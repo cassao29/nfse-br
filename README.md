@@ -27,6 +27,8 @@ and alphanumeric CNPJ values remain strings.
 
 Series validation reflects only the current working lexical evidence; it does
 not define a software/API series allocation convention.
+Lexically distinct series values that produce the same padded component map to
+the same logical `DpsIdentity` value and therefore compare as equal identities.
 
 The DPS identity contract implemented here is suitable for local deterministic
 work and testing only. Transmission remains gated on freezing and auditing the
