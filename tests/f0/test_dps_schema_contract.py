@@ -22,7 +22,14 @@ from nfse_br._f0.restricted_contract import (
 from nfse_br.domain import DomainValidationError
 from nfse_br.dps import DpsNumber
 
-_XSD_OPEN = '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">'
+_NFSE_NAMESPACE = "http://www.sped.fazenda.gov.br/nfse"
+_XSD_NAMESPACE = "http://www.w3.org/2001/XMLSchema"
+_XMLDSIG_NAMESPACE = "http://www.w3.org/2000/09/xmldsig#"
+_XSD_OPEN = (
+    '<xs:schema xmlns="http://www.sped.fazenda.gov.br/nfse" '
+    'xmlns:xs="http://www.w3.org/2001/XMLSchema" '
+    'targetNamespace="http://www.sped.fazenda.gov.br/nfse">'
+)
 _XSD_CLOSE = "</xs:schema>"
 
 
@@ -117,6 +124,21 @@ def _extract(
         simple_xsd=simple_xsd or _simple_document(),
         complex_type_names=("Root",),
         simple_type_names=("Code",),
+    )
+
+
+def _assert_fixture_qnames(
+    *,
+    complex_xsd: bytes,
+    simple_xsd: bytes | None = None,
+    expected_external_qnames: frozenset[tuple[str, str]] = frozenset(),
+) -> None:
+    schema._assert_qname_namespace_bindings(
+        complex_xsd=complex_xsd,
+        simple_xsd=simple_xsd or _simple_document(),
+        complex_type_names=("Root",),
+        simple_type_names=("Code",),
+        expected_external_qnames=expected_external_qnames,
     )
 
 
@@ -539,6 +561,316 @@ def test_qname_closure_rejects_unresolved_local_types_and_refs(
         schema._assert_qname_dependency_closure(unresolved_ref)
 
 
+def test_complex_dependency_closure_rejects_disconnected_cycle(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    names = ("TCDPS", "TCInfDPS", "DetachedA", "DetachedB")
+    monkeypatch.setattr(schema, "_COMPLEX_TYPE_NAMES", names)
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:complexType name="TCDPS"><xs:sequence>'
+        + '<xs:element name="infDPS" type="TCInfDPS"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="TCInfDPS"><xs:sequence>'
+        + '<xs:element name="code" type="Code"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="DetachedA"><xs:sequence>'
+        + '<xs:element name="b" type="DetachedB"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="DetachedB"><xs:sequence>'
+        + '<xs:element name="a" type="DetachedA"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+    structure = schema._extract_schema_subset(
+        complex_xsd=complex_xsd,
+        simple_xsd=_simple_document(),
+        complex_type_names=names,
+        simple_type_names=("Code",),
+    )
+
+    with pytest.raises(ContractFreezeError, match="complex type dependency closure"):
+        schema._assert_complex_dependency_closure(
+            structure,
+            complex_xsd=complex_xsd,
+        )
+
+
+def test_complex_dependency_closure_walks_from_root_and_handles_cycles(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    names = ("TCDPS", "A", "B")
+    monkeypatch.setattr(schema, "_COMPLEX_TYPE_NAMES", names)
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:complexType name="TCDPS"><xs:sequence>'
+        + '<xs:element name="a" type="A"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="A"><xs:sequence>'
+        + '<xs:element name="b" type="B"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="B"><xs:sequence>'
+        + '<xs:element name="a" type="A"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+    structure = schema._extract_schema_subset(
+        complex_xsd=complex_xsd,
+        simple_xsd=_simple_document(),
+        complex_type_names=names,
+        simple_type_names=("Code",),
+    )
+
+    assert schema._assert_complex_dependency_closure(
+        structure,
+        complex_xsd=complex_xsd,
+    ) == frozenset(names)
+
+
+def test_complex_dependency_closure_walks_complete_acyclic_chain(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    names = ("TCDPS", "A", "B")
+    monkeypatch.setattr(schema, "_COMPLEX_TYPE_NAMES", names)
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:complexType name="TCDPS"><xs:sequence>'
+        + '<xs:element name="a" type="A"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="A"><xs:sequence>'
+        + '<xs:element name="b" type="B"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="B"><xs:sequence>'
+        + '<xs:element name="code" type="Code"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+    structure = schema._extract_schema_subset(
+        complex_xsd=complex_xsd,
+        simple_xsd=_simple_document(),
+        complex_type_names=names,
+        simple_type_names=("Code",),
+    )
+
+    assert schema._assert_complex_dependency_closure(
+        structure,
+        complex_xsd=complex_xsd,
+    ) == frozenset(names)
+
+
+def test_complex_dependency_closure_includes_attribute_only_dependency(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    names = ("TCDPS", "AttributeType")
+    monkeypatch.setattr(schema, "_COMPLEX_TYPE_NAMES", names)
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:complexType name="TCDPS"><xs:sequence>'
+        + '<xs:element name="code" type="Code"/>'
+        + "</xs:sequence>"
+        + '<xs:attribute name="nested" type="AttributeType"/>'
+        + "</xs:complexType>"
+        + '<xs:complexType name="AttributeType"><xs:sequence>'
+        + '<xs:element name="code" type="Code"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+    structure = schema._extract_schema_subset(
+        complex_xsd=complex_xsd,
+        simple_xsd=_simple_document(),
+        complex_type_names=names,
+        simple_type_names=("Code",),
+    )
+
+    assert schema._assert_complex_dependency_closure(
+        structure,
+        complex_xsd=complex_xsd,
+    ) == frozenset(names)
+
+
+def test_complex_dependency_closure_rejects_missing_local_reference(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(schema, "_COMPLEX_TYPE_NAMES", ("TCDPS",))
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:complexType name="TCDPS"><xs:sequence>'
+        + '<xs:element name="missing" type="Missing"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+    structure = schema._extract_schema_subset(
+        complex_xsd=complex_xsd,
+        simple_xsd=_simple_document(),
+        complex_type_names=("TCDPS",),
+        simple_type_names=("Code",),
+    )
+
+    with pytest.raises(ContractFreezeError, match="Missing.*not defined"):
+        schema._assert_complex_dependency_closure(
+            structure,
+            complex_xsd=complex_xsd,
+        )
+
+
+def test_simple_dependency_closure_follows_transitive_local_bases(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(schema, "_SIMPLE_TYPE_NAMES", ("CodeA", "CodeB"))
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:complexType name="TCDPS"><xs:sequence>'
+        + '<xs:element name="code" type="CodeA"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+    simple_xsd = (
+        _XSD_OPEN
+        + '<xs:simpleType name="CodeA"><xs:restriction base="CodeB">'
+        + '<xs:pattern value="[A-Z]"/>'
+        + "</xs:restriction></xs:simpleType>"
+        + '<xs:simpleType name="CodeB"><xs:restriction base="xs:string">'
+        + '<xs:pattern value="[A-Z]"/>'
+        + "</xs:restriction></xs:simpleType>"
+        + _XSD_CLOSE
+    ).encode()
+    structure = schema._extract_schema_subset(
+        complex_xsd=complex_xsd,
+        simple_xsd=simple_xsd,
+        complex_type_names=("TCDPS",),
+        simple_type_names=("CodeA", "CodeB"),
+    )
+
+    schema._assert_simple_dependency_closure(
+        structure,
+        simple_xsd=simple_xsd,
+        reachable_complex_types=frozenset({"TCDPS"}),
+    )
+
+
+def test_qname_closure_rejects_unknown_xsd_builtin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(schema, "_EXPECTED_EXTERNAL_REFS", frozenset())
+    structure = _extract(
+        complex_xsd=_complex_document(
+            first=('<xs:element name="first" type="xs:NotARealXsdType" minOccurs="0"/>')
+        )
+    )
+
+    with pytest.raises(ContractFreezeError, match="unresolved local type QName"):
+        schema._assert_qname_dependency_closure(structure)
+
+
+def test_qname_namespace_bindings_accept_supported_profile() -> None:
+    complex_xsd = (
+        _XSD_OPEN.removesuffix(">")
+        + f' xmlns:ds="{_XMLDSIG_NAMESPACE}">'
+        + '<xs:complexType name="Root"><xs:sequence>'
+        + '<xs:element name="code" type="Code"/>'
+        + '<xs:element name="date" type="xs:date"/>'
+        + '<xs:element ref="ds:Signature" minOccurs="0"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+
+    _assert_fixture_qnames(
+        complex_xsd=complex_xsd,
+        expected_external_qnames=frozenset({(_XMLDSIG_NAMESPACE, "Signature")}),
+    )
+
+
+@pytest.mark.parametrize(
+    ("complex_xsd", "error"),
+    [
+        (
+            (
+                _XSD_OPEN.removesuffix(">")
+                + ' xmlns:ds="https://example.invalid/not-xmldsig">'
+                + '<xs:complexType name="Root"><xs:sequence>'
+                + '<xs:element ref="ds:Signature"/>'
+                + "</xs:sequence></xs:complexType>"
+                + _XSD_CLOSE
+            ).encode(),
+            "unsupported external ref QName",
+        ),
+        (
+            _complex_document(first='<xs:element name="first" type="missing:Code"/>'),
+            "undeclared QName prefix",
+        ),
+        (
+            (
+                _XSD_OPEN.removesuffix(">")
+                + f' xmlns:xsd="{_XSD_NAMESPACE}">'
+                + '<xsd:complexType name="Root"><xsd:sequence>'
+                + '<xsd:element xmlns:xs="https://example.invalid/not-xsd" '
+                + 'name="first" type="xs:string"/>'
+                + "</xsd:sequence></xsd:complexType>"
+                + _XSD_CLOSE
+            ).encode(),
+            "unsupported external type QName",
+        ),
+        (
+            _complex_document(
+                first=('<xs:element name="first" type="xs:NotARealXsdType"/>')
+            ),
+            "unsupported XML Schema type QName",
+        ),
+        (
+            _complex_document(
+                first=(
+                    '<xs:element xmlns="https://example.invalid/not-nfse" '
+                    'name="first" type="Code"/>'
+                )
+            ),
+            "unsupported external type QName",
+        ),
+    ],
+    ids=(
+        "wrong-ds-binding",
+        "undeclared-prefix",
+        "locally-redefined-xs-prefix",
+        "unknown-xsd-builtin",
+        "wrong-local-default-namespace",
+    ),
+)
+def test_qname_namespace_bindings_reject_semantic_drift(
+    complex_xsd: bytes,
+    error: str,
+) -> None:
+    with pytest.raises(ContractFreezeError, match=error):
+        _assert_fixture_qnames(complex_xsd=complex_xsd)
+
+
+def test_qname_namespace_bindings_reject_undeclared_ref_prefix() -> None:
+    complex_xsd = _complex_document(first='<xs:element ref="missing:Signature"/>')
+
+    with pytest.raises(ContractFreezeError, match="undeclared QName prefix"):
+        _assert_fixture_qnames(complex_xsd=complex_xsd)
+
+
+def test_qname_namespace_bindings_reject_undeclared_base_prefix() -> None:
+    simple_xsd = _simple_document().replace(
+        b'base="xs:string"', b'base="missing:string"'
+    )
+
+    with pytest.raises(ContractFreezeError, match="undeclared QName prefix"):
+        _assert_fixture_qnames(
+            complex_xsd=_complex_document(),
+            simple_xsd=simple_xsd,
+        )
+
+
+def test_schema_profile_rejects_incompatible_target_namespace() -> None:
+    complex_xsd = _complex_document().replace(
+        f'targetNamespace="{_NFSE_NAMESPACE}"'.encode(),
+        b'targetNamespace="https://example.invalid/not-nfse"',
+    )
+
+    with pytest.raises(ContractFreezeError, match="targetNamespace"):
+        _assert_fixture_qnames(complex_xsd=complex_xsd)
+
+
 def test_committed_contract_preserves_v04_identity_facets() -> None:
     identity = cast(
         dict[str, object],
@@ -687,6 +1019,7 @@ def test_simple_dependency_and_identity_binding_drift_are_rejected(
         schema._assert_simple_dependency_closure(
             structure,
             simple_xsd=_simple_document(),
+            reachable_complex_types=frozenset({"Root"}),
         )
 
     with pytest.raises(ContractFreezeError, match="TSIdDPS contradicts"):
@@ -776,6 +1109,7 @@ def test_offline_freeze_builds_and_writes_only_reviewed_evidence(
     monkeypatch.setattr(schema, "_SIMPLE_TYPE_NAMES", ("Code", "TSIdDPS", "TSSerieDPS"))
     monkeypatch.setattr(schema, "_EXPECTED_COMPLEX_SCHEMA_LINKS", ())
     monkeypatch.setattr(schema, "_EXPECTED_EXTERNAL_REFS", frozenset())
+    monkeypatch.setattr(schema, "_EXPECTED_EXTERNAL_QNAMES", frozenset())
     structure = schema._extract_schema_subset(
         complex_xsd=complex_xsd,
         simple_xsd=simple_xsd,

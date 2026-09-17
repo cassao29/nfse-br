@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
+from io import BytesIO
 from pathlib import Path
 from typing import Final, NoReturn, cast
 from xml.etree import ElementTree
@@ -198,7 +200,9 @@ _EXPECTED_CONTRACT_SHA256: Final = (
     "794c5904c4d81381d73050df63df541de587a08e195b7fb25f553937a43b67b0"
 )
 
+_NFSE_NAMESPACE: Final = "http://www.sped.fazenda.gov.br/nfse"
 _XSD_NAMESPACE: Final = "http://www.w3.org/2001/XMLSchema"
+_XMLDSIG_NAMESPACE: Final = "http://www.w3.org/2000/09/xmldsig#"
 _XSD: Final = f"{{{_XSD_NAMESPACE}}}"
 _SCHEMA: Final = f"{_XSD}schema"
 _ANNOTATION: Final = f"{_XSD}annotation"
@@ -235,8 +239,16 @@ _EXPECTED_COMPLEX_SCHEMA_LINKS: Final = (
 )
 _EXPECTED_SIMPLE_SCHEMA_LINKS: Final[tuple[tuple[str, str | None, str], ...]] = ()
 _EXPECTED_EXTERNAL_REFS: Final = frozenset({"ds:Signature"})
+_EXPECTED_EXTERNAL_QNAMES: Final = frozenset({(_XMLDSIG_NAMESPACE, "Signature")})
+_SUPPORTED_XSD_BUILTINS: Final = frozenset({"date", "string"})
 
 SchemaObject = dict[str, object]
+
+
+@dataclass(frozen=True, slots=True)
+class _ParsedSchema:
+    root: ElementTree.Element
+    namespace_scopes: Mapping[int, Mapping[str, str]]
 
 
 def freeze_restricted_dps_schema_contract(
@@ -325,8 +337,22 @@ def _build_contract(
         simple_type_names=_SIMPLE_TYPE_NAMES,
     )
     _assert_schema_links(complex_xsd=complex_xsd, simple_xsd=simple_xsd)
-    _assert_complex_dependency_closure(structure, complex_xsd=complex_xsd)
-    _assert_simple_dependency_closure(structure, simple_xsd=simple_xsd)
+    reachable_complex_types = _assert_complex_dependency_closure(
+        structure,
+        complex_xsd=complex_xsd,
+    )
+    _assert_simple_dependency_closure(
+        structure,
+        simple_xsd=simple_xsd,
+        reachable_complex_types=reachable_complex_types,
+    )
+    _assert_qname_namespace_bindings(
+        complex_xsd=complex_xsd,
+        simple_xsd=simple_xsd,
+        complex_type_names=_COMPLEX_TYPE_NAMES,
+        simple_type_names=_SIMPLE_TYPE_NAMES,
+        expected_external_qnames=_EXPECTED_EXTERNAL_QNAMES,
+    )
     _assert_qname_dependency_closure(structure)
     _assert_digest(
         _serialize_contract(structure),
@@ -412,10 +438,182 @@ def _extract_schema_subset(
 
 
 def _parse_schema(data: bytes, *, source: str) -> ElementTree.Element:
-    root = _parse_safe_xml(data, source=source)
-    if root.tag != _SCHEMA:
+    return _parse_schema_document(data, source=source).root
+
+
+def _parse_schema_document(data: bytes, *, source: str) -> _ParsedSchema:
+    _parse_safe_xml(data, source=source)
+    pending_namespaces: dict[str, str] = {}
+    scope_stack: list[dict[str, str]] = []
+    namespace_scopes: dict[int, Mapping[str, str]] = {}
+    root: ElementTree.Element | None = None
+
+    for event, item in ElementTree.iterparse(
+        BytesIO(data),
+        events=("start-ns", "start", "end"),
+    ):
+        if event == "start-ns":
+            prefix, namespace = cast(tuple[str | None, str], item)
+            pending_namespaces["" if prefix is None else prefix] = namespace
+            continue
+
+        element = cast(ElementTree.Element, item)
+        if event == "start":
+            scope = dict(scope_stack[-1]) if scope_stack else {}
+            scope.update(pending_namespaces)
+            pending_namespaces.clear()
+            scope_stack.append(scope)
+            namespace_scopes[id(element)] = scope
+            if root is None:
+                root = element
+            continue
+
+        scope_stack.pop()
+
+    if root is None or root.tag != _SCHEMA:
         _drift(f"{source} root is not xs:schema")
-    return root
+    root_scope = namespace_scopes[id(root)]
+    if root.get("targetNamespace") != _NFSE_NAMESPACE:
+        _drift(f"{source} targetNamespace differs from the supported profile")
+    if root_scope.get("") != _NFSE_NAMESPACE:
+        _drift(f"{source} default namespace differs from the supported profile")
+    if root_scope.get("xs") != _XSD_NAMESPACE:
+        _drift(f"{source} xs namespace differs from the supported profile")
+
+    return _ParsedSchema(root=root, namespace_scopes=namespace_scopes)
+
+
+def _assert_qname_namespace_bindings(
+    *,
+    complex_xsd: bytes,
+    simple_xsd: bytes,
+    complex_type_names: Iterable[str],
+    simple_type_names: Iterable[str],
+    expected_external_qnames: frozenset[tuple[str, str]],
+) -> None:
+    complex_schema = _parse_schema_document(complex_xsd, source="complex schema")
+    simple_schema = _parse_schema_document(simple_xsd, source="simple schema")
+    defined_complex_types = _definition_names(complex_schema.root, _COMPLEX_TYPE)
+    defined_simple_types = _definition_names(simple_schema.root, _SIMPLE_TYPE)
+    observed_external_qnames: set[tuple[str, str]] = set()
+
+    for name in complex_type_names:
+        definition = _find_unique_definition(
+            complex_schema.root,
+            _COMPLEX_TYPE,
+            name,
+        )
+        for element in definition.iter():
+            if element.tag not in {_ELEMENT, _ATTRIBUTE}:
+                continue
+            for field in ("type", "ref"):
+                value = element.get(field)
+                if value is None:
+                    continue
+                resolved = _resolve_qname(
+                    value,
+                    element=element,
+                    schema=complex_schema,
+                    context=f"{name} {field}",
+                )
+                _validate_resolved_qname(
+                    resolved,
+                    field=field,
+                    complex_types=defined_complex_types,
+                    simple_types=defined_simple_types,
+                    observed_external_qnames=observed_external_qnames,
+                )
+
+    for name in simple_type_names:
+        definition = _find_unique_definition(
+            simple_schema.root,
+            _SIMPLE_TYPE,
+            name,
+        )
+        restrictions = definition.findall(_RESTRICTION)
+        if len(restrictions) != 1:
+            _drift(f"{name} must contain exactly one xs:restriction")
+        restriction = restrictions[0]
+        base = restriction.get("base")
+        if base is None:
+            _drift(f"{name} restriction must declare a base")
+        resolved = _resolve_qname(
+            base,
+            element=restriction,
+            schema=simple_schema,
+            context=f"{name} base",
+        )
+        _validate_resolved_qname(
+            resolved,
+            field="base",
+            complex_types=defined_complex_types,
+            simple_types=defined_simple_types,
+            observed_external_qnames=observed_external_qnames,
+        )
+
+    if observed_external_qnames != set(expected_external_qnames):
+        _drift(
+            "external QName refs differ; "
+            f"expected {sorted(expected_external_qnames)!r}, "
+            f"observed {sorted(observed_external_qnames)!r}"
+        )
+
+
+def _resolve_qname(
+    value: str,
+    *,
+    element: ElementTree.Element,
+    schema: _ParsedSchema,
+    context: str,
+) -> tuple[str, str]:
+    prefix, separator, local_name = value.partition(":")
+    if separator:
+        if not prefix or not local_name or ":" in local_name:
+            _drift(f"{context} contains malformed QName {value!r}")
+        namespace = schema.namespace_scopes[id(element)].get(prefix)
+        if namespace is None:
+            _drift(f"{context} uses undeclared QName prefix {prefix!r}")
+        return namespace, local_name
+
+    if not value:
+        _drift(f"{context} contains an empty QName")
+    namespace = schema.namespace_scopes[id(element)].get("")
+    if namespace is None:
+        _drift(f"{context} has no default namespace binding")
+    return namespace, value
+
+
+def _validate_resolved_qname(
+    resolved: tuple[str, str],
+    *,
+    field: str,
+    complex_types: set[str],
+    simple_types: set[str],
+    observed_external_qnames: set[tuple[str, str]],
+) -> None:
+    namespace, local_name = resolved
+    if namespace == _XSD_NAMESPACE:
+        if field == "ref" or local_name not in _SUPPORTED_XSD_BUILTINS:
+            _drift(f"unsupported XML Schema {field} QName {local_name!r}")
+        return
+
+    if namespace == _NFSE_NAMESPACE:
+        allowed = simple_types if field == "base" else complex_types | simple_types
+        if field == "ref" or local_name not in allowed:
+            _drift(f"unresolved local {field} QName {local_name!r}")
+        return
+
+    if field == "ref" and resolved == (_XMLDSIG_NAMESPACE, "Signature"):
+        observed_external_qnames.add(resolved)
+        return
+
+    _drift(f"unsupported external {field} QName {{{namespace}}}{local_name}")
+
+
+def _definition_names(root: ElementTree.Element, tag: str) -> set[str]:
+    return {
+        name for child in root.findall(tag) if (name := child.get("name")) is not None
+    }
 
 
 def _assert_schema_links(*, complex_xsd: bytes, simple_xsd: bytes) -> None:
@@ -630,29 +828,40 @@ def _occurs(element: ElementTree.Element, attribute: str) -> str:
 
 
 def _assert_simple_dependency_closure(
-    structure: Mapping[str, object], *, simple_xsd: bytes
+    structure: Mapping[str, object],
+    *,
+    simple_xsd: bytes,
+    reachable_complex_types: frozenset[str],
 ) -> None:
     simple_root = _parse_schema(simple_xsd, source="simple schema")
-    defined_simple_types = {
-        child.get("name")
-        for child in simple_root.findall(_SIMPLE_TYPE)
-        if child.get("name") is not None
-    }
+    defined_simple_types = _definition_names(simple_root, _SIMPLE_TYPE)
     complex_types = _expect_mapping(structure, "complex_types")
     simple_types = _expect_mapping(structure, "simple_types")
-    observed = set(_iter_type_references(complex_types)) & cast(
-        set[str], defined_simple_types
-    )
+    observed: set[str] = set()
+    for complex_type_name in reachable_complex_types:
+        complex_type = _expect_mapping(complex_types, complex_type_name)
+        observed.update(
+            reference
+            for reference in _iter_type_references(complex_type)
+            if reference in defined_simple_types
+        )
     pending = list(observed)
     while pending:
         current = pending.pop()
+        if current not in simple_types:
+            _drift(f"simple type dependency {current!r} is missing from the closure")
         current_type = _expect_mapping(simple_types, current)
         base = current_type.get("base")
-        if type(base) is str and base in defined_simple_types and base not in observed:
-            observed.add(base)
-            pending.append(base)
+        if type(base) is not str:
+            _drift(f"simple type dependency {current!r} has no base")
+        if ":" not in base:
+            if base not in defined_simple_types:
+                _drift(f"simple type dependency {base!r} is not defined")
+            if base not in observed:
+                observed.add(base)
+                pending.append(base)
     expected = set(_SIMPLE_TYPE_NAMES)
-    if observed != expected:
+    if observed != expected or set(simple_types) != expected:
         _drift(
             "simple type dependency closure differs; "
             f"expected {sorted(expected)!r}, observed {sorted(observed)!r}"
@@ -661,23 +870,36 @@ def _assert_simple_dependency_closure(
 
 def _assert_complex_dependency_closure(
     structure: Mapping[str, object], *, complex_xsd: bytes
-) -> None:
+) -> frozenset[str]:
     complex_root = _parse_schema(complex_xsd, source="complex schema")
-    defined_complex_types = {
-        child.get("name")
-        for child in complex_root.findall(_COMPLEX_TYPE)
-        if child.get("name") is not None
-    }
+    defined_complex_types = _definition_names(complex_root, _COMPLEX_TYPE)
     complex_types = _expect_mapping(structure, "complex_types")
-    referenced = set(_iter_type_references(complex_types))
-    observed = referenced & cast(set[str], defined_complex_types)
-    observed.add(_ROOT_COMPLEX_TYPE_NAME)
+    simple_types = _expect_mapping(structure, "simple_types")
+    observed: set[str] = set()
+    pending = [_ROOT_COMPLEX_TYPE_NAME]
+    while pending:
+        current = pending.pop()
+        if current in observed:
+            continue
+        if current not in defined_complex_types or current not in complex_types:
+            _drift(f"complex type dependency {current!r} is missing")
+        observed.add(current)
+        current_type = _expect_mapping(complex_types, current)
+        for reference in _iter_type_references(current_type):
+            if ":" in reference or reference in simple_types:
+                continue
+            if reference not in defined_complex_types:
+                _drift(f"complex type dependency {reference!r} is not defined")
+            if reference not in observed:
+                pending.append(reference)
+
     expected = set(_COMPLEX_TYPE_NAMES)
-    if observed != expected:
+    if observed != expected or set(complex_types) != expected:
         _drift(
             "complex type dependency closure differs; "
             f"expected {sorted(expected)!r}, observed {sorted(observed)!r}"
         )
+    return frozenset(observed)
 
 
 def _assert_qname_dependency_closure(structure: Mapping[str, object]) -> None:
@@ -689,7 +911,11 @@ def _assert_qname_dependency_closure(structure: Mapping[str, object]) -> None:
         for reference in _iter_field_references(structure, field=field):
             prefix, separator, local_name = reference.partition(":")
             if separator:
-                if prefix == "xs" and local_name and ":" not in local_name:
+                if (
+                    prefix == "xs"
+                    and local_name in _SUPPORTED_XSD_BUILTINS
+                    and ":" not in local_name
+                ):
                     continue
                 _drift(f"unresolved local {field} QName {reference!r}")
             if not reference or reference not in local_types:
