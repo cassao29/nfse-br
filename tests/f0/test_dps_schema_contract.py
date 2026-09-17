@@ -530,6 +530,23 @@ def test_schema_links_are_exact_and_never_resolved() -> None:
         )
 
 
+def test_schema_link_without_location_is_rejected() -> None:
+    complex_xsd = (
+        _XSD_OPEN
+        + "<xs:include/>"
+        + '<xs:complexType name="Root"><xs:sequence>'
+        + '<xs:element name="code" type="Code"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+
+    with pytest.raises(ContractFreezeError, match="must declare schemaLocation"):
+        schema._assert_schema_links(
+            complex_xsd=complex_xsd,
+            simple_xsd=_simple_document(),
+        )
+
+
 def test_qname_closure_rejects_unresolved_local_types_and_refs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -859,6 +876,46 @@ def test_qname_namespace_bindings_reject_undeclared_base_prefix() -> None:
             complex_xsd=_complex_document(),
             simple_xsd=simple_xsd,
         )
+
+
+def test_qname_namespace_bindings_reject_malformed_qname() -> None:
+    complex_xsd = _complex_document(
+        first='<xs:element name="first" type="xs:string:extra"/>'
+    )
+
+    with pytest.raises(ContractFreezeError, match="malformed QName"):
+        _assert_fixture_qnames(complex_xsd=complex_xsd)
+
+
+def test_qname_namespace_bindings_reject_builtin_element_ref() -> None:
+    complex_xsd = _complex_document(first='<xs:element ref="xs:string"/>')
+
+    with pytest.raises(ContractFreezeError, match="XML Schema ref QName"):
+        _assert_fixture_qnames(complex_xsd=complex_xsd)
+
+
+def test_qname_namespace_bindings_reject_complex_simple_type_base() -> None:
+    simple_xsd = _simple_document().replace(b'base="xs:string"', b'base="Root"')
+
+    with pytest.raises(ContractFreezeError, match="unresolved local base QName"):
+        _assert_fixture_qnames(
+            complex_xsd=_complex_document(),
+            simple_xsd=simple_xsd,
+        )
+
+
+def test_qname_namespace_bindings_reject_unexpected_external_ref_set() -> None:
+    complex_xsd = (
+        _XSD_OPEN.removesuffix(">")
+        + f' xmlns:ds="{_XMLDSIG_NAMESPACE}">'
+        + '<xs:complexType name="Root"><xs:sequence>'
+        + '<xs:element ref="ds:Signature"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+
+    with pytest.raises(ContractFreezeError, match="external QName refs differ"):
+        _assert_fixture_qnames(complex_xsd=complex_xsd)
 
 
 def test_schema_profile_rejects_incompatible_target_namespace() -> None:
