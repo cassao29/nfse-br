@@ -8,6 +8,15 @@ development tooling, tests, coverage enforcement, and continuous integration.
 It does not yet implement fiscal models, DPS documents, schema validation,
 XML signatures, issuance, or transmission.
 
+## Current scope
+
+The library currently provides immutable primitives for NFS-e environments,
+lexical CPF/CNPJ identifiers, IBGE municipality codes, and competence dates.
+
+CPF and CNPJ checksum validation is not implemented yet. Issuance,
+transmission, DPS, XML, XSD validation, and XMLDSig are also outside the
+current scope.
+
 ## Development
 
 The project requires Python 3.12 or 3.13 and uses
