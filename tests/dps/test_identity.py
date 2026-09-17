@@ -89,12 +89,14 @@ def test_identity_construction_is_deterministic_and_hashable() -> None:
     assert hash(first) == hash(second)
 
 
-def test_lexically_distinct_series_can_produce_the_same_identity_value() -> None:
+def test_series_aliases_produce_the_same_logical_identity() -> None:
     short_series = _build_alphanumeric_cnpj_identity(series="123")
     padded_series = _build_alphanumeric_cnpj_identity(series="00123")
 
     assert short_series.value == padded_series.value
-    assert short_series != padded_series
+    assert short_series == padded_series
+    assert hash(short_series) == hash(padded_series)
+    assert len({short_series, padded_series}) == 1
 
 
 def test_identity_is_immutable() -> None:
