@@ -21,6 +21,13 @@ reached through `restriction/@base`. It preserves sequence and choice order,
 occurrence cardinalities, attributes, restriction bases, and supported facets.
 The source members are recorded with their exact size and SHA-256.
 
+The closure assertion performs a graph traversal rooted exclusively at
+`TCDPS`; disconnected types cannot satisfy it. QName checks resolve the
+effective namespace binding at each `type`, `base`, and `ref` use, including
+inherited and locally redefined prefixes. XML Schema builtins are restricted
+to those observed in the frozen profile, while `ds:Signature` is accepted only
+in the XMLDSig namespace.
+
 Here, `dps_structural_subset` means a subset of the complete NFS-e bundle, not
 a partial traversal of `TCDPS`: the full local dependency closure of `TCDPS` is
 included. The complex schema includes `tiposSimples_v1.01.xsd` and imports the
