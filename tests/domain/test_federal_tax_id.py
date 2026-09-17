@@ -1,11 +1,23 @@
 """Tests for Brazilian federal tax identifier values."""
 
+from collections.abc import Callable
 from dataclasses import FrozenInstanceError
 from typing import cast
 
 import pytest
 
 from nfse_br.domain import DomainValidationError, FederalTaxId, FederalTaxIdKind
+
+
+class StringConvertible:
+    """An object that must not be coerced into an identifier."""
+
+    def __str__(self) -> str:
+        return "12345678901"
+
+
+class TaxIdString(str):
+    """A string subclass that must not override lexical validation."""
 
 
 def test_cpf_preserves_kind_value_and_string_representation() -> None:
@@ -32,9 +44,13 @@ def test_cpf_rejects_invalid_lexical_values(value: str) -> None:
         FederalTaxId.cpf(value)
 
 
-def test_cpf_rejects_non_string_value() -> None:
+@pytest.mark.parametrize(
+    "value",
+    [None, b"12345678901", 12345678901, 12345678901.0, True, StringConvertible()],
+)
+def test_cpf_rejects_non_string_value(value: object) -> None:
     with pytest.raises(DomainValidationError, match="string"):
-        FederalTaxId.cpf(cast(str, 12345678901))
+        FederalTaxId.cpf(cast(str, value))
 
 
 def test_numeric_cnpj_is_accepted() -> None:
@@ -68,9 +84,62 @@ def test_cnpj_rejects_invalid_lexical_values(value: str) -> None:
         FederalTaxId.cnpj(value)
 
 
-def test_cnpj_rejects_non_string_value() -> None:
+@pytest.mark.parametrize(
+    "value",
+    [
+        None,
+        b"12345678000199",
+        12345678000199,
+        12345678000199.0,
+        False,
+        StringConvertible(),
+    ],
+)
+def test_cnpj_rejects_non_string_value(value: object) -> None:
     with pytest.raises(DomainValidationError, match="string"):
-        FederalTaxId.cnpj(cast(str, 12345678000199))
+        FederalTaxId.cnpj(cast(str, value))
+
+
+@pytest.mark.parametrize(
+    ("factory", "value"),
+    [
+        (FederalTaxId.cpf, TaxIdString("12345678901")),
+        (FederalTaxId.cnpj, TaxIdString("12345678000199")),
+    ],
+)
+def test_federal_tax_id_rejects_string_subclasses(
+    factory: Callable[[str], FederalTaxId], value: str
+) -> None:
+    with pytest.raises(DomainValidationError, match="string"):
+        factory(value)
+
+
+@pytest.mark.parametrize(
+    ("factory", "invalid_value"),
+    [
+        (FederalTaxId.cpf, "1234567890A"),
+        (FederalTaxId.cnpj, "12ABC34567890-"),
+    ],
+)
+def test_validation_errors_do_not_disclose_federal_tax_ids(
+    factory: Callable[[str], FederalTaxId], invalid_value: str
+) -> None:
+    with pytest.raises(DomainValidationError) as exc_info:
+        factory(invalid_value)
+
+    assert invalid_value not in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "tax_id",
+    [
+        FederalTaxId.cpf("12345678901"),
+        FederalTaxId.cnpj("12ABC345678901"),
+    ],
+)
+def test_federal_tax_id_repr_redacts_the_full_value(tax_id: FederalTaxId) -> None:
+    assert tax_id.value not in repr(tax_id)
+    assert "<redacted>" in repr(tax_id)
 
 
 def test_federal_tax_id_rejects_unknown_kind() -> None:

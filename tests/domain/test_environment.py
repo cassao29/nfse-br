@@ -1,5 +1,7 @@
 """Tests for NFS-e environment values."""
 
+from typing import cast
+
 import pytest
 
 from nfse_br.domain import DomainValidationError, NfseEnvironment
@@ -29,9 +31,10 @@ def test_environment_rejects_an_unsupported_code(code: int) -> None:
         NfseEnvironment.from_code(code)
 
 
-def test_environment_rejects_boolean_code() -> None:
+@pytest.mark.parametrize("code", [True, False, 1.0, 2.0, "1"])
+def test_environment_rejects_non_integer_code(code: object) -> None:
     with pytest.raises(DomainValidationError, match="integer"):
-        NfseEnvironment.from_code(True)
+        NfseEnvironment.from_code(cast(int, code))
 
 
 def test_domain_validation_error_is_a_value_error() -> None:
