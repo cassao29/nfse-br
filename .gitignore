@@ -36,3 +36,6 @@ dist/
 *.p12
 *.pem
 *.key
+
+# Local official-contract evidence bytes
+.f0/
