@@ -616,6 +616,7 @@ def test_offline_freeze_builds_and_writes_only_reviewed_evidence(
     monkeypatch.setattr(schema, "_SIMPLE_SCHEMA_SIZE", len(simple_xsd))
     monkeypatch.setattr(schema, "_SIMPLE_SCHEMA_SHA256", schema._sha256(simple_xsd))
     monkeypatch.setattr(schema, "_COMPLEX_TYPE_NAMES", ("Root",))
+    monkeypatch.setattr(schema, "_ROOT_COMPLEX_TYPE_NAME", "Root")
     monkeypatch.setattr(schema, "_SIMPLE_TYPE_NAMES", ("Code", "TSIdDPS", "TSSerieDPS"))
     structure = schema._extract_schema_subset(
         complex_xsd=complex_xsd,

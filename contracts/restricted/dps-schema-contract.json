@@ -1,6 +1,96 @@
 {
   "authority": "official_frozen",
   "complex_types": {
+    "TCAtvEvento": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xNome",
+            "type": "TSDesc255"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "dtIni",
+            "type": "TSData"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "dtFim",
+            "type": "TSData"
+          },
+          {
+            "kind": "choice",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "particles": [
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "idAtvEvt",
+                "type": "TSIdeEvento"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "end",
+                "type": "TCEnderecoSimples"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "TCBeneficioMunicipal": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "nBM",
+            "type": "TSNumBeneficioMunicipal"
+          },
+          {
+            "kind": "choice",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "particles": [
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "0",
+                "name": "vRedBCBM",
+                "type": "TSDec15V2"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "0",
+                "name": "pRedBCBM",
+                "type": "TSDec3V2"
+              }
+            ]
+          }
+        ]
+      }
+    },
     "TCCServ": {
       "attributes": [],
       "content": {
@@ -46,6 +136,86 @@
         ]
       }
     },
+    "TCComExterior": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "mdPrestacao",
+            "type": "TSModoPrestacao"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "vincPrest",
+            "type": "TSVincPrest"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "tpMoeda",
+            "type": "TSCodMoeda"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "vServMoeda",
+            "type": "TSDec15V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "mecAFComexP",
+            "type": "TSMecAFComExPrest"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "mecAFComexT",
+            "type": "TSMecAFComExToma"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "movTempBens",
+            "type": "TSMovTempBens"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "nDI",
+            "type": "TSNumDocImport"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "nRE",
+            "type": "TSNumRegExport"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "mdic",
+            "type": "TSEnvMDIC"
+          }
+        ]
+      }
+    },
     "TCDPS": {
       "attributes": [
         {
@@ -71,6 +241,463 @@
             "max_occurs": "1",
             "min_occurs": "0",
             "ref": "ds:Signature"
+          }
+        ]
+      }
+    },
+    "TCDocDedRed": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "choice",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "particles": [
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "chNFSe",
+                "type": "TSChaveNFSe"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "chNFe",
+                "type": "TSChaveNFe"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "NFSeMun",
+                "type": "TCDocOutNFSe"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "NFNFS",
+                "type": "TCDocNFNFS"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "nDocFisc",
+                "type": "TSDesc255"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "nDoc",
+                "type": "TSDesc255"
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "tpDedRed",
+            "type": "TSIdeDedRed"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "xDescOutDed",
+            "type": "TSDescOutDedRed"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "dtEmiDoc",
+            "type": "xs:date"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "vDedutivelRedutivel",
+            "type": "TSDec15V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "vDeducaoReducao",
+            "type": "TSDec15V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "fornec",
+            "type": "TCInfoPessoa"
+          }
+        ]
+      }
+    },
+    "TCDocNFNFS": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "nNFS",
+            "type": "TSNum7Dig"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "modNFS",
+            "type": "TSNum15Dig"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "serieNFS",
+            "type": "TSSerieNFNFS"
+          }
+        ]
+      }
+    },
+    "TCDocOutNFSe": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "cMunNFSeMun",
+            "type": "TSCodMunIBGE"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "nNFSeMun",
+            "type": "TSNum15Dig"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "cVerifNFSeMun",
+            "type": "TSCodVerificacao"
+          }
+        ]
+      }
+    },
+    "TCEnderExt": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "cPais",
+            "type": "TSCodPaisISO"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "cEndPost",
+            "type": "TSCodigoEndPostal"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xCidade",
+            "type": "TSCidade"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xEstProvReg",
+            "type": "TSEstadoProvRegiao"
+          }
+        ]
+      }
+    },
+    "TCEnderExtSimples": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "cEndPost",
+            "type": "TSCodigoEndPostal"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xCidade",
+            "type": "TSCidade"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xEstProvReg",
+            "type": "TSEstadoProvRegiao"
+          }
+        ]
+      }
+    },
+    "TCEnderNac": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "cMun",
+            "type": "TSCodMunIBGE"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "CEP",
+            "type": "TSCEP"
+          }
+        ]
+      }
+    },
+    "TCEnderObraEvento": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "choice",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "particles": [
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "CEP",
+                "type": "TSCEP"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "endExt",
+                "type": "TCEnderExtSimples"
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xLgr",
+            "type": "TSLogradouro"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "nro",
+            "type": "TSNumeroEndereco"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "xCpl",
+            "type": "TSComplementoEndereco"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xBairro",
+            "type": "TSBairro"
+          }
+        ]
+      }
+    },
+    "TCEndereco": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "choice",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "particles": [
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "endNac",
+                "type": "TCEnderNac"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "endExt",
+                "type": "TCEnderExt"
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xLgr",
+            "type": "TSLogradouro"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "nro",
+            "type": "TSNumeroEndereco"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "xCpl",
+            "type": "TSComplementoEndereco"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xBairro",
+            "type": "TSBairro"
+          }
+        ]
+      }
+    },
+    "TCEnderecoSimples": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "choice",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "particles": [
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "CEP",
+                "type": "TSCEP"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "endExt",
+                "type": "TCEnderExtSimples"
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xLgr",
+            "type": "TSLogradouro"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "nro",
+            "type": "TSNumeroEndereco"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "xCpl",
+            "type": "TSComplementoEndereco"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xBairro",
+            "type": "TSBairro"
+          }
+        ]
+      }
+    },
+    "TCExigSuspensa": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "tpSusp",
+            "type": "TSOpExigSuspensa"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "nProcesso",
+            "type": "TSNumProcExigSuspensa"
           }
         ]
       }
@@ -206,6 +833,151 @@
             "min_occurs": "0",
             "name": "IBSCBS",
             "type": "TCRTCInfoIBSCBS"
+          }
+        ]
+      }
+    },
+    "TCInfoCompl": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "idDocTec",
+            "type": "TSDRT"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "docRef",
+            "type": "TSDesc255"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "xPed",
+            "type": "TSNumeroEndereco"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "gItemPed",
+            "type": "TCInfoItemPed"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "xInfComp",
+            "type": "TSDescInfCompl"
+          }
+        ]
+      }
+    },
+    "TCInfoDedRed": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "choice",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "particles": [
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "pDR",
+                "type": "TSDec3V2"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "vDR",
+                "type": "TSDec15V2"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "documentos",
+                "type": "TCListaDocDedRed"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "TCInfoItemPed": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "99",
+            "min_occurs": "1",
+            "name": "xItemPed",
+            "type": "TSNumeroEndereco"
+          }
+        ]
+      }
+    },
+    "TCInfoObra": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "inscImobFisc",
+            "type": "TSInscImobFisc"
+          },
+          {
+            "kind": "choice",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "particles": [
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "cObra",
+                "type": "TSCodObra"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "cCIB",
+                "type": "TSCodCIB"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "end",
+                "type": "TCEnderObraEvento"
+              }
+            ]
           }
         ]
       }
@@ -391,6 +1163,23 @@
         ]
       }
     },
+    "TCInfoRefNFSe": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "99",
+            "min_occurs": "1",
+            "name": "refNFSe",
+            "type": "TSChaveNFSe"
+          }
+        ]
+      }
+    },
     "TCInfoTributacao": {
       "attributes": [],
       "content": {
@@ -460,6 +1249,23 @@
         ]
       }
     },
+    "TCListaDocDedRed": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1000",
+            "min_occurs": "1",
+            "name": "docDedRed",
+            "type": "TCDocDedRed"
+          }
+        ]
+      }
+    },
     "TCLocPrest": {
       "attributes": [],
       "content": {
@@ -480,6 +1286,573 @@
             "min_occurs": "1",
             "name": "cPaisPrestacao",
             "type": "TSCodPaisISO"
+          }
+        ]
+      }
+    },
+    "TCRTCInfoDest": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "choice",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "particles": [
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "CNPJ",
+                "type": "TSCNPJ"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "CPF",
+                "type": "TSCPF"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "NIF",
+                "type": "TSNIF"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "cNaoNIF",
+                "type": "TSCodNaoNIF"
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xNome",
+            "type": "TSDesc150"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "end",
+            "type": "TCEndereco"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "fone",
+            "type": "TSTelefone"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "email",
+            "type": "TSEmail"
+          }
+        ]
+      }
+    },
+    "TCRTCInfoIBSCBS": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "finNFSe",
+            "type": "TSRTCFinNFSe"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "indFinal",
+            "type": "TSRTCIndFinal"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "cIndOp",
+            "type": "TSRTCCodIndOp"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "tpOper",
+            "type": "TSRTCTpOper"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "gRefNFSe",
+            "type": "TCInfoRefNFSe"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "tpEnteGov",
+            "type": "TSRTCTpEnteGov"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "indDest",
+            "type": "TSRTCIndDest"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "dest",
+            "type": "TCRTCInfoDest"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "imovel",
+            "type": "TCRTCInfoImovel"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "valores",
+            "type": "TCRTCInfoValoresIBSCBS"
+          }
+        ]
+      }
+    },
+    "TCRTCInfoImovel": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "inscImobFisc",
+            "type": "TSInscImobFisc"
+          },
+          {
+            "kind": "choice",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "particles": [
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "cCIB",
+                "type": "TSCodCIB"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "end",
+                "type": "TCEnderObraEvento"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "TCRTCInfoReeRepRes": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1000",
+            "min_occurs": "1",
+            "name": "documentos",
+            "type": "TCRTCListaDoc"
+          }
+        ]
+      }
+    },
+    "TCRTCInfoTributosDif": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "pDifUF",
+            "type": "TSDec3V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "pDifMun",
+            "type": "TSDec3V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "pDifCBS",
+            "type": "TSDec3V2"
+          }
+        ]
+      }
+    },
+    "TCRTCInfoTributosIBSCBS": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "gIBSCBS",
+            "type": "TCRTCInfoTributosSitClas"
+          }
+        ]
+      }
+    },
+    "TCRTCInfoTributosSitClas": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "CST",
+            "type": "TSRTCCodSitTrib"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "cClassTrib",
+            "type": "TSRTCCodClassTrib"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "cCredPres",
+            "type": "TSRTCCodCredPres"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "gTribRegular",
+            "type": "TCRTCInfoTributosTribRegular"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "gDif",
+            "type": "TCRTCInfoTributosDif"
+          }
+        ]
+      }
+    },
+    "TCRTCInfoTributosTribRegular": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "CSTReg",
+            "type": "TSRTCCodSitTrib"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "cClassTribReg",
+            "type": "TSRTCCodClassTrib"
+          }
+        ]
+      }
+    },
+    "TCRTCInfoValoresIBSCBS": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "gReeRepRes",
+            "type": "TCRTCInfoReeRepRes"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "trib",
+            "type": "TCRTCInfoTributosIBSCBS"
+          }
+        ]
+      }
+    },
+    "TCRTCListaDoc": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "choice",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "particles": [
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "dFeNacional",
+                "type": "TCRTCListaDocDFe"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "docFiscalOutro",
+                "type": "TCRTCListaDocFiscalOutro"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "docOutro",
+                "type": "TCRTCListaDocOutro"
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "fornec",
+            "type": "TCRTCListaDocFornec"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "dtEmiDoc",
+            "type": "TSData"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "dtCompDoc",
+            "type": "TSData"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "tpReeRepRes",
+            "type": "TSRTCTpReeRepRes"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "xTpReeRepRes",
+            "type": "TSDesc150"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "vlrReeRepRes",
+            "type": "TSDec15V2"
+          }
+        ]
+      }
+    },
+    "TCRTCListaDocDFe": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "tipoChaveDFe",
+            "type": "TSRTCTipoChaveDFe"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "xTipoChaveDFe",
+            "type": "TSDesc255"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "chaveDFe",
+            "type": "TSRTCChaveDFe"
+          }
+        ]
+      }
+    },
+    "TCRTCListaDocFiscalOutro": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "cMunDocFiscal",
+            "type": "TSNum7Dig"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "nDocFiscal",
+            "type": "TSDesc255"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xDocFiscal",
+            "type": "TSDesc255"
+          }
+        ]
+      }
+    },
+    "TCRTCListaDocFornec": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "choice",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "particles": [
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "CNPJ",
+                "type": "TSCNPJ"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "CPF",
+                "type": "TSCPF"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "NIF",
+                "type": "TSNIF"
+              },
+              {
+                "kind": "element",
+                "max_occurs": "1",
+                "min_occurs": "1",
+                "name": "cNaoNIF",
+                "type": "TSCodNaoNIF"
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xNome",
+            "type": "TSDesc150"
+          }
+        ]
+      }
+    },
+    "TCRTCListaDocOutro": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "nDoc",
+            "type": "TSDesc255"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "xDoc",
+            "type": "TSDesc255"
           }
         ]
       }
@@ -567,6 +1940,75 @@
         ]
       }
     },
+    "TCSubstituicao": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "chSubstda",
+            "type": "TSChaveNFSe"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "cMotivo",
+            "type": "TSCodJustSubst"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "xMotivo",
+            "type": "TSMotivo"
+          }
+        ]
+      }
+    },
+    "TCTribFederal": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "piscofins",
+            "type": "TCTribOutrosPisCofins"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "vRetCP",
+            "type": "TSDec15V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "vRetIRRF",
+            "type": "TSDec15V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "vRetCSLL",
+            "type": "TSDec15V2"
+          }
+        ]
+      }
+    },
     "TCTribMunicipal": {
       "attributes": [],
       "content": {
@@ -626,6 +2068,65 @@
         ]
       }
     },
+    "TCTribOutrosPisCofins": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "CST",
+            "type": "TSTipoCST"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "vBCPisCofins",
+            "type": "TSDec15V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "pAliqPis",
+            "type": "TSDec2V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "pAliqCofins",
+            "type": "TSDec2V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "vPis",
+            "type": "TSDec15V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "vCofins",
+            "type": "TSDec15V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "tpRetPisCofins",
+            "type": "TSTipoRetPISCofins"
+          }
+        ]
+      }
+    },
     "TCTribTotal": {
       "attributes": [],
       "content": {
@@ -667,6 +2168,92 @@
                 "type": "TSDec2V2"
               }
             ]
+          }
+        ]
+      }
+    },
+    "TCTribTotalMonet": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "vTotTribFed",
+            "type": "TSDec15V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "vTotTribEst",
+            "type": "TSDec15V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "vTotTribMun",
+            "type": "TSDec15V2"
+          }
+        ]
+      }
+    },
+    "TCTribTotalPercent": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "pTotTribFed",
+            "type": "TSDec3V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "pTotTribEst",
+            "type": "TSDec3V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "name": "pTotTribMun",
+            "type": "TSDec3V2"
+          }
+        ]
+      }
+    },
+    "TCVDescCondIncond": {
+      "attributes": [],
+      "content": {
+        "kind": "sequence",
+        "max_occurs": "1",
+        "min_occurs": "1",
+        "particles": [
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "vDescIncond",
+            "type": "TSDec15V2"
+          },
+          {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "0",
+            "name": "vDescCond",
+            "type": "TSDec15V2"
           }
         ]
       }
@@ -724,6 +2311,19 @@
         }
       ]
     },
+    "TSBairro": {
+      "base": "TSString",
+      "facets": [
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "60"
+        }
+      ]
+    },
     "TSCAEPF": {
       "base": "xs:string",
       "facets": [
@@ -738,6 +2338,19 @@
         {
           "name": "pattern",
           "value": "[0-9]{14}"
+        }
+      ]
+    },
+    "TSCEP": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "pattern",
+          "value": "[0-9]{8}"
         }
       ]
     },
@@ -792,6 +2405,103 @@
         }
       ]
     },
+    "TSChaveNFe": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "maxLength",
+          "value": "44"
+        },
+        {
+          "name": "pattern",
+          "value": "[0-9]{6}([0-9A-Z]{14})[0-9]{24}"
+        }
+      ]
+    },
+    "TSCidade": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "60"
+        }
+      ]
+    },
+    "TSCodCIB": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "length",
+          "value": "8"
+        }
+      ]
+    },
+    "TSCodJustSubst": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "01"
+        },
+        {
+          "name": "enumeration",
+          "value": "02"
+        },
+        {
+          "name": "enumeration",
+          "value": "03"
+        },
+        {
+          "name": "enumeration",
+          "value": "04"
+        },
+        {
+          "name": "enumeration",
+          "value": "05"
+        },
+        {
+          "name": "enumeration",
+          "value": "99"
+        }
+      ]
+    },
+    "TSCodMoeda": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "maxLength",
+          "value": "3"
+        },
+        {
+          "name": "pattern",
+          "value": "[0-9]{3}"
+        }
+      ]
+    },
     "TSCodMunIBGE": {
       "base": "xs:string",
       "facets": [
@@ -839,6 +2549,23 @@
         }
       ]
     },
+    "TSCodObra": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "30"
+        }
+      ]
+    },
     "TSCodPaisISO": {
       "base": "xs:string",
       "facets": [
@@ -865,6 +2592,44 @@
         }
       ]
     },
+    "TSCodVerificacao": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "9"
+        },
+        {
+          "name": "pattern",
+          "value": "[a-zA-Z0-9]{1,9}"
+        }
+      ]
+    },
+    "TSCodigoEndPostal": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "11"
+        }
+      ]
+    },
     "TSCodigoInternoContribuinte": {
       "base": "TSString",
       "facets": [
@@ -879,6 +2644,36 @@
         {
           "name": "pattern",
           "value": "[a-zA-Z0-9]{1,20}"
+        }
+      ]
+    },
+    "TSComplementoEndereco": {
+      "base": "TSString",
+      "facets": [
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "156"
+        }
+      ]
+    },
+    "TSDRT": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "40"
         }
       ]
     },
@@ -947,6 +2742,36 @@
         }
       ]
     },
+    "TSDec3V2": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "pattern",
+          "value": "0|0\\.[0-9]{2}|[1-9]{1}[0-9]{0,2}(\\.[0-9]{2})?"
+        }
+      ]
+    },
+    "TSDesc150": {
+      "base": "TSString",
+      "facets": [
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "150"
+        },
+        {
+          "name": "pattern",
+          "value": "[\\s\\S]*[^\\s][\\s\\S]*"
+        }
+      ]
+    },
     "TSDesc2000": {
       "base": "TSStringComQuebraDeLinha",
       "facets": [
@@ -961,6 +2786,65 @@
         {
           "name": "pattern",
           "value": "[\\s\\S]*[^\\s][\\s\\S]*"
+        }
+      ]
+    },
+    "TSDesc255": {
+      "base": "TSString",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "255"
+        },
+        {
+          "name": "pattern",
+          "value": "[\\s\\S]*[^\\s][\\s\\S]*"
+        }
+      ]
+    },
+    "TSDescInfCompl": {
+      "base": "TSString",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "2000"
+        },
+        {
+          "name": "pattern",
+          "value": "[\\s\\S]*[^\\s][\\s\\S]*"
+        }
+      ]
+    },
+    "TSDescOutDedRed": {
+      "base": "TSString",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "150"
         }
       ]
     },
@@ -1002,6 +2886,40 @@
         }
       ]
     },
+    "TSEnvMDIC": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "0"
+        },
+        {
+          "name": "enumeration",
+          "value": "1"
+        }
+      ]
+    },
+    "TSEstadoProvRegiao": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "60"
+        }
+      ]
+    },
     "TSIdDPS": {
       "base": "xs:string",
       "facets": [
@@ -1019,6 +2937,89 @@
         }
       ]
     },
+    "TSIdeDedRed": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "1"
+        },
+        {
+          "name": "enumeration",
+          "value": "2"
+        },
+        {
+          "name": "enumeration",
+          "value": "3"
+        },
+        {
+          "name": "enumeration",
+          "value": "4"
+        },
+        {
+          "name": "enumeration",
+          "value": "5"
+        },
+        {
+          "name": "enumeration",
+          "value": "6"
+        },
+        {
+          "name": "enumeration",
+          "value": "7"
+        },
+        {
+          "name": "enumeration",
+          "value": "8"
+        },
+        {
+          "name": "enumeration",
+          "value": "9"
+        },
+        {
+          "name": "enumeration",
+          "value": "99"
+        }
+      ]
+    },
+    "TSIdeEvento": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "30"
+        }
+      ]
+    },
+    "TSInscImobFisc": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "30"
+        }
+      ]
+    },
     "TSInscMun": {
       "base": "xs:string",
       "facets": [
@@ -1033,6 +3034,223 @@
         {
           "name": "whiteSpace",
           "value": "preserve"
+        }
+      ]
+    },
+    "TSLogradouro": {
+      "base": "TSString",
+      "facets": [
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "255"
+        }
+      ]
+    },
+    "TSMecAFComExPrest": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "00"
+        },
+        {
+          "name": "enumeration",
+          "value": "01"
+        },
+        {
+          "name": "enumeration",
+          "value": "02"
+        },
+        {
+          "name": "enumeration",
+          "value": "03"
+        },
+        {
+          "name": "enumeration",
+          "value": "04"
+        },
+        {
+          "name": "enumeration",
+          "value": "05"
+        },
+        {
+          "name": "enumeration",
+          "value": "06"
+        },
+        {
+          "name": "enumeration",
+          "value": "07"
+        },
+        {
+          "name": "enumeration",
+          "value": "08"
+        }
+      ]
+    },
+    "TSMecAFComExToma": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "00"
+        },
+        {
+          "name": "enumeration",
+          "value": "01"
+        },
+        {
+          "name": "enumeration",
+          "value": "02"
+        },
+        {
+          "name": "enumeration",
+          "value": "03"
+        },
+        {
+          "name": "enumeration",
+          "value": "04"
+        },
+        {
+          "name": "enumeration",
+          "value": "05"
+        },
+        {
+          "name": "enumeration",
+          "value": "06"
+        },
+        {
+          "name": "enumeration",
+          "value": "07"
+        },
+        {
+          "name": "enumeration",
+          "value": "08"
+        },
+        {
+          "name": "enumeration",
+          "value": "09"
+        },
+        {
+          "name": "enumeration",
+          "value": "10"
+        },
+        {
+          "name": "enumeration",
+          "value": "11"
+        },
+        {
+          "name": "enumeration",
+          "value": "12"
+        },
+        {
+          "name": "enumeration",
+          "value": "13"
+        },
+        {
+          "name": "enumeration",
+          "value": "14"
+        },
+        {
+          "name": "enumeration",
+          "value": "15"
+        },
+        {
+          "name": "enumeration",
+          "value": "16"
+        },
+        {
+          "name": "enumeration",
+          "value": "17"
+        },
+        {
+          "name": "enumeration",
+          "value": "18"
+        },
+        {
+          "name": "enumeration",
+          "value": "19"
+        },
+        {
+          "name": "enumeration",
+          "value": "20"
+        },
+        {
+          "name": "enumeration",
+          "value": "21"
+        },
+        {
+          "name": "enumeration",
+          "value": "22"
+        },
+        {
+          "name": "enumeration",
+          "value": "23"
+        },
+        {
+          "name": "enumeration",
+          "value": "24"
+        },
+        {
+          "name": "enumeration",
+          "value": "25"
+        },
+        {
+          "name": "enumeration",
+          "value": "26"
+        }
+      ]
+    },
+    "TSModoPrestacao": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "0"
+        },
+        {
+          "name": "enumeration",
+          "value": "1"
+        },
+        {
+          "name": "enumeration",
+          "value": "2"
+        },
+        {
+          "name": "enumeration",
+          "value": "3"
+        },
+        {
+          "name": "enumeration",
+          "value": "4"
+        }
+      ]
+    },
+    "TSMotivo": {
+      "base": "TSString",
+      "facets": [
+        {
+          "name": "minLength",
+          "value": "15"
+        },
+        {
+          "name": "maxLength",
+          "value": "255"
         }
       ]
     },
@@ -1058,6 +3276,31 @@
         {
           "name": "enumeration",
           "value": "4"
+        }
+      ]
+    },
+    "TSMovTempBens": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "0"
+        },
+        {
+          "name": "enumeration",
+          "value": "1"
+        },
+        {
+          "name": "enumeration",
+          "value": "2"
+        },
+        {
+          "name": "enumeration",
+          "value": "3"
         }
       ]
     },
@@ -1095,6 +3338,49 @@
         }
       ]
     },
+    "TSNum15Dig": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "maxLength",
+          "value": "15"
+        },
+        {
+          "name": "pattern",
+          "value": "[0-9]{15}"
+        }
+      ]
+    },
+    "TSNum7Dig": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "maxLength",
+          "value": "7"
+        },
+        {
+          "name": "pattern",
+          "value": "[0-9]{7}"
+        }
+      ]
+    },
+    "TSNumBeneficioMunicipal": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "pattern",
+          "value": "[0-9]{14}"
+        }
+      ]
+    },
     "TSNumDPS": {
       "base": "xs:string",
       "facets": [
@@ -1109,6 +3395,71 @@
         {
           "name": "pattern",
           "value": "[1-9]{1}[0-9]{0,14}"
+        }
+      ]
+    },
+    "TSNumDocImport": {
+      "base": "TSString",
+      "facets": [
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "12"
+        }
+      ]
+    },
+    "TSNumProcExigSuspensa": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "pattern",
+          "value": "[0-9]{30}"
+        }
+      ]
+    },
+    "TSNumRegExport": {
+      "base": "TSString",
+      "facets": [
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "12"
+        }
+      ]
+    },
+    "TSNumeroEndereco": {
+      "base": "TSString",
+      "facets": [
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "60"
+        }
+      ]
+    },
+    "TSOpExigSuspensa": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "1"
+        },
+        {
+          "name": "enumeration",
+          "value": "2"
         }
       ]
     },
@@ -1130,6 +3481,230 @@
         {
           "name": "enumeration",
           "value": "3"
+        }
+      ]
+    },
+    "TSRTCChaveDFe": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "50"
+        }
+      ]
+    },
+    "TSRTCCodClassTrib": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "pattern",
+          "value": "[0-9]{6}"
+        }
+      ]
+    },
+    "TSRTCCodCredPres": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "pattern",
+          "value": "[0-9]{2}"
+        }
+      ]
+    },
+    "TSRTCCodIndOp": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "pattern",
+          "value": "[0-9]{6}"
+        }
+      ]
+    },
+    "TSRTCCodSitTrib": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "pattern",
+          "value": "[0-9]{3}"
+        }
+      ]
+    },
+    "TSRTCFinNFSe": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "0"
+        }
+      ]
+    },
+    "TSRTCIndDest": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "0"
+        },
+        {
+          "name": "enumeration",
+          "value": "1"
+        }
+      ]
+    },
+    "TSRTCIndFinal": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "0"
+        },
+        {
+          "name": "enumeration",
+          "value": "1"
+        }
+      ]
+    },
+    "TSRTCTipoChaveDFe": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "1"
+        },
+        {
+          "name": "enumeration",
+          "value": "2"
+        },
+        {
+          "name": "enumeration",
+          "value": "3"
+        },
+        {
+          "name": "enumeration",
+          "value": "9"
+        }
+      ]
+    },
+    "TSRTCTpEnteGov": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "1"
+        },
+        {
+          "name": "enumeration",
+          "value": "2"
+        },
+        {
+          "name": "enumeration",
+          "value": "3"
+        },
+        {
+          "name": "enumeration",
+          "value": "4"
+        }
+      ]
+    },
+    "TSRTCTpOper": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "1"
+        },
+        {
+          "name": "enumeration",
+          "value": "2"
+        },
+        {
+          "name": "enumeration",
+          "value": "3"
+        },
+        {
+          "name": "enumeration",
+          "value": "4"
+        },
+        {
+          "name": "enumeration",
+          "value": "5"
+        }
+      ]
+    },
+    "TSRTCTpReeRepRes": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "01"
+        },
+        {
+          "name": "enumeration",
+          "value": "02"
+        },
+        {
+          "name": "enumeration",
+          "value": "03"
+        },
+        {
+          "name": "enumeration",
+          "value": "04"
+        },
+        {
+          "name": "enumeration",
+          "value": "99"
         }
       ]
     },
@@ -1212,6 +3787,27 @@
         }
       ]
     },
+    "TSSerieNFNFS": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "minLength",
+          "value": "1"
+        },
+        {
+          "name": "maxLength",
+          "value": "15"
+        },
+        {
+          "name": "pattern",
+          "value": "[a-zA-Z0-9]{1,15}"
+        }
+      ]
+    },
     "TSTelefone": {
       "base": "xs:string",
       "facets": [
@@ -1239,6 +3835,151 @@
         {
           "name": "enumeration",
           "value": "2"
+        }
+      ]
+    },
+    "TSTipoCST": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "00"
+        },
+        {
+          "name": "enumeration",
+          "value": "01"
+        },
+        {
+          "name": "enumeration",
+          "value": "02"
+        },
+        {
+          "name": "enumeration",
+          "value": "03"
+        },
+        {
+          "name": "enumeration",
+          "value": "04"
+        },
+        {
+          "name": "enumeration",
+          "value": "05"
+        },
+        {
+          "name": "enumeration",
+          "value": "06"
+        },
+        {
+          "name": "enumeration",
+          "value": "07"
+        },
+        {
+          "name": "enumeration",
+          "value": "08"
+        },
+        {
+          "name": "enumeration",
+          "value": "09"
+        },
+        {
+          "name": "enumeration",
+          "value": "49"
+        },
+        {
+          "name": "enumeration",
+          "value": "50"
+        },
+        {
+          "name": "enumeration",
+          "value": "51"
+        },
+        {
+          "name": "enumeration",
+          "value": "52"
+        },
+        {
+          "name": "enumeration",
+          "value": "53"
+        },
+        {
+          "name": "enumeration",
+          "value": "54"
+        },
+        {
+          "name": "enumeration",
+          "value": "55"
+        },
+        {
+          "name": "enumeration",
+          "value": "56"
+        },
+        {
+          "name": "enumeration",
+          "value": "60"
+        },
+        {
+          "name": "enumeration",
+          "value": "61"
+        },
+        {
+          "name": "enumeration",
+          "value": "62"
+        },
+        {
+          "name": "enumeration",
+          "value": "63"
+        },
+        {
+          "name": "enumeration",
+          "value": "64"
+        },
+        {
+          "name": "enumeration",
+          "value": "65"
+        },
+        {
+          "name": "enumeration",
+          "value": "66"
+        },
+        {
+          "name": "enumeration",
+          "value": "67"
+        },
+        {
+          "name": "enumeration",
+          "value": "70"
+        },
+        {
+          "name": "enumeration",
+          "value": "71"
+        },
+        {
+          "name": "enumeration",
+          "value": "72"
+        },
+        {
+          "name": "enumeration",
+          "value": "73"
+        },
+        {
+          "name": "enumeration",
+          "value": "74"
+        },
+        {
+          "name": "enumeration",
+          "value": "75"
+        },
+        {
+          "name": "enumeration",
+          "value": "98"
+        },
+        {
+          "name": "enumeration",
+          "value": "99"
         }
       ]
     },
@@ -1309,6 +4050,55 @@
         }
       ]
     },
+    "TSTipoRetPISCofins": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "0"
+        },
+        {
+          "name": "enumeration",
+          "value": "1"
+        },
+        {
+          "name": "enumeration",
+          "value": "2"
+        },
+        {
+          "name": "enumeration",
+          "value": "3"
+        },
+        {
+          "name": "enumeration",
+          "value": "4"
+        },
+        {
+          "name": "enumeration",
+          "value": "5"
+        },
+        {
+          "name": "enumeration",
+          "value": "6"
+        },
+        {
+          "name": "enumeration",
+          "value": "7"
+        },
+        {
+          "name": "enumeration",
+          "value": "8"
+        },
+        {
+          "name": "enumeration",
+          "value": "9"
+        }
+      ]
+    },
     "TSTribISSQN": {
       "base": "xs:string",
       "facets": [
@@ -1344,6 +4134,47 @@
         {
           "name": "maxLength",
           "value": "20"
+        }
+      ]
+    },
+    "TSVincPrest": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "enumeration",
+          "value": "0"
+        },
+        {
+          "name": "enumeration",
+          "value": "1"
+        },
+        {
+          "name": "enumeration",
+          "value": "2"
+        },
+        {
+          "name": "enumeration",
+          "value": "3"
+        },
+        {
+          "name": "enumeration",
+          "value": "4"
+        },
+        {
+          "name": "enumeration",
+          "value": "5"
+        },
+        {
+          "name": "enumeration",
+          "value": "6"
+        },
+        {
+          "name": "enumeration",
+          "value": "9"
         }
       ]
     },

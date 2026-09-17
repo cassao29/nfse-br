@@ -42,66 +42,158 @@ _SIMPLE_SCHEMA_SHA256: Final = (
     "3d8171c9b7c9a82ecb48eed9a96485f2077006e7d21db6cd182839dd34dbb5e4"
 )
 
+_ROOT_COMPLEX_TYPE_NAME: Final = "TCDPS"
 _COMPLEX_TYPE_NAMES: Final = (
+    "TCAtvEvento",
+    "TCBeneficioMunicipal",
+    "TCCServ",
+    "TCComExterior",
     "TCDPS",
+    "TCDocDedRed",
+    "TCDocNFNFS",
+    "TCDocOutNFSe",
+    "TCEnderExt",
+    "TCEnderExtSimples",
+    "TCEnderNac",
+    "TCEnderObraEvento",
+    "TCEndereco",
+    "TCEnderecoSimples",
+    "TCExigSuspensa",
     "TCInfDPS",
-    "TCInfoPrestador",
+    "TCInfoCompl",
+    "TCInfoDedRed",
+    "TCInfoItemPed",
+    "TCInfoObra",
     "TCInfoPessoa",
+    "TCInfoPrestador",
+    "TCInfoRefNFSe",
+    "TCInfoTributacao",
+    "TCInfoValores",
+    "TCListaDocDedRed",
+    "TCLocPrest",
+    "TCRTCInfoDest",
+    "TCRTCInfoIBSCBS",
+    "TCRTCInfoImovel",
+    "TCRTCInfoReeRepRes",
+    "TCRTCInfoTributosDif",
+    "TCRTCInfoTributosIBSCBS",
+    "TCRTCInfoTributosSitClas",
+    "TCRTCInfoTributosTribRegular",
+    "TCRTCInfoValoresIBSCBS",
+    "TCRTCListaDoc",
+    "TCRTCListaDocDFe",
+    "TCRTCListaDocFiscalOutro",
+    "TCRTCListaDocFornec",
+    "TCRTCListaDocOutro",
     "TCRegTrib",
     "TCServ",
-    "TCLocPrest",
-    "TCCServ",
-    "TCInfoValores",
-    "TCInfoTributacao",
+    "TCSubstituicao",
+    "TCTribFederal",
     "TCVServPrest",
     "TCTribMunicipal",
+    "TCTribOutrosPisCofins",
     "TCTribTotal",
+    "TCTribTotalMonet",
+    "TCTribTotalPercent",
+    "TCVDescCondIncond",
 )
 _SIMPLE_TYPE_NAMES: Final = (
     "TCCodTribMun",
+    "TSBairro",
     "TSCAEPF",
+    "TSCEP",
     "TSCNPJ",
     "TSCPF",
     "TSChaveNFSe",
+    "TSChaveNFe",
+    "TSCidade",
+    "TSCodCIB",
+    "TSCodJustSubst",
+    "TSCodMoeda",
     "TSCodMunIBGE",
     "TSCodNBS",
     "TSCodNaoNIF",
+    "TSCodObra",
     "TSCodPaisISO",
     "TSCodTribNac",
+    "TSCodVerificacao",
+    "TSCodigoEndPostal",
     "TSCodigoInternoContribuinte",
+    "TSComplementoEndereco",
+    "TSDRT",
     "TSData",
     "TSDateTimeUTC",
     "TSDec15V2",
     "TSDec1V2",
     "TSDec2V2",
+    "TSDec3V2",
+    "TSDesc150",
     "TSDesc2000",
+    "TSDesc255",
+    "TSDescInfCompl",
+    "TSDescOutDedRed",
     "TSEmail",
     "TSEmitenteDPS",
+    "TSEnvMDIC",
+    "TSEstadoProvRegiao",
     "TSIdDPS",
+    "TSIdeDedRed",
+    "TSIdeEvento",
+    "TSInscImobFisc",
     "TSInscMun",
+    "TSLogradouro",
+    "TSMecAFComExPrest",
+    "TSMecAFComExToma",
+    "TSModoPrestacao",
+    "TSMotivo",
     "TSMotivoEmisTI",
+    "TSMovTempBens",
     "TSNIF",
     "TSNomeRazaoSocial",
+    "TSNum15Dig",
+    "TSNum7Dig",
+    "TSNumBeneficioMunicipal",
     "TSNumDPS",
+    "TSNumDocImport",
+    "TSNumProcExigSuspensa",
+    "TSNumRegExport",
+    "TSNumeroEndereco",
+    "TSOpExigSuspensa",
     "TSOpSimpNac",
+    "TSRTCChaveDFe",
+    "TSRTCCodClassTrib",
+    "TSRTCCodCredPres",
+    "TSRTCCodIndOp",
+    "TSRTCCodSitTrib",
+    "TSRTCFinNFSe",
+    "TSRTCIndDest",
+    "TSRTCIndFinal",
+    "TSRTCTipoChaveDFe",
+    "TSRTCTpEnteGov",
+    "TSRTCTpOper",
+    "TSRTCTpReeRepRes",
     "TSRegEspTrib",
     "TSRegimeApuracaoSimpNac",
     "TSSerieDPS",
+    "TSSerieNFNFS",
     "TSTelefone",
     "TSTipoAmbiente",
+    "TSTipoCST",
     "TSTipoImunidadeISSQN",
     "TSTipoIndTotTrib",
     "TSTipoRetISSQN",
+    "TSTipoRetPISCofins",
     "TSTribISSQN",
     "TSVerAplic",
+    "TSVincPrest",
     "TVerNFSe",
 )
 
 _EXPECTED_STRUCTURE_SHA256: Final = (
-    "e5f9f1142e0ec9db73e2a88fd8e9ad9d3e9f46a0380e9fc926d1af25a391fae5"
+    "76ae4a10e111f96e0f482e3b8bbe9d015e12551212aba26b17dbd24c41871b96"
 )
 _EXPECTED_CONTRACT_SHA256: Final = (
-    "26dfe391ebca7069764f7dba3cafb4a2b57593decd61b208cde9958e6c04ad06"
+    "823b2bc86c72c14b91a8780c9248531a7327390c6c0ba41e635963373d64b0f7"
 )
 
 _XSD_NAMESPACE: Final = "http://www.w3.org/2001/XMLSchema"
@@ -218,6 +310,7 @@ def _build_contract(
         complex_type_names=_COMPLEX_TYPE_NAMES,
         simple_type_names=_SIMPLE_TYPE_NAMES,
     )
+    _assert_complex_dependency_closure(structure, complex_xsd=complex_xsd)
     _assert_direct_simple_references(structure, simple_xsd=simple_xsd)
     _assert_digest(
         _serialize_contract(structure),
@@ -503,6 +596,27 @@ def _assert_direct_simple_references(
     if observed != expected:
         _drift(
             "direct simple type references differ; "
+            f"expected {sorted(expected)!r}, observed {sorted(observed)!r}"
+        )
+
+
+def _assert_complex_dependency_closure(
+    structure: Mapping[str, object], *, complex_xsd: bytes
+) -> None:
+    complex_root = _parse_schema(complex_xsd, source="complex schema")
+    defined_complex_types = {
+        child.get("name")
+        for child in complex_root.findall(_COMPLEX_TYPE)
+        if child.get("name") is not None
+    }
+    complex_types = _expect_mapping(structure, "complex_types")
+    referenced = set(_iter_type_references(complex_types))
+    observed = referenced & cast(set[str], defined_complex_types)
+    observed.add(_ROOT_COMPLEX_TYPE_NAME)
+    expected = set(_COMPLEX_TYPE_NAMES)
+    if observed != expected:
+        _drift(
+            "complex type dependency closure differs; "
             f"expected {sorted(expected)!r}, observed {sorted(observed)!r}"
         )
 
