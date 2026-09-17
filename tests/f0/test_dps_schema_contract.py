@@ -1,0 +1,1172 @@
+"""Offline tests for the restricted DPS structural contract freeze."""
+
+from __future__ import annotations
+
+import hashlib
+import importlib
+import json
+import urllib.request
+import zipfile
+from io import BytesIO
+from pathlib import Path
+from typing import cast
+
+import pytest
+
+import nfse_br._f0.dps_schema_contract as schema
+from nfse_br._f0.restricted_contract import (
+    EXPECTED_XSD_URL,
+    ContractFreezeError,
+    DownloadedArtifact,
+)
+from nfse_br.domain import DomainValidationError
+from nfse_br.dps import DpsNumber
+
+_NFSE_NAMESPACE = "http://www.sped.fazenda.gov.br/nfse"
+_XSD_NAMESPACE = "http://www.w3.org/2001/XMLSchema"
+_XMLDSIG_NAMESPACE = "http://www.w3.org/2000/09/xmldsig#"
+_XSD_OPEN = (
+    '<xs:schema xmlns="http://www.sped.fazenda.gov.br/nfse" '
+    'xmlns:xs="http://www.w3.org/2001/XMLSchema" '
+    'targetNamespace="http://www.sped.fazenda.gov.br/nfse">'
+)
+_XSD_CLOSE = "</xs:schema>"
+
+
+def _complex_document(
+    *,
+    first: str = '<xs:element name="first" type="Code" minOccurs="0"/>',
+    choice: str = (
+        '<xs:choice minOccurs="0" maxOccurs="2">'
+        '<xs:element name="alpha" type="Code"/>'
+        '<xs:element name="beta" type="Code"/>'
+        "</xs:choice>"
+    ),
+    second: str = '<xs:element name="second" type="Code" maxOccurs="unbounded"/>',
+    attribute: str = '<xs:attribute name="Id" type="Code" use="required"/>',
+    extra_definition: str = "",
+) -> bytes:
+    return (
+        _XSD_OPEN
+        + '<xs:complexType name="Root"><xs:sequence>'
+        + first
+        + choice
+        + second
+        + "</xs:sequence>"
+        + attribute
+        + "</xs:complexType>"
+        + extra_definition
+        + _XSD_CLOSE
+    ).encode()
+
+
+def _simple_document(
+    *,
+    pattern: str = "[A-Z]",
+    enumerations: tuple[str, ...] = ("A", "B"),
+    extra_definition: str = "",
+) -> bytes:
+    facets = '<xs:whiteSpace value="preserve"/>'
+    facets += f'<xs:pattern value="{pattern}"/>'
+    facets += "".join(f'<xs:enumeration value="{value}"/>' for value in enumerations)
+    return (
+        _XSD_OPEN
+        + '<xs:simpleType name="Code"><xs:restriction base="xs:string">'
+        + facets
+        + "</xs:restriction></xs:simpleType>"
+        + extra_definition
+        + _XSD_CLOSE
+    ).encode()
+
+
+def _freeze_simple_document() -> bytes:
+    return (
+        _XSD_OPEN
+        + '<xs:simpleType name="Code"><xs:restriction base="xs:string">'
+        + '<xs:pattern value="[A-Z]"/>'
+        + "</xs:restriction></xs:simpleType>"
+        + '<xs:simpleType name="TSIdDPS"><xs:restriction base="xs:string">'
+        + '<xs:maxLength value="45"/>'
+        + '<xs:pattern value="DPS[0-9]{7}(1[0-9]{14}|2[0-9A-Z]{14})[0-9]{20}"/>'
+        + "</xs:restriction></xs:simpleType>"
+        + '<xs:simpleType name="TSSerieDPS"><xs:restriction base="xs:string">'
+        + '<xs:pattern value="[0-9]{1,4}|[0-8][0-9]{4}"/>'
+        + "</xs:restriction></xs:simpleType>"
+        + _XSD_CLOSE
+    ).encode()
+
+
+def _freeze_complex_document() -> bytes:
+    return (
+        _XSD_OPEN
+        + '<xs:complexType name="Root"><xs:sequence>'
+        + '<xs:element name="code" type="Code"/>'
+        + '<xs:element name="identity" type="TSIdDPS"/>'
+        + '<xs:element name="series" type="TSSerieDPS"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+
+
+def _zip_bytes(members: dict[str, bytes]) -> bytes:
+    output = BytesIO()
+    with zipfile.ZipFile(output, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for path, data in members.items():
+            archive.writestr(path, data)
+    return output.getvalue()
+
+
+def _extract(
+    *, complex_xsd: bytes | None = None, simple_xsd: bytes | None = None
+) -> schema.SchemaObject:
+    return schema._extract_schema_subset(
+        complex_xsd=complex_xsd or _complex_document(),
+        simple_xsd=simple_xsd or _simple_document(),
+        complex_type_names=("Root",),
+        simple_type_names=("Code",),
+    )
+
+
+def _assert_fixture_qnames(
+    *,
+    complex_xsd: bytes,
+    simple_xsd: bytes | None = None,
+    expected_external_qnames: frozenset[tuple[str, str]] = frozenset(),
+) -> None:
+    schema._assert_qname_namespace_bindings(
+        complex_xsd=complex_xsd,
+        simple_xsd=simple_xsd or _simple_document(),
+        complex_type_names=("Root",),
+        simple_type_names=("Code",),
+        expected_external_qnames=expected_external_qnames,
+    )
+
+
+def _expect_drift(observed: schema.SchemaObject, expected: schema.SchemaObject) -> None:
+    with pytest.raises(ContractFreezeError, match="OFFICIAL_DPS_SCHEMA_DRIFT"):
+        schema._assert_expected_structure(observed, expected)
+
+
+def test_extracts_sequence_choice_attributes_and_facets() -> None:
+    contract = _extract()
+
+    root = cast(dict[str, object], contract["complex_types"])["Root"]
+    root_mapping = cast(dict[str, object], root)
+    content = cast(dict[str, object], root_mapping["content"])
+    particles = cast(list[object], content["particles"])
+    choice = cast(dict[str, object], particles[1])
+    second = cast(dict[str, object], particles[2])
+    simple = cast(dict[str, object], contract["simple_types"])["Code"]
+
+    assert content["kind"] == "sequence"
+    assert content["min_occurs"] == "1"
+    assert content["max_occurs"] == "1"
+    assert choice["kind"] == "choice"
+    assert choice["min_occurs"] == "0"
+    assert choice["max_occurs"] == "2"
+    assert second["max_occurs"] == "unbounded"
+    assert root_mapping["attributes"] == [
+        {"name": "Id", "type": "Code", "use": "required"}
+    ]
+    assert simple == {
+        "base": "xs:string",
+        "facets": [
+            {"name": "whiteSpace", "value": "preserve"},
+            {"name": "pattern", "value": "[A-Z]"},
+            {"name": "enumeration", "value": "A"},
+            {"name": "enumeration", "value": "B"},
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    ("complex_xsd", "simple_xsd"),
+    [
+        (_complex_document(first=""), _simple_document()),
+        (
+            _complex_document(
+                first=(
+                    '<xs:element name="first" type="Code" minOccurs="0"/>'
+                    '<xs:element name="added" type="Code"/>'
+                )
+            ),
+            _simple_document(),
+        ),
+        (
+            _complex_document(
+                first='<xs:element name="second" type="Code" maxOccurs="unbounded"/>',
+                second='<xs:element name="first" type="Code" minOccurs="0"/>',
+            ),
+            _simple_document(),
+        ),
+        (
+            _complex_document(
+                first='<xs:element name="first" type="Code" minOccurs="1"/>'
+            ),
+            _simple_document(),
+        ),
+        (
+            _complex_document(
+                second='<xs:element name="second" type="Code" maxOccurs="2"/>'
+            ),
+            _simple_document(),
+        ),
+        (
+            _complex_document(
+                choice=(
+                    '<xs:choice minOccurs="0" maxOccurs="2">'
+                    '<xs:element name="alpha" type="Code"/>'
+                    "</xs:choice>"
+                )
+            ),
+            _simple_document(),
+        ),
+        (
+            _complex_document(
+                choice=(
+                    '<xs:choice minOccurs="1" maxOccurs="2">'
+                    '<xs:element name="alpha" type="Code"/>'
+                    '<xs:element name="beta" type="Code"/>'
+                    "</xs:choice>"
+                )
+            ),
+            _simple_document(),
+        ),
+        (_complex_document(attribute=""), _simple_document()),
+        (
+            _complex_document(
+                attribute='<xs:attribute name="Id" type="xs:string" use="required"/>'
+            ),
+            _simple_document(),
+        ),
+        (_complex_document(), _simple_document(pattern="[0-9]")),
+        (_complex_document(), _simple_document(enumerations=("A",))),
+        (_complex_document(), _simple_document(enumerations=("A", "B", "C"))),
+        (_complex_document(), _simple_document(enumerations=("A", "C"))),
+        (_complex_document(), _simple_document(enumerations=("B", "A"))),
+    ],
+    ids=(
+        "sequence-field-removed",
+        "sequence-field-added",
+        "sequence-reordered",
+        "min-occurs-changed",
+        "max-occurs-changed",
+        "choice-alternative-removed",
+        "choice-cardinality-changed",
+        "attribute-removed",
+        "attribute-type-changed",
+        "simple-pattern-changed",
+        "enumeration-removed",
+        "enumeration-added",
+        "enumeration-value-changed",
+        "enumeration-reordered",
+    ),
+)
+def test_structural_drift_is_fail_closed(complex_xsd: bytes, simple_xsd: bytes) -> None:
+    _expect_drift(
+        _extract(complex_xsd=complex_xsd, simple_xsd=simple_xsd),
+        _extract(),
+    )
+
+
+def test_rejects_duplicate_complex_type() -> None:
+    duplicate = (
+        '<xs:complexType name="Root">'
+        '<xs:sequence><xs:element name="other" type="Code"/></xs:sequence>'
+        "</xs:complexType>"
+    )
+
+    with pytest.raises(ContractFreezeError, match="observed 2"):
+        _extract(complex_xsd=_complex_document(extra_definition=duplicate))
+
+
+def test_rejects_duplicate_simple_type() -> None:
+    duplicate = (
+        '<xs:simpleType name="Code"><xs:restriction base="xs:string">'
+        '<xs:pattern value="[0-9]"/>'
+        "</xs:restriction></xs:simpleType>"
+    )
+
+    with pytest.raises(ContractFreezeError, match="observed 2"):
+        _extract(simple_xsd=_simple_document(extra_definition=duplicate))
+
+
+def test_rejects_unsupported_nested_compositor() -> None:
+    nested = (
+        "<xs:choice><xs:sequence>"
+        '<xs:element name="nested" type="Code"/>'
+        "</xs:sequence></xs:choice>"
+    )
+
+    with pytest.raises(ContractFreezeError, match="unsupported nested compositor"):
+        _extract(complex_xsd=_complex_document(choice=nested))
+
+
+def test_particle_model_does_not_flatten_nested_choice() -> None:
+    nested_choice = _extract()
+    flat_elements = _extract(
+        complex_xsd=_complex_document(
+            choice=(
+                '<xs:element name="alpha" type="Code"/>'
+                '<xs:element name="beta" type="Code"/>'
+            )
+        )
+    )
+
+    assert nested_choice != flat_elements
+
+
+@pytest.mark.parametrize(
+    "complex_xsd",
+    [
+        (
+            _XSD_OPEN
+            + '<xs:complexType name="Root"><xs:sequence minOccurs="unbounded">'
+            + '<xs:element name="first" type="Code"/>'
+            + "</xs:sequence></xs:complexType>"
+            + _XSD_CLOSE
+        ).encode(),
+        _complex_document(first='<xs:element name="first" ref="other"/>'),
+        _complex_document(
+            attribute='<xs:attribute name="Id" ref="other" use="required"/>'
+        ),
+        _complex_document(
+            attribute=('<xs:attribute name="Id" type="Code" fixed="A" default="B"/>')
+        ),
+        _complex_document(
+            attribute='<xs:attribute name="Id" type="Code" use="sometimes"/>'
+        ),
+        _complex_document(
+            choice=(
+                '<xs:choice><xs:element name="alpha" type="Code" '
+                'unexpected="yes"/></xs:choice>'
+            )
+        ),
+    ],
+)
+def test_rejects_ambiguous_or_unsupported_complex_structures(
+    complex_xsd: bytes,
+) -> None:
+    with pytest.raises(ContractFreezeError, match="OFFICIAL_DPS_SCHEMA_DRIFT"):
+        _extract(complex_xsd=complex_xsd)
+
+
+@pytest.mark.parametrize(
+    "simple_xsd",
+    [
+        (
+            _XSD_OPEN
+            + '<xs:simpleType name="Code"><xs:list itemType="xs:string"/>'
+            + "</xs:simpleType>"
+            + _XSD_CLOSE
+        ).encode(),
+        (
+            _XSD_OPEN
+            + '<xs:simpleType name="Code"><xs:restriction base="xs:string">'
+            + '<xs:assertion value="true()"/>'
+            + "</xs:restriction></xs:simpleType>"
+            + _XSD_CLOSE
+        ).encode(),
+        (
+            _XSD_OPEN
+            + '<xs:simpleType name="Code"><xs:restriction base="xs:string"/>'
+            + "</xs:simpleType>"
+            + _XSD_CLOSE
+        ).encode(),
+    ],
+)
+def test_rejects_unsupported_or_empty_simple_types(simple_xsd: bytes) -> None:
+    with pytest.raises(ContractFreezeError, match="OFFICIAL_DPS_SCHEMA_DRIFT"):
+        _extract(simple_xsd=simple_xsd)
+
+
+def test_preserves_multiple_pattern_facets_in_declared_order() -> None:
+    document = (
+        _XSD_OPEN
+        + '<xs:simpleType name="Code"><xs:restriction base="xs:string">'
+        + '<xs:pattern value="[A-Z]+"/><xs:pattern value=".{1,3}"/>'
+        + "</xs:restriction></xs:simpleType>"
+        + _XSD_CLOSE
+    ).encode()
+
+    observed = _extract(simple_xsd=document)
+    simple = cast(dict[str, object], observed["simple_types"])["Code"]
+    simple_mapping = cast(dict[str, object], simple)
+
+    assert simple_mapping["facets"] == [
+        {"name": "pattern", "value": "[A-Z]+"},
+        {"name": "pattern", "value": ".{1,3}"},
+    ]
+
+
+def test_committed_contract_is_canonical_and_bound_to_v04_manifest() -> None:
+    contract_path = Path("contracts/restricted/dps-schema-contract.json")
+    identity_path = Path("contracts/restricted/manifest.json")
+    contract_bytes = contract_path.read_bytes()
+    contract = cast(dict[str, object], json.loads(contract_bytes))
+    source = cast(dict[str, object], contract["source"])
+    schemas = cast(list[dict[str, object]], contract["schemas"])
+    complex_types = cast(dict[str, object], contract["complex_types"])
+    simple_types = cast(dict[str, object], contract["simple_types"])
+
+    assert hashlib.sha256(identity_path.read_bytes()).hexdigest() == (
+        schema.IDENTITY_MANIFEST_SHA256
+    )
+    assert hashlib.sha256(contract_bytes).hexdigest() == (
+        schema._EXPECTED_CONTRACT_SHA256
+    )
+    assert contract["authority"] == "official_frozen"
+    assert contract["environment"] == "restricted"
+    assert contract["scope"] == "dps_structural_subset"
+    assert contract["transmission_ready"] is False
+    assert source == {
+        "identity_manifest_sha256": schema.IDENTITY_MANIFEST_SHA256,
+        "xsd_zip_sha256": schema.XSD_ZIP_SHA256,
+        "xsd_zip_size": schema.XSD_ZIP_SIZE,
+        "xsd_zip_url": EXPECTED_XSD_URL,
+    }
+    assert schemas == [
+        {
+            "path": schema._COMPLEX_SCHEMA_PATH,
+            "sha256": schema._COMPLEX_SCHEMA_SHA256,
+            "size": schema._COMPLEX_SCHEMA_SIZE,
+        },
+        {
+            "path": schema._SIMPLE_SCHEMA_PATH,
+            "sha256": schema._SIMPLE_SCHEMA_SHA256,
+            "size": schema._SIMPLE_SCHEMA_SIZE,
+        },
+    ]
+    assert set(complex_types) == set(schema._COMPLEX_TYPE_NAMES)
+    assert set(simple_types) == set(schema._SIMPLE_TYPE_NAMES)
+
+    schema._assert_qname_dependency_closure(contract)
+    assert set(schema._iter_field_references(contract, field="ref")) == {"ds:Signature"}
+    attributes = [
+        (type_name, attribute)
+        for type_name, value in complex_types.items()
+        for attribute in cast(
+            list[dict[str, object]], cast(dict[str, object], value)["attributes"]
+        )
+    ]
+    assert attributes == [
+        (
+            "TCDPS",
+            {"name": "versao", "type": "TVerNFSe", "use": "required"},
+        ),
+        (
+            "TCInfDPS",
+            {"name": "Id", "type": "TSIdDPS", "use": "required"},
+        ),
+    ]
+    facet_kinds = {
+        cast(str, facet["name"])
+        for value in simple_types.values()
+        for facet in cast(
+            list[dict[str, object]], cast(dict[str, object], value)["facets"]
+        )
+    }
+    assert facet_kinds == {
+        "enumeration",
+        "length",
+        "maxLength",
+        "minLength",
+        "pattern",
+        "whiteSpace",
+    }
+
+    number = cast(dict[str, object], simple_types["TSNumDPS"])
+    assert number["facets"] == [
+        {"name": "whiteSpace", "value": "preserve"},
+        {"name": "maxLength", "value": "15"},
+        {"name": "pattern", "value": "[1-9]{1}[0-9]{0,14}"},
+    ]
+
+
+def test_dps_number_is_bound_to_official_ts_num_dps() -> None:
+    contract = cast(
+        dict[str, object],
+        json.loads(Path("contracts/restricted/dps-schema-contract.json").read_bytes()),
+    )
+    simple_types = cast(dict[str, object], contract["simple_types"])
+    number_type = cast(dict[str, object], simple_types["TSNumDPS"])
+
+    assert number_type["facets"] == [
+        {"name": "whiteSpace", "value": "preserve"},
+        {"name": "maxLength", "value": "15"},
+        {"name": "pattern", "value": "[1-9]{1}[0-9]{0,14}"},
+    ]
+    assert DpsNumber(1).identity_component == "000000000000001"
+    assert DpsNumber(42).identity_component == "000000000000042"
+    assert DpsNumber(999_999_999_999_999).identity_component == ("999999999999999")
+    with pytest.raises(DomainValidationError):
+        DpsNumber(0)
+
+
+def test_schema_links_are_exact_and_never_resolved() -> None:
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:import namespace="http://www.w3.org/2000/09/xmldsig#" '
+        + 'schemaLocation="xmldsig-core-schema.xsd"/>'
+        + '<xs:include schemaLocation="tiposSimples_v1.01.xsd"/>'
+        + '<xs:complexType name="Root"><xs:sequence>'
+        + '<xs:element name="code" type="Code"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+
+    schema._assert_schema_links(
+        complex_xsd=complex_xsd,
+        simple_xsd=_simple_document(),
+    )
+
+    changed = complex_xsd.replace(
+        b"xmldsig-core-schema.xsd", b"https://example.invalid/xmldsig.xsd"
+    )
+    with pytest.raises(ContractFreezeError, match="include/import declarations"):
+        schema._assert_schema_links(
+            complex_xsd=changed,
+            simple_xsd=_simple_document(),
+        )
+
+
+def test_qname_closure_rejects_unresolved_local_types_and_refs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(schema, "_EXPECTED_EXTERNAL_REFS", frozenset())
+    schema._assert_qname_dependency_closure(_extract())
+
+    unresolved_type = _extract(
+        complex_xsd=_complex_document(
+            first='<xs:element name="first" type="Missing" minOccurs="0"/>'
+        )
+    )
+    with pytest.raises(ContractFreezeError, match="unresolved local type QName"):
+        schema._assert_qname_dependency_closure(unresolved_type)
+
+    malformed_builtin = _extract(
+        complex_xsd=_complex_document(
+            first='<xs:element name="first" type="xs:" minOccurs="0"/>'
+        )
+    )
+    with pytest.raises(ContractFreezeError, match="unresolved local type QName"):
+        schema._assert_qname_dependency_closure(malformed_builtin)
+
+    unresolved_ref = _extract(
+        complex_xsd=_complex_document(
+            first='<xs:element ref="external" minOccurs="0"/>'
+        )
+    )
+    with pytest.raises(ContractFreezeError, match="external element/attribute refs"):
+        schema._assert_qname_dependency_closure(unresolved_ref)
+
+
+def test_complex_dependency_closure_rejects_disconnected_cycle(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    names = ("TCDPS", "TCInfDPS", "DetachedA", "DetachedB")
+    monkeypatch.setattr(schema, "_COMPLEX_TYPE_NAMES", names)
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:complexType name="TCDPS"><xs:sequence>'
+        + '<xs:element name="infDPS" type="TCInfDPS"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="TCInfDPS"><xs:sequence>'
+        + '<xs:element name="code" type="Code"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="DetachedA"><xs:sequence>'
+        + '<xs:element name="b" type="DetachedB"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="DetachedB"><xs:sequence>'
+        + '<xs:element name="a" type="DetachedA"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+    structure = schema._extract_schema_subset(
+        complex_xsd=complex_xsd,
+        simple_xsd=_simple_document(),
+        complex_type_names=names,
+        simple_type_names=("Code",),
+    )
+
+    with pytest.raises(ContractFreezeError, match="complex type dependency closure"):
+        schema._assert_complex_dependency_closure(
+            structure,
+            complex_xsd=complex_xsd,
+        )
+
+
+def test_complex_dependency_closure_walks_from_root_and_handles_cycles(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    names = ("TCDPS", "A", "B")
+    monkeypatch.setattr(schema, "_COMPLEX_TYPE_NAMES", names)
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:complexType name="TCDPS"><xs:sequence>'
+        + '<xs:element name="a" type="A"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="A"><xs:sequence>'
+        + '<xs:element name="b" type="B"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="B"><xs:sequence>'
+        + '<xs:element name="a" type="A"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+    structure = schema._extract_schema_subset(
+        complex_xsd=complex_xsd,
+        simple_xsd=_simple_document(),
+        complex_type_names=names,
+        simple_type_names=("Code",),
+    )
+
+    assert schema._assert_complex_dependency_closure(
+        structure,
+        complex_xsd=complex_xsd,
+    ) == frozenset(names)
+
+
+def test_complex_dependency_closure_walks_complete_acyclic_chain(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    names = ("TCDPS", "A", "B")
+    monkeypatch.setattr(schema, "_COMPLEX_TYPE_NAMES", names)
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:complexType name="TCDPS"><xs:sequence>'
+        + '<xs:element name="a" type="A"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="A"><xs:sequence>'
+        + '<xs:element name="b" type="B"/>'
+        + "</xs:sequence></xs:complexType>"
+        + '<xs:complexType name="B"><xs:sequence>'
+        + '<xs:element name="code" type="Code"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+    structure = schema._extract_schema_subset(
+        complex_xsd=complex_xsd,
+        simple_xsd=_simple_document(),
+        complex_type_names=names,
+        simple_type_names=("Code",),
+    )
+
+    assert schema._assert_complex_dependency_closure(
+        structure,
+        complex_xsd=complex_xsd,
+    ) == frozenset(names)
+
+
+def test_complex_dependency_closure_includes_attribute_only_dependency(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    names = ("TCDPS", "AttributeType")
+    monkeypatch.setattr(schema, "_COMPLEX_TYPE_NAMES", names)
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:complexType name="TCDPS"><xs:sequence>'
+        + '<xs:element name="code" type="Code"/>'
+        + "</xs:sequence>"
+        + '<xs:attribute name="nested" type="AttributeType"/>'
+        + "</xs:complexType>"
+        + '<xs:complexType name="AttributeType"><xs:sequence>'
+        + '<xs:element name="code" type="Code"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+    structure = schema._extract_schema_subset(
+        complex_xsd=complex_xsd,
+        simple_xsd=_simple_document(),
+        complex_type_names=names,
+        simple_type_names=("Code",),
+    )
+
+    assert schema._assert_complex_dependency_closure(
+        structure,
+        complex_xsd=complex_xsd,
+    ) == frozenset(names)
+
+
+def test_complex_dependency_closure_rejects_missing_local_reference(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(schema, "_COMPLEX_TYPE_NAMES", ("TCDPS",))
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:complexType name="TCDPS"><xs:sequence>'
+        + '<xs:element name="missing" type="Missing"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+    structure = schema._extract_schema_subset(
+        complex_xsd=complex_xsd,
+        simple_xsd=_simple_document(),
+        complex_type_names=("TCDPS",),
+        simple_type_names=("Code",),
+    )
+
+    with pytest.raises(ContractFreezeError, match="Missing.*not defined"):
+        schema._assert_complex_dependency_closure(
+            structure,
+            complex_xsd=complex_xsd,
+        )
+
+
+def test_simple_dependency_closure_follows_transitive_local_bases(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(schema, "_SIMPLE_TYPE_NAMES", ("CodeA", "CodeB"))
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:complexType name="TCDPS"><xs:sequence>'
+        + '<xs:element name="code" type="CodeA"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+    simple_xsd = (
+        _XSD_OPEN
+        + '<xs:simpleType name="CodeA"><xs:restriction base="CodeB">'
+        + '<xs:pattern value="[A-Z]"/>'
+        + "</xs:restriction></xs:simpleType>"
+        + '<xs:simpleType name="CodeB"><xs:restriction base="xs:string">'
+        + '<xs:pattern value="[A-Z]"/>'
+        + "</xs:restriction></xs:simpleType>"
+        + _XSD_CLOSE
+    ).encode()
+    structure = schema._extract_schema_subset(
+        complex_xsd=complex_xsd,
+        simple_xsd=simple_xsd,
+        complex_type_names=("TCDPS",),
+        simple_type_names=("CodeA", "CodeB"),
+    )
+
+    schema._assert_simple_dependency_closure(
+        structure,
+        simple_xsd=simple_xsd,
+        reachable_complex_types=frozenset({"TCDPS"}),
+    )
+
+
+def test_qname_closure_rejects_unknown_xsd_builtin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(schema, "_EXPECTED_EXTERNAL_REFS", frozenset())
+    structure = _extract(
+        complex_xsd=_complex_document(
+            first=('<xs:element name="first" type="xs:NotARealXsdType" minOccurs="0"/>')
+        )
+    )
+
+    with pytest.raises(ContractFreezeError, match="unresolved local type QName"):
+        schema._assert_qname_dependency_closure(structure)
+
+
+def test_qname_namespace_bindings_accept_supported_profile() -> None:
+    complex_xsd = (
+        _XSD_OPEN.removesuffix(">")
+        + f' xmlns:ds="{_XMLDSIG_NAMESPACE}">'
+        + '<xs:complexType name="Root"><xs:sequence>'
+        + '<xs:element name="code" type="Code"/>'
+        + '<xs:element name="date" type="xs:date"/>'
+        + '<xs:element ref="ds:Signature" minOccurs="0"/>'
+        + "</xs:sequence></xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+
+    _assert_fixture_qnames(
+        complex_xsd=complex_xsd,
+        expected_external_qnames=frozenset({(_XMLDSIG_NAMESPACE, "Signature")}),
+    )
+
+
+@pytest.mark.parametrize(
+    ("complex_xsd", "error"),
+    [
+        (
+            (
+                _XSD_OPEN.removesuffix(">")
+                + ' xmlns:ds="https://example.invalid/not-xmldsig">'
+                + '<xs:complexType name="Root"><xs:sequence>'
+                + '<xs:element ref="ds:Signature"/>'
+                + "</xs:sequence></xs:complexType>"
+                + _XSD_CLOSE
+            ).encode(),
+            "unsupported external ref QName",
+        ),
+        (
+            _complex_document(first='<xs:element name="first" type="missing:Code"/>'),
+            "undeclared QName prefix",
+        ),
+        (
+            (
+                _XSD_OPEN.removesuffix(">")
+                + f' xmlns:xsd="{_XSD_NAMESPACE}">'
+                + '<xsd:complexType name="Root"><xsd:sequence>'
+                + '<xsd:element xmlns:xs="https://example.invalid/not-xsd" '
+                + 'name="first" type="xs:string"/>'
+                + "</xsd:sequence></xsd:complexType>"
+                + _XSD_CLOSE
+            ).encode(),
+            "unsupported external type QName",
+        ),
+        (
+            _complex_document(
+                first=('<xs:element name="first" type="xs:NotARealXsdType"/>')
+            ),
+            "unsupported XML Schema type QName",
+        ),
+        (
+            _complex_document(
+                first=(
+                    '<xs:element xmlns="https://example.invalid/not-nfse" '
+                    'name="first" type="Code"/>'
+                )
+            ),
+            "unsupported external type QName",
+        ),
+    ],
+    ids=(
+        "wrong-ds-binding",
+        "undeclared-prefix",
+        "locally-redefined-xs-prefix",
+        "unknown-xsd-builtin",
+        "wrong-local-default-namespace",
+    ),
+)
+def test_qname_namespace_bindings_reject_semantic_drift(
+    complex_xsd: bytes,
+    error: str,
+) -> None:
+    with pytest.raises(ContractFreezeError, match=error):
+        _assert_fixture_qnames(complex_xsd=complex_xsd)
+
+
+def test_qname_namespace_bindings_reject_undeclared_ref_prefix() -> None:
+    complex_xsd = _complex_document(first='<xs:element ref="missing:Signature"/>')
+
+    with pytest.raises(ContractFreezeError, match="undeclared QName prefix"):
+        _assert_fixture_qnames(complex_xsd=complex_xsd)
+
+
+def test_qname_namespace_bindings_reject_undeclared_base_prefix() -> None:
+    simple_xsd = _simple_document().replace(
+        b'base="xs:string"', b'base="missing:string"'
+    )
+
+    with pytest.raises(ContractFreezeError, match="undeclared QName prefix"):
+        _assert_fixture_qnames(
+            complex_xsd=_complex_document(),
+            simple_xsd=simple_xsd,
+        )
+
+
+def test_schema_profile_rejects_incompatible_target_namespace() -> None:
+    complex_xsd = _complex_document().replace(
+        f'targetNamespace="{_NFSE_NAMESPACE}"'.encode(),
+        b'targetNamespace="https://example.invalid/not-nfse"',
+    )
+
+    with pytest.raises(ContractFreezeError, match="targetNamespace"):
+        _assert_fixture_qnames(complex_xsd=complex_xsd)
+
+
+def test_committed_contract_preserves_v04_identity_facets() -> None:
+    identity = cast(
+        dict[str, object],
+        json.loads(Path("contracts/restricted/manifest.json").read_bytes()),
+    )
+    contract = cast(
+        dict[str, object],
+        json.loads(Path("contracts/restricted/dps-schema-contract.json").read_bytes()),
+    )
+    xsd = cast(dict[str, object], identity["xsd"])
+    identity_facets = cast(dict[str, object], xsd["identity_contract"])
+    series_facets = cast(dict[str, object], xsd["series_contract"])
+    simple_types = cast(dict[str, object], contract["simple_types"])
+
+    schema._assert_identity_binding(
+        identity_contract=identity_facets,
+        series_contract=series_facets,
+        simple_types=simple_types,
+    )
+
+
+def test_identity_manifest_hash_drift_is_rejected(tmp_path: Path) -> None:
+    changed = tmp_path / "manifest.json"
+    changed.write_bytes(Path("contracts/restricted/manifest.json").read_bytes() + b" ")
+
+    with pytest.raises(ContractFreezeError, match="identity manifest SHA-256"):
+        schema._load_identity_manifest(changed)
+
+
+def test_identity_manifest_symlink_and_unreadable_path_are_rejected(
+    tmp_path: Path,
+) -> None:
+    missing = tmp_path / "missing.json"
+    symlink = tmp_path / "manifest-link.json"
+    symlink.symlink_to(missing)
+
+    with pytest.raises(ContractFreezeError, match="must not be a symlink"):
+        schema._load_identity_manifest(symlink)
+    with pytest.raises(ContractFreezeError, match="Could not read"):
+        schema._load_identity_manifest(missing)
+
+
+def test_changed_official_artifact_is_rejected() -> None:
+    with pytest.raises(ContractFreezeError, match="OFFICIAL_ARTIFACT_CHANGED"):
+        schema._validate_xsd_zip_artifact(EXPECTED_XSD_URL, b"changed")
+
+    with pytest.raises(ContractFreezeError, match="URL differs"):
+        schema._validate_xsd_zip_artifact(
+            "https://www.gov.br/nfse/changed.zip",
+            b"changed",
+        )
+
+
+def test_required_schema_member_is_exactly_bound() -> None:
+    with pytest.raises(ContractFreezeError, match="required source schema"):
+        schema._require_source_member({}, path="required.xsd", size=1, sha256="0")
+    with pytest.raises(ContractFreezeError, match="OFFICIAL_ARTIFACT_CHANGED"):
+        schema._require_source_member(
+            {"required.xsd": b"x"},
+            path="required.xsd",
+            size=1,
+            sha256="0" * 64,
+        )
+
+
+def test_rejects_non_schema_root_and_empty_or_unsupported_complex_types() -> None:
+    with pytest.raises(ContractFreezeError, match="root is not xs:schema"):
+        schema._parse_schema(b"<root/>", source="fixture")
+
+    for definition in (
+        '<xs:complexType name="Root"><xs:any/></xs:complexType>',
+        '<xs:complexType name="Root"/>',
+        '<xs:complexType name="Root"><xs:sequence/></xs:complexType>',
+        ('<xs:complexType name="Root"><xs:sequence/><xs:choice/></xs:complexType>'),
+    ):
+        document = (_XSD_OPEN + definition + _XSD_CLOSE).encode()
+        with pytest.raises(ContractFreezeError, match="OFFICIAL_DPS_SCHEMA_DRIFT"):
+            _extract(complex_xsd=document)
+
+
+def test_preserves_refs_defaults_fixed_facets_and_annotations() -> None:
+    complex_xsd = (
+        _XSD_OPEN
+        + '<xs:complexType name="Root"><xs:annotation/>'
+        + '<xs:choice><xs:annotation/><xs:element ref="external"><xs:annotation/>'
+        + "</xs:element></xs:choice>"
+        + '<xs:attribute ref="externalAttr" default="A"/>'
+        + '<xs:attribute name="fixedAttr" fixed="B" use="prohibited"/>'
+        + "</xs:complexType>"
+        + _XSD_CLOSE
+    ).encode()
+    simple_xsd = (
+        _XSD_OPEN
+        + '<xs:simpleType name="Code"><xs:annotation/>'
+        + '<xs:restriction base="xs:string"><xs:annotation/>'
+        + '<xs:pattern value="[A-Z]" fixed="true"><xs:annotation/>'
+        + "</xs:pattern></xs:restriction></xs:simpleType>"
+        + _XSD_CLOSE
+    ).encode()
+
+    observed = _extract(complex_xsd=complex_xsd, simple_xsd=simple_xsd)
+    root = cast(dict[str, object], observed["complex_types"])["Root"]
+    root_mapping = cast(dict[str, object], root)
+    content = cast(dict[str, object], root_mapping["content"])
+
+    assert content["particles"] == [
+        {
+            "kind": "element",
+            "max_occurs": "1",
+            "min_occurs": "1",
+            "ref": "external",
+        }
+    ]
+    assert root_mapping["attributes"] == [
+        {"default": "A", "ref": "externalAttr", "use": "optional"},
+        {"fixed": "B", "name": "fixedAttr", "use": "prohibited"},
+    ]
+    simple = cast(dict[str, object], observed["simple_types"])["Code"]
+    assert simple == {
+        "base": "xs:string",
+        "facets": [{"fixed": "true", "name": "pattern", "value": "[A-Z]"}],
+    }
+
+
+def test_rejects_invalid_simple_restriction_details() -> None:
+    definitions = (
+        '<xs:simpleType name="Code"><xs:restriction><xs:pattern value="x"/>'
+        "</xs:restriction></xs:simpleType>",
+        '<xs:simpleType name="Code"><xs:restriction base="xs:string">'
+        "<xs:pattern/></xs:restriction></xs:simpleType>",
+        '<xs:simpleType name="Code"><xs:restriction base="xs:string">'
+        '<xs:pattern value="x"><xs:element name="nested"/></xs:pattern>'
+        "</xs:restriction></xs:simpleType>",
+    )
+    for definition in definitions:
+        with pytest.raises(ContractFreezeError, match="OFFICIAL_DPS_SCHEMA_DRIFT"):
+            _extract(simple_xsd=(_XSD_OPEN + definition + _XSD_CLOSE).encode())
+
+
+def test_simple_dependency_and_identity_binding_drift_are_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    structure = _extract()
+    monkeypatch.setattr(schema, "_SIMPLE_TYPE_NAMES", ("Missing",))
+    with pytest.raises(ContractFreezeError, match="simple type dependency closure"):
+        schema._assert_simple_dependency_closure(
+            structure,
+            simple_xsd=_simple_document(),
+            reachable_complex_types=frozenset({"Root"}),
+        )
+
+    with pytest.raises(ContractFreezeError, match="TSIdDPS contradicts"):
+        schema._assert_identity_binding(
+            identity_contract={"max_length": 45, "pattern": "expected"},
+            series_contract={"pattern": "series"},
+            simple_types={
+                "TSIdDPS": {"facets": []},
+                "TSSerieDPS": {"facets": []},
+            },
+        )
+    with pytest.raises(ContractFreezeError, match="TSSerieDPS contradicts"):
+        schema._assert_identity_binding(
+            identity_contract={"max_length": 45, "pattern": "identity"},
+            series_contract={"pattern": "expected"},
+            simple_types={
+                "TSIdDPS": {
+                    "facets": [
+                        {"name": "maxLength", "value": "45"},
+                        {"name": "pattern", "value": "identity"},
+                    ]
+                },
+                "TSSerieDPS": {"facets": []},
+            },
+        )
+    with pytest.raises(ContractFreezeError, match="facets are malformed"):
+        schema._has_facet({}, name="pattern", value="x")
+
+
+def test_existing_contract_is_never_replaced_silently(tmp_path: Path) -> None:
+    contract = tmp_path / "contract.json"
+    contract.write_bytes(b"stale\n")
+
+    with pytest.raises(ContractFreezeError, match="existing DPS schema contract"):
+        schema._validate_existing_contract(contract, expected=b"fresh\n")
+    assert contract.read_bytes() == b"stale\n"
+
+
+def test_existing_contract_symlink_is_rejected(tmp_path: Path) -> None:
+    target = tmp_path / "target.json"
+    target.write_bytes(b"safe\n")
+    link = tmp_path / "contract.json"
+    link.symlink_to(target)
+
+    with pytest.raises(ContractFreezeError, match="must not be a symlink"):
+        schema._validate_existing_contract(link, expected=b"safe\n")
+    assert target.read_bytes() == b"safe\n"
+
+
+def test_mapping_contract_is_fail_closed() -> None:
+    with pytest.raises(ContractFreezeError, match="must be an object"):
+        schema._expect_mapping({"field": []}, "field")
+
+
+def test_contract_serialization_is_byte_deterministic() -> None:
+    contract = _extract()
+
+    assert schema._serialize_contract(contract) == schema._serialize_contract(contract)
+    assert schema._serialize_contract(contract).endswith(b"\n")
+
+
+def test_offline_freeze_builds_and_writes_only_reviewed_evidence(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    complex_xsd = _freeze_complex_document()
+    simple_xsd = _freeze_simple_document()
+    archive = _zip_bytes(
+        {
+            "complex.xsd": complex_xsd,
+            "simple.xsd": simple_xsd,
+        }
+    )
+    identity_manifest = cast(
+        dict[str, object],
+        json.loads(Path("contracts/restricted/manifest.json").read_bytes()),
+    )
+    monkeypatch.setattr(schema, "XSD_ZIP_SHA256", schema._sha256(archive))
+    monkeypatch.setattr(schema, "XSD_ZIP_SIZE", len(archive))
+    monkeypatch.setattr(schema, "_COMPLEX_SCHEMA_PATH", "complex.xsd")
+    monkeypatch.setattr(schema, "_COMPLEX_SCHEMA_SIZE", len(complex_xsd))
+    monkeypatch.setattr(schema, "_COMPLEX_SCHEMA_SHA256", schema._sha256(complex_xsd))
+    monkeypatch.setattr(schema, "_SIMPLE_SCHEMA_PATH", "simple.xsd")
+    monkeypatch.setattr(schema, "_SIMPLE_SCHEMA_SIZE", len(simple_xsd))
+    monkeypatch.setattr(schema, "_SIMPLE_SCHEMA_SHA256", schema._sha256(simple_xsd))
+    monkeypatch.setattr(schema, "_COMPLEX_TYPE_NAMES", ("Root",))
+    monkeypatch.setattr(schema, "_ROOT_COMPLEX_TYPE_NAME", "Root")
+    monkeypatch.setattr(schema, "_SIMPLE_TYPE_NAMES", ("Code", "TSIdDPS", "TSSerieDPS"))
+    monkeypatch.setattr(schema, "_EXPECTED_COMPLEX_SCHEMA_LINKS", ())
+    monkeypatch.setattr(schema, "_EXPECTED_EXTERNAL_REFS", frozenset())
+    monkeypatch.setattr(schema, "_EXPECTED_EXTERNAL_QNAMES", frozenset())
+    structure = schema._extract_schema_subset(
+        complex_xsd=complex_xsd,
+        simple_xsd=simple_xsd,
+        complex_type_names=schema._COMPLEX_TYPE_NAMES,
+        simple_type_names=schema._SIMPLE_TYPE_NAMES,
+    )
+    monkeypatch.setattr(
+        schema,
+        "_EXPECTED_STRUCTURE_SHA256",
+        schema._sha256(schema._serialize_contract(structure)),
+    )
+    contract = schema._build_contract(
+        xsd_zip=archive,
+        identity_manifest=identity_manifest,
+    )
+    monkeypatch.setattr(
+        schema,
+        "_EXPECTED_CONTRACT_SHA256",
+        schema._sha256(schema._serialize_contract(contract)),
+    )
+    monkeypatch.setattr(
+        schema,
+        "_load_identity_manifest",
+        lambda path: identity_manifest,
+    )
+    monkeypatch.setattr(
+        schema,
+        "download_official_url",
+        lambda url, max_bytes: DownloadedArtifact(
+            url=url,
+            data=archive,
+            content_type="application/zip",
+        ),
+    )
+    work_dir = tmp_path / "work"
+    contract_path = tmp_path / "contract.json"
+
+    observed = schema.freeze_restricted_dps_schema_contract(
+        identity_manifest_path=tmp_path / "identity.json",
+        work_dir=work_dir,
+        contract_path=contract_path,
+    )
+
+    assert observed == contract
+    assert contract_path.read_bytes() == schema._serialize_contract(contract)
+    assert (work_dir / "restricted-xsd.zip").read_bytes() == archive
+
+
+def test_import_has_no_network_or_filesystem_side_effects(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError((args, kwargs))
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(urllib.request, "build_opener", forbidden)
+
+    importlib.reload(schema)
+
+    assert list(tmp_path.iterdir()) == []

@@ -24,7 +24,6 @@ class IndexConvertible:
 @pytest.mark.parametrize(
     ("value", "component"),
     [
-        (0, "000000000000000"),
         (1, "000000000000001"),
         (42, "000000000000042"),
         (999_999_999_999_999, "999999999999999"),
@@ -39,9 +38,9 @@ def test_number_accepts_structural_boundaries(value: int, component: str) -> Non
     assert len(number.identity_component) == 15
 
 
-@pytest.mark.parametrize("value", [-1, 1_000_000_000_000_000])
+@pytest.mark.parametrize("value", [-1, 0, 1_000_000_000_000_000])
 def test_number_rejects_values_outside_structural_range(value: int) -> None:
-    with pytest.raises(DomainValidationError, match="15-position"):
+    with pytest.raises(DomainValidationError, match="between 1 and"):
         DpsNumber(value)
 
 
