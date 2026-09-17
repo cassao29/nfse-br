@@ -11,12 +11,13 @@ import tempfile
 import urllib.error
 import urllib.request
 import zipfile
+from collections.abc import Mapping
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from http.client import HTTPMessage
 from io import BytesIO
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import IO, BinaryIO, Final
+from typing import IO, BinaryIO, Final, NoReturn, cast
 from urllib.parse import urljoin, urlsplit
 from xml.etree import ElementTree
 
@@ -46,6 +47,7 @@ MAX_MEMBER_BYTES: Final = 20 * 1024 * 1024
 MAX_TOTAL_UNCOMPRESSED: Final = 100 * 1024 * 1024
 DOWNLOAD_TIMEOUT_SECONDS: Final = 30.0
 _DOWNLOAD_CHUNK_BYTES: Final = 64 * 1024
+_SHA256_PATTERN: Final = re.compile(r"[0-9a-f]{64}")
 _XML_SCHEMA_NAMESPACE: Final = "http://www.w3.org/2001/XMLSchema"
 _XML_SIMPLE_TYPE: Final = f"{{{_XML_SCHEMA_NAMESPACE}}}simpleType"
 _XML_RESTRICTION: Final = f"{{{_XML_SCHEMA_NAMESPACE}}}restriction"
@@ -222,6 +224,7 @@ def audit_restricted_contract(xsd_zip: bytes) -> ContractAudit:
     }
     if not xsd_members:
         raise ContractFreezeError("Official XSD archive contains no XSD files.")
+    _reject_duplicate_xsd_basenames(xsd_members)
 
     identity = _find_type_facets(xsd_members, "TSIdDPS", require_max_length=True)
     series = _find_type_facets(xsd_members, "TSSerieDPS", require_max_length=False)
@@ -284,7 +287,9 @@ def freeze_restricted_contract(
     audit = audit_restricted_contract(xsd.data)
     validate_layout_xlsx(layout.data)
     manifest = _build_manifest(links=links, xsd=xsd, layout=layout, audit=audit)
+    _validate_manifest(manifest)
     manifest_bytes = _serialize_manifest(manifest)
+    _validate_existing_manifest(manifest_path, expected=manifest_bytes)
 
     _write_fixed_artifact(work_dir, "restricted-xsd.zip", xsd.data)
     _write_fixed_artifact(work_dir, "restricted-layout.xlsx", layout.data)
@@ -318,6 +323,7 @@ def _validate_official_url(url: str) -> None:
         or parsed.username is not None
         or parsed.password is not None
         or port not in (None, 443)
+        or bool(parsed.fragment)
     ):
         raise ContractFreezeError(
             "Official URL must use HTTPS on a gov.br host without credentials."
@@ -405,8 +411,10 @@ def _validate_zip_member(info: zipfile.ZipInfo) -> None:
     windows_path = PureWindowsPath(info.filename)
     if (
         not normalized
+        or "\x00" in info.filename
         or posix_path.is_absolute()
         or windows_path.is_absolute()
+        or bool(windows_path.drive)
         or ".." in posix_path.parts
     ):
         raise ContractFreezeError(
@@ -452,7 +460,7 @@ def _find_type_facets(
         )
     restriction = restrictions[0]
     patterns = restriction.findall(_XML_PATTERN)
-    if len(patterns) != 1 or patterns[0].get("value") is None:
+    if len(patterns) != 1:
         raise ContractFreezeError(
             f"Official XSD type {type_name} must have one pattern facet."
         )
@@ -492,6 +500,19 @@ def _find_type_facets(
         pattern=pattern,
         max_length=max_length,
     )
+
+
+def _reject_duplicate_xsd_basenames(xsd_members: dict[str, bytes]) -> None:
+    seen: dict[str, str] = {}
+    for path in sorted(xsd_members):
+        basename = PurePosixPath(path).name.casefold()
+        previous = seen.get(basename)
+        if previous is not None:
+            raise ContractFreezeError(
+                "Official XSD archive has ambiguous basename "
+                f"{PurePosixPath(path).name!r} in {previous!r} and {path!r}."
+            )
+        seen[basename] = path
 
 
 def _parse_safe_xml(data: bytes, *, source: str) -> ElementTree.Element:
@@ -561,10 +582,12 @@ def _build_manifest(
             "identity_contract": {
                 "max_length": audit.identity.max_length,
                 "pattern": audit.identity.pattern,
+                "source": audit.identity.source,
                 "type": audit.identity.type_name,
             },
             "series_contract": {
                 "pattern": audit.series.pattern,
+                "source": audit.series.source,
                 "type": audit.series.type_name,
             },
             "sha256": xsd.sha256,
@@ -575,7 +598,223 @@ def _build_manifest(
 
 
 def _serialize_manifest(manifest: dict[str, object]) -> bytes:
-    return (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode()
+    return (
+        json.dumps(manifest, allow_nan=False, indent=2, sort_keys=True) + "\n"
+    ).encode()
+
+
+def _validate_existing_manifest(path: Path, *, expected: bytes) -> None:
+    if not path.exists() and not path.is_symlink():
+        return
+    if path.is_symlink():
+        raise ContractFreezeError("Existing manifest must not be a symlink.")
+    try:
+        current = path.read_bytes()
+    except OSError as exc:
+        raise ContractFreezeError("Could not read existing frozen manifest.") from exc
+    manifest = _deserialize_manifest(current)
+    _validate_manifest(manifest)
+    if current != _serialize_manifest(manifest):
+        raise ContractFreezeError(
+            "Existing frozen manifest is not in canonical deterministic form."
+        )
+    if current != expected:
+        raise ContractFreezeError(
+            "OFFICIAL_ARTIFACT_CHANGED: official evidence differs from the "
+            "existing frozen manifest; manual review is required."
+        )
+
+
+def _deserialize_manifest(data: bytes) -> dict[str, object]:
+    try:
+        parsed: object = json.loads(data, parse_constant=_reject_json_constant)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ContractFreezeError("Existing frozen manifest is invalid JSON.") from exc
+    if type(parsed) is not dict:
+        raise ContractFreezeError("Existing frozen manifest must be a JSON object.")
+    return cast(dict[str, object], parsed)
+
+
+def _reject_json_constant(value: str) -> NoReturn:
+    raise ContractFreezeError(
+        f"Existing frozen manifest contains forbidden constant {value!r}."
+    )
+
+
+def _validate_manifest(manifest: Mapping[str, object]) -> None:
+    _expect_keys(
+        manifest,
+        {
+            "authority",
+            "environment",
+            "layout",
+            "portal",
+            "regression_vectors",
+            "scope",
+            "transmission_ready",
+            "xsd",
+        },
+        context="manifest",
+    )
+    _expect_exact(manifest, "authority", "official_frozen")
+    _expect_exact(manifest, "environment", "restricted")
+    _expect_exact(manifest, "scope", "dps_identity")
+    _expect_exact(manifest, "transmission_ready", False)
+
+    portal = _expect_mapping(manifest, "portal")
+    _expect_keys(
+        portal,
+        {"layout_label", "url", "xsd_label"},
+        context="portal",
+    )
+    _expect_exact(portal, "url", PORTAL_URL)
+    _expect_exact(portal, "xsd_label", EXPECTED_XSD_LABEL)
+    _expect_exact(portal, "layout_label", EXPECTED_LAYOUT_LABEL)
+
+    layout = _expect_mapping(manifest, "layout")
+    _expect_keys(layout, {"sha256", "size", "url"}, context="layout")
+    _validate_manifest_artifact(layout, expected_url=EXPECTED_LAYOUT_URL)
+
+    vectors = _expect_mapping(manifest, "regression_vectors")
+    _expect_keys(
+        vectors,
+        {"alphanumeric_cnpj", "synthetic_cpf"},
+        context="regression_vectors",
+    )
+    _expect_exact(
+        vectors,
+        "alphanumeric_cnpj",
+        "DPS2927408212ABC6780001Z000123000000000000042",
+    )
+    _expect_exact(
+        vectors,
+        "synthetic_cpf",
+        "DPS292740810001234567890100123000000000000042",
+    )
+
+    xsd = _expect_mapping(manifest, "xsd")
+    _expect_keys(
+        xsd,
+        {
+            "audited_schema_files",
+            "identity_contract",
+            "series_contract",
+            "sha256",
+            "size",
+            "url",
+        },
+        context="xsd",
+    )
+    _validate_manifest_artifact(xsd, expected_url=EXPECTED_XSD_URL)
+    identity = _expect_mapping(xsd, "identity_contract")
+    _expect_keys(
+        identity,
+        {"max_length", "pattern", "source", "type"},
+        context="identity_contract",
+    )
+    _expect_exact(identity, "type", "TSIdDPS")
+    _expect_exact(identity, "max_length", EXPECTED_IDENTITY_MAX_LENGTH)
+    _expect_exact(identity, "pattern", EXPECTED_IDENTITY_PATTERN)
+    identity_source = _expect_string(identity, "source")
+    series = _expect_mapping(xsd, "series_contract")
+    _expect_keys(
+        series,
+        {"pattern", "source", "type"},
+        context="series_contract",
+    )
+    _expect_exact(series, "type", "TSSerieDPS")
+    _expect_exact(series, "pattern", EXPECTED_SERIES_PATTERN)
+    series_source = _expect_string(series, "source")
+
+    audited = xsd.get("audited_schema_files")
+    if type(audited) is not list or not audited:
+        raise ContractFreezeError(
+            "Frozen manifest audited_schema_files must be a non-empty list."
+        )
+    audited_paths: set[str] = set()
+    audited_basenames: set[str] = set()
+    for raw_entry in cast(list[object], audited):
+        if type(raw_entry) is not dict:
+            raise ContractFreezeError(
+                "Frozen manifest audited schema entry must be an object."
+            )
+        entry = cast(dict[str, object], raw_entry)
+        _expect_keys(entry, {"path", "sha256"}, context="audited_schema_file")
+        path = _expect_string(entry, "path")
+        pure_path = PurePosixPath(path)
+        if pure_path.is_absolute() or ".." in pure_path.parts or not pure_path.name:
+            raise ContractFreezeError(
+                "Frozen manifest contains unsafe audited schema path."
+            )
+        basename = pure_path.name.casefold()
+        if path in audited_paths or basename in audited_basenames:
+            raise ContractFreezeError(
+                "Frozen manifest contains ambiguous audited schema paths."
+            )
+        audited_paths.add(path)
+        audited_basenames.add(basename)
+        _expect_sha256(entry, "sha256")
+    if identity_source not in audited_paths or series_source not in audited_paths:
+        raise ContractFreezeError(
+            "Frozen manifest facet sources must reference audited schema files."
+        )
+
+
+def _validate_manifest_artifact(
+    artifact: Mapping[str, object], *, expected_url: str
+) -> None:
+    _expect_exact(artifact, "url", expected_url)
+    _validate_official_url(_expect_string(artifact, "url"))
+    _expect_sha256(artifact, "sha256")
+    size = artifact.get("size")
+    if type(size) is not int or size <= 0:
+        raise ContractFreezeError(
+            "Frozen manifest artifact size must be a positive integer."
+        )
+
+
+def _expect_mapping(mapping: Mapping[str, object], field: str) -> Mapping[str, object]:
+    value = mapping.get(field)
+    if type(value) is not dict:
+        raise ContractFreezeError(f"Frozen manifest field {field!r} must be an object.")
+    return cast(dict[str, object], value)
+
+
+def _expect_keys(
+    mapping: Mapping[str, object], expected: set[str], *, context: str
+) -> None:
+    observed = set(mapping)
+    if observed != expected:
+        raise ContractFreezeError(
+            f"Frozen manifest {context} fields differ; "
+            f"expected {sorted(expected)!r}, observed {sorted(observed)!r}."
+        )
+
+
+def _expect_string(mapping: Mapping[str, object], field: str) -> str:
+    value = mapping.get(field)
+    if type(value) is not str:
+        raise ContractFreezeError(f"Frozen manifest field {field!r} must be a string.")
+    return value
+
+
+def _expect_exact(mapping: Mapping[str, object], field: str, expected: object) -> None:
+    observed = mapping.get(field)
+    if type(observed) is not type(expected) or observed != expected:
+        raise ContractFreezeError(
+            f"Frozen manifest field {field!r} differs; "
+            f"expected {_bounded_repr(expected)}, "
+            f"observed {_bounded_repr(observed)}."
+        )
+
+
+def _expect_sha256(mapping: Mapping[str, object], field: str) -> str:
+    value = _expect_string(mapping, field)
+    if _SHA256_PATTERN.fullmatch(value) is None:
+        raise ContractFreezeError(
+            f"Frozen manifest field {field!r} must be lowercase SHA-256 hex."
+        )
+    return value
 
 
 def _write_fixed_artifact(work_dir: Path, filename: str, data: bytes) -> None:
