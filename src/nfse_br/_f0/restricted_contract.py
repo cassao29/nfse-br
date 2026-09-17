@@ -495,6 +495,10 @@ def _find_type_facets(
 
 
 def _parse_safe_xml(data: bytes, *, source: str) -> ElementTree.Element:
+    if b"\x00" in data:
+        raise ContractFreezeError(
+            f"Unsupported XML encoding in {source!r}; UTF-8 bytes are required."
+        )
     upper = data.upper()
     if b"<!DOCTYPE" in upper or b"<!ENTITY" in upper:
         raise ContractFreezeError(f"XML declarations are forbidden in {source!r}.")
@@ -508,8 +512,16 @@ def _compare_facet(name: str, expected: object, observed: object) -> None:
     if observed != expected:
         raise ContractFreezeError(
             f"OFFICIAL_CONTRACT_DRIFT: {name} differs; "
-            f"expected {expected!r}, observed {observed!r}."
+            f"expected {_bounded_repr(expected)}, "
+            f"observed {_bounded_repr(observed)}."
         )
+
+
+def _bounded_repr(value: object, *, limit: int = 240) -> str:
+    rendered = repr(value)
+    if len(rendered) <= limit:
+        return rendered
+    return f"{rendered[:limit]}... <{len(rendered)} chars>"
 
 
 def _build_manifest(

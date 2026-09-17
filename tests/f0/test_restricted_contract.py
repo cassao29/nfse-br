@@ -367,6 +367,13 @@ def test_rejects_dtd_and_entity_declarations(declaration: str) -> None:
         audit_restricted_contract(archive)
 
 
+def test_rejects_utf16_xml_that_could_hide_dtd() -> None:
+    xsd = _xsd_document(declaration="<!DOCTYPE schema>").decode().encode("utf-16")
+
+    with pytest.raises(ContractFreezeError, match="Unsupported XML encoding"):
+        audit_restricted_contract(_zip_bytes({"schema.xsd": xsd}))
+
+
 def test_rejects_identity_pattern_drift() -> None:
     archive = _zip_bytes({"schema.xsd": _xsd_document(identity_pattern="DPS[0-9]{42}")})
 
@@ -377,6 +384,18 @@ def test_rejects_identity_pattern_drift() -> None:
     assert "TSIdDPS pattern" in message
     assert repr(restricted.EXPECTED_IDENTITY_PATTERN) in message
     assert repr("DPS[0-9]{42}") in message
+
+
+def test_drift_error_bounds_large_observed_facet() -> None:
+    large_pattern = "A" * 10_000
+    archive = _zip_bytes({"schema.xsd": _xsd_document(identity_pattern=large_pattern)})
+
+    with pytest.raises(ContractFreezeError) as exc_info:
+        audit_restricted_contract(archive)
+
+    message = str(exc_info.value)
+    assert len(message) < 1_000
+    assert "10002 chars" in message
 
 
 def test_rejects_series_pattern_drift() -> None:
@@ -545,6 +564,18 @@ def test_rejects_symlink_manifest_target(
         restricted._atomic_write(symlink, b"changed")
 
     assert real.read_text() == "untouched"
+
+
+def test_rejects_symlink_work_directory(tmp_path: Path) -> None:
+    real = tmp_path / "real"
+    real.mkdir()
+    symlink = tmp_path / "work"
+    symlink.symlink_to(real, target_is_directory=True)
+
+    with pytest.raises(ContractFreezeError, match="Work directory"):
+        restricted._write_fixed_artifact(symlink, "artifact.zip", b"PK")
+
+    assert list(real.iterdir()) == []
 
 
 def test_private_f0_module_is_not_promoted_or_networked_on_import(
