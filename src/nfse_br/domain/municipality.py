@@ -13,7 +13,7 @@ class MunicipalityCode:
 
     def __post_init__(self) -> None:
         """Validate the lexical representation without performing a lookup."""
-        if not isinstance(self.value, str):
+        if type(self.value) is not str:
             raise DomainValidationError(
                 "Municipality code must be provided as a string."
             )

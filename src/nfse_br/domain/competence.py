@@ -23,7 +23,7 @@ class CompetenceDate:
     @classmethod
     def from_iso(cls, value: str) -> Self:
         """Create a competence date from an ISO ``YYYY-MM-DD`` string."""
-        if not isinstance(value, str):
+        if type(value) is not str:
             raise DomainValidationError("Competence date must be an ISO date string.")
 
         digits = value.replace("-", "")

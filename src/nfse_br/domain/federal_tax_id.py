@@ -48,16 +48,20 @@ class FederalTaxId:
         """Return the normalized, unmasked identifier value."""
         return self.value
 
+    def __repr__(self) -> str:
+        """Return a representation that does not disclose the identifier."""
+        return f"FederalTaxId(kind={self.kind.name}, value=<redacted>)"
+
     @staticmethod
     def _validate_cpf(value: str) -> None:
-        if not isinstance(value, str):
+        if type(value) is not str:
             raise DomainValidationError("CPF must be provided as a string.")
         if len(value) != 11 or not value.isascii() or not value.isdecimal():
             raise DomainValidationError("CPF must contain exactly 11 ASCII digits.")
 
     @staticmethod
     def _normalize_cnpj(value: str) -> str:
-        if not isinstance(value, str):
+        if type(value) is not str:
             raise DomainValidationError("CNPJ must be provided as a string.")
         if len(value) != 14 or not value.isascii() or not value.isalnum():
             raise DomainValidationError(
