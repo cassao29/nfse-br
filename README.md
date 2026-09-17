@@ -34,6 +34,17 @@ The DPS identity contract implemented here is suitable for local deterministic
 work and testing only. Transmission remains gated on freezing and auditing the
 exact official environment-specific XSD/layout bundle.
 
+## Contract evidence
+
+The working identity can be audited against exact official restricted-
+environment bytes with `scripts/f0_freeze_restricted.py`. The resulting
+SHA-256 provenance and audited facets are recorded in
+`contracts/restricted/manifest.json`; downloaded artifacts remain under the
+ignored `.f0/` directory and are not redistributed.
+
+This evidence covers only DPS identity and series facets. Transmission remains
+unavailable and `transmission_ready` remains `false`.
+
 ## Development
 
 The project requires Python 3.12 or 3.13 and uses

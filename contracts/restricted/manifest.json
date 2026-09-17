@@ -1,0 +1,42 @@
+{
+  "authority": "official_frozen",
+  "environment": "restricted",
+  "layout": {
+    "sha256": "2ae2ac9f91efa9b64f0c9ed97acaf18bb7513b090fae39ba5bda59187e64d9e9",
+    "size": 215056,
+    "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita/anexo_i-sefin_adn-dps_nfse-snnfse-prodrest-v1-01-20260209.xlsx"
+  },
+  "portal": {
+    "layout_label": "ANEXO_I-SEFIN_ADN-DPS_NFSe-SNNFSe-PRODREST-v1.01-20260209",
+    "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita",
+    "xsd_label": "NFSe-ESQUEMAS_XSD-PRODREST-v1.01-20260727"
+  },
+  "regression_vectors": {
+    "alphanumeric_cnpj": "DPS2927408212ABC6780001Z000123000000000000042",
+    "synthetic_cpf": "DPS292740810001234567890100123000000000000042"
+  },
+  "scope": "dps_identity",
+  "transmission_ready": false,
+  "xsd": {
+    "audited_schema_files": [
+      {
+        "path": "tiposSimples_v1.01.xsd",
+        "sha256": "3d8171c9b7c9a82ecb48eed9a96485f2077006e7d21db6cd182839dd34dbb5e4"
+      }
+    ],
+    "identity_contract": {
+      "max_length": 45,
+      "pattern": "DPS[0-9]{7}(1[0-9]{14}|2[0-9A-Z]{14})[0-9]{20}",
+      "source": "tiposSimples_v1.01.xsd",
+      "type": "TSIdDPS"
+    },
+    "series_contract": {
+      "pattern": "[0-9]{1,4}|[0-8][0-9]{4}",
+      "source": "tiposSimples_v1.01.xsd",
+      "type": "TSSerieDPS"
+    },
+    "sha256": "6c7e0510d3ecff4454f291f4e10b742d27a4818f23aab181494f96d0ea79f3dc",
+    "size": 34933,
+    "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita/esquemas-nfse-rtc-v1-01-20260727.zip"
+  }
+}
