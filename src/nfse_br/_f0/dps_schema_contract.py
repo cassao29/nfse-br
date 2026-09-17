@@ -202,6 +202,8 @@ _XSD_NAMESPACE: Final = "http://www.w3.org/2001/XMLSchema"
 _XSD: Final = f"{{{_XSD_NAMESPACE}}}"
 _SCHEMA: Final = f"{_XSD}schema"
 _ANNOTATION: Final = f"{_XSD}annotation"
+_IMPORT: Final = f"{_XSD}import"
+_INCLUDE: Final = f"{_XSD}include"
 _COMPLEX_TYPE: Final = f"{_XSD}complexType"
 _SIMPLE_TYPE: Final = f"{_XSD}simpleType"
 _RESTRICTION: Final = f"{_XSD}restriction"
@@ -223,6 +225,16 @@ _SUPPORTED_FACETS: Final = frozenset(
         "whiteSpace",
     }
 )
+_EXPECTED_COMPLEX_SCHEMA_LINKS: Final = (
+    (
+        "import",
+        "http://www.w3.org/2000/09/xmldsig#",
+        "xmldsig-core-schema.xsd",
+    ),
+    ("include", None, "tiposSimples_v1.01.xsd"),
+)
+_EXPECTED_SIMPLE_SCHEMA_LINKS: Final[tuple[tuple[str, str | None, str], ...]] = ()
+_EXPECTED_EXTERNAL_REFS: Final = frozenset({"ds:Signature"})
 
 SchemaObject = dict[str, object]
 
@@ -312,8 +324,10 @@ def _build_contract(
         complex_type_names=_COMPLEX_TYPE_NAMES,
         simple_type_names=_SIMPLE_TYPE_NAMES,
     )
+    _assert_schema_links(complex_xsd=complex_xsd, simple_xsd=simple_xsd)
     _assert_complex_dependency_closure(structure, complex_xsd=complex_xsd)
     _assert_simple_dependency_closure(structure, simple_xsd=simple_xsd)
+    _assert_qname_dependency_closure(structure)
     _assert_digest(
         _serialize_contract(structure),
         expected=_EXPECTED_STRUCTURE_SHA256,
@@ -402,6 +416,39 @@ def _parse_schema(data: bytes, *, source: str) -> ElementTree.Element:
     if root.tag != _SCHEMA:
         _drift(f"{source} root is not xs:schema")
     return root
+
+
+def _assert_schema_links(*, complex_xsd: bytes, simple_xsd: bytes) -> None:
+    observed_complex = _schema_links(
+        _parse_schema(complex_xsd, source="complex schema")
+    )
+    observed_simple = _schema_links(_parse_schema(simple_xsd, source="simple schema"))
+    if observed_complex != _EXPECTED_COMPLEX_SCHEMA_LINKS:
+        _drift(
+            "complex schema include/import declarations differ; "
+            f"expected {_EXPECTED_COMPLEX_SCHEMA_LINKS!r}, "
+            f"observed {observed_complex!r}"
+        )
+    if observed_simple != _EXPECTED_SIMPLE_SCHEMA_LINKS:
+        _drift(
+            "simple schema include/import declarations differ; "
+            f"expected {_EXPECTED_SIMPLE_SCHEMA_LINKS!r}, "
+            f"observed {observed_simple!r}"
+        )
+
+
+def _schema_links(
+    root: ElementTree.Element,
+) -> tuple[tuple[str, str | None, str], ...]:
+    links: list[tuple[str, str | None, str]] = []
+    for child in root:
+        if child.tag not in {_IMPORT, _INCLUDE}:
+            continue
+        location = child.get("schemaLocation")
+        if not location:
+            _drift("schema include/import must declare schemaLocation")
+        links.append((_tag_name(child.tag), child.get("namespace"), location))
+    return tuple(links)
 
 
 def _find_unique_definition(
@@ -633,6 +680,30 @@ def _assert_complex_dependency_closure(
         )
 
 
+def _assert_qname_dependency_closure(structure: Mapping[str, object]) -> None:
+    complex_types = _expect_mapping(structure, "complex_types")
+    simple_types = _expect_mapping(structure, "simple_types")
+    local_types = set(complex_types) | set(simple_types)
+
+    for field in ("type", "base"):
+        for reference in _iter_field_references(structure, field=field):
+            prefix, separator, local_name = reference.partition(":")
+            if separator:
+                if prefix == "xs" and local_name and ":" not in local_name:
+                    continue
+                _drift(f"unresolved local {field} QName {reference!r}")
+            if not reference or reference not in local_types:
+                _drift(f"unresolved local {field} QName {reference!r}")
+
+    external_refs = frozenset(_iter_field_references(structure, field="ref"))
+    if external_refs != _EXPECTED_EXTERNAL_REFS:
+        _drift(
+            "external element/attribute refs differ; "
+            f"expected {sorted(_EXPECTED_EXTERNAL_REFS)!r}, "
+            f"observed {sorted(external_refs)!r}"
+        )
+
+
 def _iter_type_references(value: object) -> Iterable[str]:
     if type(value) is dict:
         mapping = cast(dict[str, object], value)
@@ -644,6 +715,19 @@ def _iter_type_references(value: object) -> Iterable[str]:
     elif type(value) is list:
         for nested in cast(list[object], value):
             yield from _iter_type_references(nested)
+
+
+def _iter_field_references(value: object, *, field: str) -> Iterable[str]:
+    if type(value) is dict:
+        mapping = cast(dict[str, object], value)
+        reference = mapping.get(field)
+        if type(reference) is str:
+            yield reference
+        for nested in mapping.values():
+            yield from _iter_field_references(nested, field=field)
+    elif type(value) is list:
+        for nested in cast(list[object], value):
+            yield from _iter_field_references(nested, field=field)
 
 
 def _assert_identity_binding(
