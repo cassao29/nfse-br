@@ -21,6 +21,12 @@ reached through `restriction/@base`. It preserves sequence and choice order,
 occurrence cardinalities, attributes, restriction bases, and supported facets.
 The source members are recorded with their exact size and SHA-256.
 
+Here, `dps_structural_subset` means a subset of the complete NFS-e bundle, not
+a partial traversal of `TCDPS`: the full local dependency closure of `TCDPS` is
+included. The complex schema includes `tiposSimples_v1.01.xsd` and imports the
+XMLDSig schema. The sole external particle, `ds:Signature`, remains an external
+reference and is not resolved or interpreted by this tooling.
+
 The structural contract itself has SHA-256:
 
 ```text
@@ -43,5 +49,8 @@ It does not authorize XML generation, signing, issuance, or transmission.
 `transmission_ready` remains `false`.
 
 One boundary recorded for future builder work is that the official
-`TSNumDPS` pattern is `[1-9]{1}[0-9]{0,14}`. The broader local `DpsNumber`
-value object is not changed by this evidence-only freeze.
+`TSNumDPS` pattern is `[1-9]{1}[0-9]{0,14}`. `DpsNumber` follows this more
+specific field constraint and therefore accepts values from 1 through
+999999999999999. The broader `TSIdDPS` identity pattern still describes the
+15-position wire component; it does not independently express every `nDPS`
+field constraint.
