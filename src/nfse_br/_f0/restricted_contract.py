@@ -53,6 +53,12 @@ _XML_SIMPLE_TYPE: Final = f"{{{_XML_SCHEMA_NAMESPACE}}}simpleType"
 _XML_RESTRICTION: Final = f"{{{_XML_SCHEMA_NAMESPACE}}}restriction"
 _XML_PATTERN: Final = f"{{{_XML_SCHEMA_NAMESPACE}}}pattern"
 _XML_MAX_LENGTH: Final = f"{{{_XML_SCHEMA_NAMESPACE}}}maxLength"
+_XML_DECLARATION_PATTERN: Final = re.compile(
+    r"\A<\?xml(?=\s)(?P<body>.*?)\?>", re.IGNORECASE | re.DOTALL
+)
+_XML_ENCODING_PATTERN: Final = re.compile(
+    r"\bencoding\s*=\s*(['\"])(?P<encoding>[^'\"]+)\1", re.IGNORECASE
+)
 
 
 class ContractFreezeError(RuntimeError):
@@ -520,8 +526,23 @@ def _parse_safe_xml(data: bytes, *, source: str) -> ElementTree.Element:
         raise ContractFreezeError(
             f"Unsupported XML encoding in {source!r}; UTF-8 bytes are required."
         )
-    upper = data.upper()
-    if b"<!DOCTYPE" in upper or b"<!ENTITY" in upper:
+    try:
+        text = data.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise ContractFreezeError(
+            f"Unsupported XML encoding in {source!r}; UTF-8 bytes are required."
+        ) from exc
+
+    declaration = _XML_DECLARATION_PATTERN.match(text)
+    if declaration is not None:
+        encoding = _XML_ENCODING_PATTERN.search(declaration.group("body"))
+        if encoding is not None and encoding.group("encoding").casefold() != "utf-8":
+            raise ContractFreezeError(
+                f"Unsupported XML encoding in {source!r}; UTF-8 is required."
+            )
+
+    upper = text.upper()
+    if "<!DOCTYPE" in upper or "<!ENTITY" in upper:
         raise ContractFreezeError(f"XML declarations are forbidden in {source!r}.")
     try:
         return ElementTree.fromstring(data)

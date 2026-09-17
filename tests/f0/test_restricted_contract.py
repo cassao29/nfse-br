@@ -496,6 +496,38 @@ def test_rejects_dtd_and_entity_declarations(declaration: str) -> None:
         audit_restricted_contract(archive)
 
 
+@pytest.mark.parametrize(
+    "document",
+    [
+        b"<root/>",
+        b'<?xml version="1.0" encoding="UTF-8"?><root/>',
+        b'<?xml version="1.0" encoding="utf-8"?><root/>',
+        b"<?xml version='1.0' encoding='UTF-8'?><root/>",
+        b'\xef\xbb\xbf<?xml version="1.0" encoding="UTF-8"?><root/>',
+    ],
+)
+def test_accepts_utf8_xml_evidence(document: bytes) -> None:
+    assert restricted._parse_safe_xml(document, source="fixture.xml").tag == "root"
+
+
+@pytest.mark.parametrize(
+    "document",
+    [
+        b'<?xml version="1.0" encoding="ISO-8859-1"?><root>caf\xe9</root>',
+        b'<?xml version="1.0" encoding="ISO-8859-1"?><root/>',
+        b'<?xml version="1.0" encoding="windows-1252"?><root/>',
+        '<?xml version="1.0" encoding="UTF-16"?><root/>'.encode("utf-16-le"),
+        '<?xml version="1.0" encoding="UTF-16"?><root/>'.encode("utf-16-be"),
+        '<?xml version="1.0" encoding="UTF-32"?><root/>'.encode("utf-32-le"),
+        '<?xml version="1.0" encoding="UTF-32"?><root/>'.encode("utf-32-be"),
+        b"<root>\xff</root>",
+    ],
+)
+def test_rejects_non_utf8_xml_evidence(document: bytes) -> None:
+    with pytest.raises(ContractFreezeError, match="Unsupported XML encoding"):
+        restricted._parse_safe_xml(document, source="fixture.xml")
+
+
 def test_rejects_utf16_xml_that_could_hide_dtd() -> None:
     xsd = _xsd_document(declaration="<!DOCTYPE schema>").decode().encode("utf-16")
 
@@ -682,6 +714,19 @@ def test_rejects_xlsx_without_content_types() -> None:
 
 def test_accepts_structurally_valid_xlsx() -> None:
     validate_layout_xlsx(_valid_xlsx())
+
+
+def test_xlsx_rejects_non_utf8_content_types() -> None:
+    content_types = b'<?xml version="1.0" encoding="windows-1252"?><Types/>'
+    workbook = _zip_bytes(
+        {
+            "[Content_Types].xml": content_types,
+            "xl/workbook.xml": b"<workbook/>",
+        }
+    )
+
+    with pytest.raises(ContractFreezeError, match="Unsupported XML encoding"):
+        validate_layout_xlsx(workbook)
 
 
 @pytest.mark.parametrize("name", ["../evil", "..\\evil", "/absolute"])
