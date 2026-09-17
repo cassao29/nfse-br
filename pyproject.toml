@@ -30,13 +30,22 @@ Homepage = "https://github.com/cassao29/nfse-br"
 Issues = "https://github.com/cassao29/nfse-br/issues"
 Repository = "https://github.com/cassao29/nfse-br"
 
+[project.optional-dependencies]
+xsd = [
+    "lxml==6.1.3",
+]
+
 [dependency-groups]
 dev = [
   "mypy==2.3.1",
   "pytest==9.1.1",
   "pytest-cov==7.1.0",
   "ruff==0.16.7",
+  "types-lxml==2026.2.16",
 ]
+
+[tool.hatch.build]
+exclude = ["/.agents", "/.claude", "/.f0", "/build", "/dist"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/nfse_br"]
