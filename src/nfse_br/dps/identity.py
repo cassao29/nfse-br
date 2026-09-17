@@ -1,7 +1,7 @@
 """Deterministic identity for the working local DPS contract."""
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Self
 
 from nfse_br.domain import (
@@ -22,10 +22,10 @@ _WORKING_DPS_ID_PATTERN = re.compile(
 class DpsIdentity:
     """An immutable identity composed under the working local DPS contract."""
 
-    municipality: MunicipalityCode
-    federal_tax_id: FederalTaxId
-    series: DpsSeries
-    number: DpsNumber
+    municipality: MunicipalityCode = field(compare=False)
+    federal_tax_id: FederalTaxId = field(compare=False)
+    series: DpsSeries = field(compare=False)
+    number: DpsNumber = field(compare=False)
     value: str
 
     def __init__(self) -> None:
