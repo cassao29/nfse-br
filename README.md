@@ -59,10 +59,18 @@ The project requires Python 3.12 or 3.13 and uses
 uv sync --frozen
 uv run ruff check .
 uv run ruff format --check .
-uv run mypy src tests
-uv run pytest --cov=src/nfse_br --cov-branch --cov-report=term-missing --cov-fail-under=80
+uv run mypy src tests scripts/check_coverage.py
+mkdir -p build/coverage
+uv run pytest --cov=src/nfse_br --cov-branch --cov-report=term-missing \
+  --cov-report=json:build/coverage/coverage.json --cov-fail-under=80
+uv run python scripts/check_coverage.py build/coverage/coverage.json
 uv build
 ```
+
+The executable coverage gates require at least 80% combined coverage for the
+library, 90% aggregate branch coverage for `src/nfse_br/_f0/`, and 90% branch
+coverage for `src/nfse_br/_f0/dps_schema_contract.py`. Gate decisions use the
+exact counters from Coverage.py JSON rather than rounded display percentages.
 
 ## License
 
