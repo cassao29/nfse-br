@@ -51,8 +51,10 @@ closed if the bytes, selected schema members, reviewed structure, or existing
 contract differ. Official XSD bytes remain under the ignored `.f0/` directory
 and are not redistributed.
 
-This artifact is repository evidence, not a runtime schema API or validator.
-It does not authorize XML generation, signing, issuance, or transmission.
+This artifact is repository evidence, not runtime configuration. The optional
+local validator is independently pinned to the exact bundle and compilation
+profile described in [`DPS_XSD_VALIDATOR.md`](DPS_XSD_VALIDATOR.md). Neither
+artifact authorizes XML generation, signing, issuance, or transmission;
 `transmission_ready` remains `false`.
 
 One boundary recorded for future builder work is that the official
