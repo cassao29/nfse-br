@@ -13,6 +13,9 @@ _SCHEMA = "src/nfse_br/_f0/dps_schema_contract.py"
 _RESTRICTED = "src/nfse_br/_f0/restricted_contract.py"
 _F0_INIT = "src/nfse_br/_f0/__init__.py"
 _F0_PATHS = frozenset({_SCHEMA, _RESTRICTED, _F0_INIT})
+_XSD_INIT = "src/nfse_br/xsd/__init__.py"
+_XSD_VALIDATOR = "src/nfse_br/xsd/validator.py"
+_XSD_PATHS = frozenset({_XSD_INIT, _XSD_VALIDATOR})
 
 
 def _summary(*, covered: int, total: int) -> dict[str, object]:
@@ -31,6 +34,7 @@ def _report(
     restricted: tuple[int, int] = (100, 100),
     global_lines: tuple[int, int] = (800, 900),
     global_branches: tuple[int, int] = (80, 100),
+    xsd: tuple[int, int] = (90, 100),
     branch_coverage: bool = True,
 ) -> dict[str, object]:
     return {
@@ -50,6 +54,8 @@ def _report(
                     total=restricted[1],
                 )
             },
+            _XSD_INIT: {"summary": _summary(covered=0, total=0)},
+            _XSD_VALIDATOR: {"summary": _summary(covered=xsd[0], total=xsd[1])},
         },
     }
 
@@ -58,13 +64,14 @@ def _results(report: dict[str, object]) -> tuple[check_coverage.GateResult, ...]
     return check_coverage.evaluate_report(
         report,
         expected_f0_paths=_F0_PATHS,
+        expected_xsd_paths=_XSD_PATHS,
     )
 
 
 def test_module_203_of_226_fails_even_with_rounded_display() -> None:
     results = _results(_report(module=(203, 226)))
 
-    assert [result.passed for result in results] == [True, True, False]
+    assert [result.passed for result in results] == [True, True, False, True]
     assert results[2].percentage == pytest.approx(89.82300884955752)
 
 
@@ -81,6 +88,15 @@ def test_exactly_ninety_percent_passes() -> None:
     assert results[2].passed
 
 
+def test_xsd_exactly_ninety_percent_passes_and_below_fails() -> None:
+    passing = _results(_report(xsd=(9, 10)))
+    failing = _results(_report(xsd=(89, 100)))
+
+    assert passing[3].passed
+    assert not failing[3].passed
+    assert all(result.passed for result in failing[:3])
+
+
 def test_aggregate_f0_below_ninety_percent_fails() -> None:
     results = _results(_report(module=(90, 100), restricted=(8, 10)))
 
@@ -88,6 +104,7 @@ def test_aggregate_f0_below_ninety_percent_fails() -> None:
     assert results[1].total == 110
     assert not results[1].passed
     assert results[2].passed
+    assert results[3].passed
 
 
 def test_global_combined_below_eighty_percent_fails() -> None:
@@ -101,6 +118,7 @@ def test_global_combined_below_eighty_percent_fails() -> None:
     assert not results[0].passed
     assert results[1].passed
     assert results[2].passed
+    assert results[3].passed
 
 
 def test_missing_module_and_disabled_branch_measurement_are_rejected() -> None:
@@ -112,6 +130,15 @@ def test_missing_module_and_disabled_branch_measurement_are_rejected() -> None:
         _results(missing)
     with pytest.raises(check_coverage.CoverageGateError, match="not enabled"):
         _results(_report(branch_coverage=False))
+
+
+def test_missing_xsd_file_is_rejected() -> None:
+    report = _report()
+    files = cast(dict[str, object], report["files"])
+    del files[_XSD_VALIDATOR]
+
+    with pytest.raises(check_coverage.CoverageGateError, match="missing XSD files"):
+        _results(report)
 
 
 @pytest.mark.parametrize(
@@ -157,7 +184,8 @@ def test_cli_returns_zero_and_prints_all_passing_gates(
     assert "Library combined" in output
     assert "F0 branches" in output
     assert "DPS schema branches" in output
-    assert output.count("PASS") == 3
+    assert "XSD validator branches" in output
+    assert output.count("PASS") == 4
 
 
 @pytest.mark.parametrize(
@@ -218,4 +246,5 @@ def test_unsafe_or_incomplete_f0_paths_are_rejected() -> None:
         check_coverage.evaluate_report(
             _report(),
             expected_f0_paths=_F0_PATHS | {"src/nfse_br/_f0/future.py"},
+            expected_xsd_paths=_XSD_PATHS,
         )

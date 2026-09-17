@@ -13,9 +13,11 @@ from typing import NoReturn, cast
 GLOBAL_COMBINED_MINIMUM = 80
 F0_BRANCH_MINIMUM = 90
 SCHEMA_BRANCH_MINIMUM = 90
+XSD_BRANCH_MINIMUM = 90
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _F0_ROOT = _PROJECT_ROOT / "src/nfse_br/_f0"
+_XSD_ROOT = _PROJECT_ROOT / "src/nfse_br/xsd"
 _SCHEMA_MODULE = "src/nfse_br/_f0/dps_schema_contract.py"
 
 
@@ -47,8 +49,9 @@ def evaluate_report(
     report: Mapping[str, object],
     *,
     expected_f0_paths: frozenset[str],
-) -> tuple[GateResult, GateResult, GateResult]:
-    """Validate a Coverage.py report and calculate the three required gates."""
+    expected_xsd_paths: frozenset[str],
+) -> tuple[GateResult, GateResult, GateResult, GateResult]:
+    """Validate a Coverage.py report and calculate the four required gates."""
     meta = _mapping(report.get("meta"), context="meta")
     if meta.get("branch_coverage") is not True:
         raise CoverageGateError("branch measurement is not enabled")
@@ -71,6 +74,11 @@ def evaluate_report(
     if missing_f0:
         raise CoverageGateError(
             f"coverage report is missing F0 files: {sorted(missing_f0)!r}"
+        )
+    missing_xsd = expected_xsd_paths - files.keys()
+    if missing_xsd:
+        raise CoverageGateError(
+            f"coverage report is missing XSD files: {sorted(missing_xsd)!r}"
         )
 
     f0_covered = 0
@@ -96,6 +104,15 @@ def evaluate_report(
         unit="branches",
     )
 
+    xsd_covered = 0
+    xsd_total = 0
+    for path in expected_xsd_paths:
+        file_data = files[path]
+        summary = _mapping(file_data.get("summary"), context=f"summary for {path!r}")
+        covered, total = _counts(summary, context=path, unit="branches")
+        xsd_covered += covered
+        xsd_total += total
+
     return (
         _gate(
             "Library combined",
@@ -114,6 +131,12 @@ def evaluate_report(
             covered=schema_covered,
             total=schema_total,
             minimum=SCHEMA_BRANCH_MINIMUM,
+        ),
+        _gate(
+            "XSD validator branches",
+            covered=xsd_covered,
+            total=xsd_total,
+            minimum=XSD_BRANCH_MINIMUM,
         ),
     )
 
@@ -136,6 +159,15 @@ def expected_f0_paths() -> frozenset[str]:
     return frozenset(
         path.relative_to(_PROJECT_ROOT).as_posix()
         for path in _F0_ROOT.rglob("*.py")
+        if path.is_file()
+    )
+
+
+def expected_xsd_paths() -> frozenset[str]:
+    """Return every Python source file in the optional XSD package."""
+    return frozenset(
+        path.relative_to(_PROJECT_ROOT).as_posix()
+        for path in _XSD_ROOT.rglob("*.py")
         if path.is_file()
     )
 
@@ -206,6 +238,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         results = evaluate_report(
             load_report(args.report),
             expected_f0_paths=expected_f0_paths(),
+            expected_xsd_paths=expected_xsd_paths(),
         )
     except CoverageGateError as exc:
         print(f"Coverage gate error: {exc}", file=sys.stderr)
