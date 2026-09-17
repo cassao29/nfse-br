@@ -45,15 +45,20 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Type-check
-        run: uv run mypy src tests
+        run: uv run mypy src tests scripts/check_coverage.py
 
       - name: Test
-        run: >-
-          uv run pytest
-          --cov=src/nfse_br
-          --cov-branch
-          --cov-report=term-missing
-          --cov-fail-under=80
+        run: |
+          mkdir -p build/coverage
+          uv run pytest \
+            --cov=src/nfse_br \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-report=json:build/coverage/coverage.json \
+            --cov-fail-under=80
+
+      - name: Enforce coverage gates
+        run: uv run python scripts/check_coverage.py build/coverage/coverage.json
 
       - name: Build distributions
         run: uv build
