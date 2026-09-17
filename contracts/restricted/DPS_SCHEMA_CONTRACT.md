@@ -1,0 +1,45 @@
+# Restricted DPS structural contract
+
+`dps-schema-contract.json` freezes the provider-independent DPS structure
+needed to design a future builder. It is derived from the official Produção
+Restrita XSD bundle whose SHA-256 is:
+
+```text
+6c7e0510d3ecff4454f291f4e10b742d27a4818f23aab181494f96d0ea79f3dc
+```
+
+The artifact is also bound to the V0.4 identity manifest with SHA-256:
+
+```text
+2d8049958e7dcfa5e4e002a45cca8d526df83ab9c42b57eff2320017f85b3b8c
+```
+
+The frozen subset contains 13 complex types and the 37 simple types they use
+directly. It preserves sequence and choice order, occurrence cardinalities,
+attributes, restriction bases, and supported facets. The source members are
+recorded with their exact size and SHA-256.
+
+The structural contract itself has SHA-256:
+
+```text
+26dfe391ebca7069764f7dba3cafb4a2b57593decd61b208cde9958e6c04ad06
+```
+
+Reproduce it from the repository root with:
+
+```console
+uv run python scripts/f0_freeze_dps_schema_contract.py
+```
+
+The command downloads and checks the already pinned official ZIP. It fails
+closed if the bytes, selected schema members, reviewed structure, or existing
+contract differ. Official XSD bytes remain under the ignored `.f0/` directory
+and are not redistributed.
+
+This artifact is repository evidence, not a runtime schema API or validator.
+It does not authorize XML generation, signing, issuance, or transmission.
+`transmission_ready` remains `false`.
+
+One boundary recorded for future builder work is that the official
+`TSNumDPS` pattern is `[1-9]{1}[0-9]{0,14}`. The broader local `DpsNumber`
+value object is not changed by this evidence-only freeze.

@@ -45,6 +45,11 @@ ignored `.f0/` directory and are not redistributed.
 This evidence covers only DPS identity and series facets. Transmission remains
 unavailable and `transmission_ready` remains `false`.
 
+The derived restricted DPS structural subset is recorded separately in
+`contracts/restricted/dps-schema-contract.json`. It is bound to the identity
+manifest and official XSD ZIP by SHA-256, but remains repository evidence—not
+a runtime XSD validator or XML builder.
+
 ## Development
 
 The project requires Python 3.12 or 3.13 and uses

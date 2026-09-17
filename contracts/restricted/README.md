@@ -27,3 +27,9 @@ uv run python scripts/f0_freeze_restricted.py
 The command fails closed if the official labels, URLs, archive structure, or
 audited facets drift. A successful identity freeze still records
 `transmission_ready` as `false`.
+
+`dps-schema-contract.json` is a separate, derived evidence artifact. It freezes
+the reviewed DPS structural subset from the same XSD ZIP and binds itself to
+the immutable identity manifest by SHA-256. See
+[`DPS_SCHEMA_CONTRACT.md`](DPS_SCHEMA_CONTRACT.md) for its exact scope and
+reproduction command.
