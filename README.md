@@ -14,7 +14,7 @@ The project requires Python 3.12 or 3.13 and uses
 [`uv`](https://docs.astral.sh/uv/) for project management.
 
 ```console
-uv sync
+uv sync --frozen
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy src tests
