@@ -3808,6 +3808,32 @@
         }
       ]
     },
+    "TSString": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "pattern",
+          "value": "[!-\u00ff]{1}[ -\u00ff]{0,}[!-\u00ff]{1}|[!-\u00ff]{1}"
+        }
+      ]
+    },
+    "TSStringComQuebraDeLinha": {
+      "base": "xs:string",
+      "facets": [
+        {
+          "name": "whiteSpace",
+          "value": "preserve"
+        },
+        {
+          "name": "pattern",
+          "value": "[\\s\\S!-\u00ff]{1}[\\s\\S -\u00ff]{0,}[\\s\\S!-\u00ff]{1}|[\\s\\S!-\u00ff]{1}"
+        }
+      ]
+    },
     "TSTelefone": {
       "base": "xs:string",
       "facets": [

@@ -522,13 +522,13 @@ def test_rejects_invalid_simple_restriction_details() -> None:
             _extract(simple_xsd=(_XSD_OPEN + definition + _XSD_CLOSE).encode())
 
 
-def test_direct_simple_reference_and_identity_binding_drift_are_rejected(
+def test_simple_dependency_and_identity_binding_drift_are_rejected(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     structure = _extract()
     monkeypatch.setattr(schema, "_SIMPLE_TYPE_NAMES", ("Missing",))
-    with pytest.raises(ContractFreezeError, match="direct simple type references"):
-        schema._assert_direct_simple_references(
+    with pytest.raises(ContractFreezeError, match="simple type dependency closure"):
+        schema._assert_simple_dependency_closure(
             structure,
             simple_xsd=_simple_document(),
         )

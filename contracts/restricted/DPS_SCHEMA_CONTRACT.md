@@ -16,14 +16,15 @@ The artifact is also bound to the V0.4 identity manifest with SHA-256:
 
 Starting at `TCDPS`, the freeze follows every complex-type reference found in
 the official schema. The resulting closed subset contains 52 complex types and
-the 89 simple types they use directly. It preserves sequence and choice order,
+91 simple types: every type used directly plus the custom simple-type bases
+reached through `restriction/@base`. It preserves sequence and choice order,
 occurrence cardinalities, attributes, restriction bases, and supported facets.
 The source members are recorded with their exact size and SHA-256.
 
 The structural contract itself has SHA-256:
 
 ```text
-823b2bc86c72c14b91a8780c9248531a7327390c6c0ba41e635963373d64b0f7
+794c5904c4d81381d73050df63df541de587a08e195b7fb25f553937a43b67b0
 ```
 
 Reproduce it from the repository root with:

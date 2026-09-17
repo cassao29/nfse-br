@@ -176,6 +176,8 @@ _SIMPLE_TYPE_NAMES: Final = (
     "TSRegimeApuracaoSimpNac",
     "TSSerieDPS",
     "TSSerieNFNFS",
+    "TSString",
+    "TSStringComQuebraDeLinha",
     "TSTelefone",
     "TSTipoAmbiente",
     "TSTipoCST",
@@ -190,10 +192,10 @@ _SIMPLE_TYPE_NAMES: Final = (
 )
 
 _EXPECTED_STRUCTURE_SHA256: Final = (
-    "76ae4a10e111f96e0f482e3b8bbe9d015e12551212aba26b17dbd24c41871b96"
+    "d5dcb8ac8c4f50a5b6fb9e035f2930b487c77e3642db903527a5a020e915dc4f"
 )
 _EXPECTED_CONTRACT_SHA256: Final = (
-    "823b2bc86c72c14b91a8780c9248531a7327390c6c0ba41e635963373d64b0f7"
+    "794c5904c4d81381d73050df63df541de587a08e195b7fb25f553937a43b67b0"
 )
 
 _XSD_NAMESPACE: Final = "http://www.w3.org/2001/XMLSchema"
@@ -311,7 +313,7 @@ def _build_contract(
         simple_type_names=_SIMPLE_TYPE_NAMES,
     )
     _assert_complex_dependency_closure(structure, complex_xsd=complex_xsd)
-    _assert_direct_simple_references(structure, simple_xsd=simple_xsd)
+    _assert_simple_dependency_closure(structure, simple_xsd=simple_xsd)
     _assert_digest(
         _serialize_contract(structure),
         expected=_EXPECTED_STRUCTURE_SHA256,
@@ -580,7 +582,7 @@ def _occurs(element: ElementTree.Element, attribute: str) -> str:
     return value
 
 
-def _assert_direct_simple_references(
+def _assert_simple_dependency_closure(
     structure: Mapping[str, object], *, simple_xsd: bytes
 ) -> None:
     simple_root = _parse_schema(simple_xsd, source="simple schema")
@@ -590,12 +592,22 @@ def _assert_direct_simple_references(
         if child.get("name") is not None
     }
     complex_types = _expect_mapping(structure, "complex_types")
-    referenced = set(_iter_type_references(complex_types))
-    observed = referenced & cast(set[str], defined_simple_types)
+    simple_types = _expect_mapping(structure, "simple_types")
+    observed = set(_iter_type_references(complex_types)) & cast(
+        set[str], defined_simple_types
+    )
+    pending = list(observed)
+    while pending:
+        current = pending.pop()
+        current_type = _expect_mapping(simple_types, current)
+        base = current_type.get("base")
+        if type(base) is str and base in defined_simple_types and base not in observed:
+            observed.add(base)
+            pending.append(base)
     expected = set(_SIMPLE_TYPE_NAMES)
     if observed != expected:
         _drift(
-            "direct simple type references differ; "
+            "simple type dependency closure differs; "
             f"expected {sorted(expected)!r}, observed {sorted(observed)!r}"
         )
 
