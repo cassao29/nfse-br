@@ -82,6 +82,21 @@ def _valid_drafts() -> tuple[tuple[str, RestrictedDpsDraft], ...]:
                 competence=CompetenceDate(date(2099, 12, 31)),
             ),
         ),
+        ("non-breaking-space description", replace(base, service_description="\u00a0")),
+        ("opSimpNac 2", replace(base, op_simp_nac="2")),
+        ("opSimpNac 3", replace(base, op_simp_nac="3")),
+        ("regEspTrib 1", replace(base, reg_esp_trib="1")),
+        ("regEspTrib 2", replace(base, reg_esp_trib="2")),
+        ("regEspTrib 3", replace(base, reg_esp_trib="3")),
+        ("regEspTrib 4", replace(base, reg_esp_trib="4")),
+        ("regEspTrib 5", replace(base, reg_esp_trib="5")),
+        ("regEspTrib 6", replace(base, reg_esp_trib="6")),
+        ("regEspTrib 9", replace(base, reg_esp_trib="9")),
+        ("tribISSQN 2", replace(base, trib_issqn="2")),
+        ("tribISSQN 3", replace(base, trib_issqn="3")),
+        ("tribISSQN 4", replace(base, trib_issqn="4")),
+        ("tpRetISSQN 2", replace(base, tp_ret_issqn="2")),
+        ("tpRetISSQN 3", replace(base, tp_ret_issqn="3")),
     )
 
 
@@ -143,8 +158,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         base = documents[0][1]
         invalid_documents = _invalid_documents(base)
-        validator.validate(base)
         for label, document in invalid_documents:
+            validator.validate(base)
             try:
                 validator.validate(document)
             except XsdValidationError as exc:

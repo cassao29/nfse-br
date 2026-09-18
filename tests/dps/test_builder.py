@@ -3,12 +3,25 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import traceback
 from dataclasses import FrozenInstanceError, replace
 from datetime import UTC, date, datetime, timedelta, timezone, tzinfo
-from decimal import Decimal, DivisionByZero, InvalidOperation, localcontext
+from decimal import (
+    ROUND_DOWN,
+    ROUND_UP,
+    Decimal,
+    DivisionByZero,
+    Inexact,
+    InvalidOperation,
+    Overflow,
+    Rounded,
+    Underflow,
+    localcontext,
+)
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from xml.etree import ElementTree
 
 import pytest
@@ -50,6 +63,54 @@ _GOLDEN_XML = (
     b"<totTrib><indTotTrib>0</indTotTrib></totTrib></trib></valores>"
     b"</infDPS></DPS>"
 )
+
+_NAMESPACE_SUBPROCESS = r"""
+import sys
+from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
+from xml.etree import ElementTree
+
+namespace = "http://www.sped.fazenda.gov.br/nfse"
+if sys.argv[1] == "before":
+    ElementTree.register_namespace("host", namespace)
+    ElementTree.register_namespace("", "urn:host-default")
+
+from nfse_br.domain import CompetenceDate, FederalTaxId, MunicipalityCode
+from nfse_br.dps import DpsNumber, DpsSeries
+from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
+
+if sys.argv[1] == "after":
+    ElementTree.register_namespace("host", namespace)
+    ElementTree.register_namespace("", "urn:host-default")
+
+draft = RestrictedDpsDraft(
+    issuer_tax_id=FederalTaxId.cnpj("12ABC6780001Z0"),
+    issue_municipality=MunicipalityCode("2927408"),
+    service_municipality=MunicipalityCode("3550308"),
+    series=DpsSeries("123"),
+    number=DpsNumber(42),
+    issued_at=datetime(
+        2026, 9, 17, 12, tzinfo=timezone(timedelta(hours=-3))
+    ),
+    competence=CompetenceDate(date(2026, 9, 17)),
+    application_version="nfse-br-test",
+    national_service_code="010101",
+    service_description="Servico sintetico",
+    service_amount=Decimal("1.00"),
+    op_simp_nac="1",
+    reg_esp_trib="0",
+    trib_issqn="1",
+    tp_ret_issqn="1",
+    ind_tot_trib="0",
+)
+first = build_unsigned_dps(draft)
+ElementTree.register_namespace("changed", namespace)
+ElementTree.register_namespace("", "urn:changed-default")
+second = build_unsigned_dps(draft)
+if first != second:
+    raise SystemExit("namespace registry changed serialized bytes")
+sys.stdout.buffer.write(first)
+"""
 
 
 def _draft(**changes: Any) -> RestrictedDpsDraft:
@@ -103,6 +164,7 @@ def test_golden_xml_is_manually_fixed_and_deterministic() -> None:
 
 
 def test_root_identity_namespace_and_order_are_exact() -> None:
+    xml = build_unsigned_dps(_draft())
     root = _root()
     information = root.find("n:infDPS", _NS)
 
@@ -129,6 +191,8 @@ def test_root_identity_namespace_and_order_are_exact() -> None:
     assert root.find(".//n:toma", _NS) is None
     assert root.find(".//n:interm", _NS) is None
     assert root.find(".//n:IBSCBS", _NS) is None
+    assert b'xmlns=""' not in xml
+    assert all(element.tag.startswith(f"{{{_NAMESPACE}}}") for element in root.iter())
 
 
 def test_identity_uses_issue_values_while_service_location_is_distinct() -> None:
@@ -174,6 +238,38 @@ def test_text_is_escaped_as_data_and_never_becomes_markup() -> None:
     assert root.find(".//item") is None
 
 
+@pytest.mark.parametrize(
+    "description",
+    [
+        "Acentuacao: ação",
+        "& < > ' \"",
+        "&amp;",
+        "<Signature xmlns='urn:attack'>texto</Signature>",
+        "<infDPS Id='attack'/>",
+        "]]>",
+        "linha um\nlinha dois",
+        "\u00a0",
+    ],
+)
+def test_accepted_service_text_round_trips_exactly(description: str) -> None:
+    xml = build_unsigned_dps(_draft(service_description=description))
+    root = ElementTree.fromstring(xml)
+    service_description = root.find(".//n:xDescServ", _NS)
+    assert service_description is not None
+
+    assert service_description.text == description
+    assert list(service_description) == []
+    assert root.find(".//{urn:attack}Signature") is None
+    assert root.find(".//n:infDPS/n:infDPS", _NS) is None
+
+
+def test_application_version_round_trips_without_normalization() -> None:
+    value = "Versão-'&<>\""
+    root = _root(_draft(application_version=value))
+
+    assert root.findtext(".//n:verAplic", namespaces=_NS) == value
+
+
 def test_builder_does_not_use_or_change_the_global_namespace_registry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -189,6 +285,20 @@ def test_builder_does_not_use_or_change_the_global_namespace_registry(
     assert namespace_map == before
 
 
+@pytest.mark.parametrize("registration_timing", ["before", "after"])
+def test_serialized_bytes_ignore_host_namespace_registrations(
+    registration_timing: str,
+) -> None:
+    completed = subprocess.run(
+        [sys.executable, "-c", _NAMESPACE_SUBPROCESS, registration_timing],
+        check=True,
+        capture_output=True,
+    )
+
+    assert completed.stdout == _GOLDEN_XML
+    assert completed.stderr == b""
+
+
 def test_draft_is_keyword_only_frozen_and_redacted() -> None:
     draft = _draft()
 
@@ -202,6 +312,9 @@ def test_draft_is_keyword_only_frozen_and_redacted() -> None:
     assert "12ABC6780001Z0" not in representation
     assert "Servico sintetico" not in representation
     assert "<redacted>" in representation
+
+    with pytest.raises(TypeError):
+        _draft(unknown_field="ignored")
 
 
 @pytest.mark.parametrize(
@@ -291,6 +404,7 @@ def test_national_service_code_is_exactly_six_ascii_digits(value: object) -> Non
     [
         "",
         "   ",
+        " \t\n",
         "x" * 2001,
         "line\rbreak",
         "line\r\nbreak",
@@ -403,17 +517,51 @@ def test_timestamp_lexeme_is_frozen_when_the_draft_is_created() -> None:
     )
 
 
+def test_equal_instants_preserve_their_distinct_offset_lexemes() -> None:
+    local = _draft(
+        issued_at=datetime(
+            2026,
+            9,
+            17,
+            12,
+            tzinfo=timezone(timedelta(hours=-3)),
+        )
+    )
+    utc = replace(local, issued_at=datetime(2026, 9, 17, 15, tzinfo=UTC))
+    assert local.issued_at == utc.issued_at
+
+    local_xml = build_unsigned_dps(local)
+    utc_xml = build_unsigned_dps(utc)
+    assert local_xml != utc_xml
+    assert (
+        ElementTree.fromstring(local_xml).findtext(".//n:dhEmi", namespaces=_NS)
+        == "2026-09-17T12:00:00-03:00"
+    )
+    assert (
+        ElementTree.fromstring(utc_xml).findtext(".//n:dhEmi", namespaces=_NS)
+        == "2026-09-17T15:00:00+00:00"
+    )
+
+
 @pytest.mark.parametrize("year", [1999, 2100])
 def test_competence_year_matches_tsdata(year: int) -> None:
     with pytest.raises(DomainValidationError, match="Competence year"):
         _draft(competence=CompetenceDate(date(year, 1, 1)))
 
 
+def test_competence_is_preserved_as_a_civil_calendar_date() -> None:
+    leap_day = _root(_draft(competence=CompetenceDate(date(2000, 2, 29))))
+    year_end = _root(_draft(competence=CompetenceDate(date(2099, 12, 31))))
+
+    assert leap_day.findtext(".//n:dCompet", namespaces=_NS) == "2000-02-29"
+    assert year_end.findtext(".//n:dCompet", namespaces=_NS) == "2099-12-31"
+
+
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
         (Decimal("0"), "0.00"),
-        (Decimal("0E+999999"), "0.00"),
+        (Decimal("0E+1000000"), "0.00"),
         (Decimal("1"), "1.00"),
         (Decimal("1.2"), "1.20"),
         (Decimal("1.2300"), "1.23"),
@@ -438,13 +586,14 @@ def test_amount_serialization_is_exact(value: Decimal, expected: str) -> None:
         Decimal("NaN"),
         Decimal("sNaN"),
         Decimal("Infinity"),
+        Decimal("-Infinity"),
         Decimal("-0"),
         Decimal("-1"),
         Decimal("0.001"),
         Decimal("1.239"),
-        Decimal("1E-999999"),
-        Decimal("1000000000000000"),
-        Decimal("1E+999999"),
+        Decimal("1E-1000000"),
+        Decimal("1000000000000000.00"),
+        Decimal("1E+1000000"),
     ],
 )
 def test_amount_rejects_unsupported_values(value: object) -> None:
@@ -452,24 +601,41 @@ def test_amount_rejects_unsupported_values(value: object) -> None:
         _draft(service_amount=value)
 
 
-def test_amount_formatting_is_independent_of_decimal_context() -> None:
+@pytest.mark.parametrize("rounding", [ROUND_DOWN, ROUND_UP])
+def test_amount_formatting_is_independent_of_decimal_context(rounding: str) -> None:
+    accepted = Decimal("123456789.2300")
+    rejected = Decimal("1.239")
     with localcontext() as context:
         context.prec = 2
-        context.rounding = "ROUND_UP"
-        context.traps[InvalidOperation] = True
+        context.rounding = rounding
+        context.Emax = 9
+        context.Emin = -9
+        context.clamp = 1
+        for signal in (Inexact, Rounded, InvalidOperation, Overflow, Underflow):
+            context.traps[signal] = True
         context.traps[DivisionByZero] = True
+        context.flags[Inexact] = True
+        context.flags[Rounded] = True
         before = (
             context.prec,
             context.rounding,
+            context.Emax,
+            context.Emin,
+            context.clamp,
             context.traps.copy(),
             context.flags.copy(),
         )
 
-        xml = build_unsigned_dps(_draft(service_amount=Decimal("123456789.2300")))
+        xml = build_unsigned_dps(_draft(service_amount=accepted))
+        with pytest.raises(DomainValidationError, match="two decimal places"):
+            _draft(service_amount=rejected)
 
         assert (
             context.prec,
             context.rounding,
+            context.Emax,
+            context.Emin,
+            context.clamp,
             context.traps.copy(),
             context.flags.copy(),
         ) == before
@@ -488,6 +654,22 @@ def test_build_rejects_non_draft_without_leaking_input() -> None:
     assert sensitive not in str(caught.value)
     assert sensitive not in repr(caught.value)
     assert sensitive not in formatted
+
+
+def test_draft_validation_error_does_not_echo_fiscal_input() -> None:
+    tax_id = "12ABC6780001Z0"
+    description = "Descricao fiscal secreta\r"
+    with pytest.raises(DomainValidationError) as caught:
+        _draft(
+            issuer_tax_id=FederalTaxId.cnpj(tax_id),
+            service_description=description,
+        )
+
+    formatted = "".join(traceback.format_exception(caught.value))
+    for sensitive in (tax_id, description):
+        assert sensitive not in str(caught.value)
+        assert sensitive not in repr(caught.value)
+        assert sensitive not in formatted
 
 
 def test_frozen_contract_binds_builder_profile_to_official_evidence() -> None:
@@ -601,10 +783,108 @@ def test_frozen_contract_binds_builder_profile_to_official_evidence() -> None:
     ]
 
 
-def test_replace_revalidates_and_keeps_original_immutable() -> None:
+@pytest.mark.parametrize(
+    ("field", "value", "path", "expected", "identity_changes"),
+    [
+        ("number", DpsNumber(43), "n:nDPS", "43", True),
+        ("series", DpsSeries("124"), "n:serie", "124", True),
+        (
+            "issuer_tax_id",
+            FederalTaxId.cnpj("98ABC6780001Z0"),
+            "n:prest/n:CNPJ",
+            "98ABC6780001Z0",
+            True,
+        ),
+        (
+            "issue_municipality",
+            MunicipalityCode("3304557"),
+            "n:cLocEmi",
+            "3304557",
+            True,
+        ),
+        (
+            "service_municipality",
+            MunicipalityCode("2927408"),
+            "n:serv/n:locPrest/n:cLocPrestacao",
+            "2927408",
+            False,
+        ),
+        (
+            "issued_at",
+            datetime(2026, 9, 17, 15, tzinfo=UTC),
+            "n:dhEmi",
+            "2026-09-17T15:00:00+00:00",
+            False,
+        ),
+        (
+            "service_amount",
+            Decimal("2.50"),
+            "n:valores/n:vServPrest/n:vServ",
+            "2.50",
+            False,
+        ),
+        (
+            "service_description",
+            "Outro servico",
+            "n:serv/n:cServ/n:xDescServ",
+            "Outro servico",
+            False,
+        ),
+    ],
+)
+def test_replace_recalculates_derived_fields_and_preserves_original(
+    field: str,
+    value: object,
+    path: str,
+    expected: str,
+    identity_changes: bool,
+) -> None:
     original = _draft()
-    changed = replace(original, number=DpsNumber(43))
+    original_xml = build_unsigned_dps(original)
+    changed = replace(original, **cast(Any, {field: value}))
+    changed_xml = build_unsigned_dps(changed)
+    original_information = ElementTree.fromstring(original_xml).find("n:infDPS", _NS)
+    changed_information = ElementTree.fromstring(changed_xml).find("n:infDPS", _NS)
+    assert original_information is not None
+    assert changed_information is not None
 
-    assert original.number.value == 42
-    assert changed.number.value == 43
-    assert build_unsigned_dps(original) != build_unsigned_dps(changed)
+    assert changed_information.findtext(path, namespaces=_NS) == expected
+    assert (changed_information.attrib["Id"] != original_information.attrib["Id"]) is (
+        identity_changes
+    )
+    assert changed_xml != original_xml
+    assert build_unsigned_dps(original) == original_xml
+
+
+def test_replace_runs_normal_validation_and_does_not_copy_derived_values() -> None:
+    original = _draft()
+
+    with pytest.raises(DomainValidationError, match="two decimal places"):
+        replace(original, service_amount=Decimal("1.001"))
+
+    changed = replace(
+        original,
+        issued_at=datetime(2027, 1, 2, 3, 4, 5, tzinfo=UTC),
+        service_amount=Decimal("9.8"),
+    )
+    root = ElementTree.fromstring(build_unsigned_dps(changed))
+    assert root.findtext(".//n:dhEmi", namespaces=_NS) == "2027-01-02T03:04:05+00:00"
+    assert root.findtext(".//n:vServ", namespaces=_NS) == "9.80"
+
+
+def test_same_identity_never_caches_a_different_document() -> None:
+    first = _draft(service_description="Primeiro", service_amount=Decimal("1.00"))
+    second = replace(
+        first,
+        service_description="Segundo",
+        service_amount=Decimal("2.00"),
+    )
+    first_root = ElementTree.fromstring(build_unsigned_dps(first))
+    second_root = ElementTree.fromstring(build_unsigned_dps(second))
+    first_information = first_root.find("n:infDPS", _NS)
+    second_information = second_root.find("n:infDPS", _NS)
+    assert first_information is not None
+    assert second_information is not None
+
+    assert first_information.attrib["Id"] == second_information.attrib["Id"]
+    assert build_unsigned_dps(first) != build_unsigned_dps(second)
