@@ -32,6 +32,7 @@ _SPECIAL_TAX_REGIMES = frozenset({"0", "1", "2", "3", "4", "5", "6", "9"})
 _ISSQN_TAXATION_OPTIONS = frozenset({"1", "2", "3", "4"})
 _ISSQN_WITHHOLDING_OPTIONS = frozenset({"1", "2", "3"})
 _TOTAL_TAX_INDICATORS = frozenset({"0"})
+_XSD_WHITESPACE = frozenset({"\t", "\n", "\r", " "})
 
 _SimpleNationalOption = Literal["1", "2", "3"]
 _SpecialTaxRegime = Literal["0", "1", "2", "3", "4", "5", "6", "9"]
@@ -253,7 +254,9 @@ def _validate_service_code(value: object) -> None:
 def _validate_service_description(value: object) -> None:
     if type(value) is not str:
         raise DomainValidationError("Service description must be a string.")
-    if not 1 <= len(value) <= 2000 or value.isspace():
+    if not 1 <= len(value) <= 2000 or all(
+        character in _XSD_WHITESPACE for character in value
+    ):
         raise DomainValidationError(
             "Service description must contain 1 to 2000 characters and text."
         )

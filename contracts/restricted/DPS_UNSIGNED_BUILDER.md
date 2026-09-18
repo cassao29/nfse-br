@@ -58,7 +58,10 @@ offset is preserved. Competence remains a civil date and must fit the frozen
 
 The description preserves text and LF characters, rejects CR/CRLF and XML 1.0
 forbidden characters, and is escaped by the standard-library XML serializer.
-No caller value is interpreted as markup.
+No caller value is interpreted as markup. Its non-whitespace requirement uses
+the XML Schema whitespace set (space, tab, LF, and CR), rather than Python's
+broader Unicode `str.isspace()` classification; accepted characters such as a
+non-breaking space are preserved exactly.
 
 ## Deliberate boundaries
 
