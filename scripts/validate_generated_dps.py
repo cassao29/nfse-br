@@ -9,6 +9,7 @@ from datetime import UTC, date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 
+from nfse_br._xmlsig.preflight import inspect_unsigned_dps
 from nfse_br.domain import CompetenceDate, FederalTaxId, MunicipalityCode
 from nfse_br.dps import DpsNumber, DpsSeries
 from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
@@ -154,6 +155,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         for label, draft in _valid_drafts():
             document = build_unsigned_dps(draft)
             validator.validate(document)
+            inspect_unsigned_dps(document)
             documents.append((label, document))
 
         base = documents[0][1]
@@ -180,6 +182,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Generated valid case {label}: PASS")
     for label, _document in invalid_documents:
         print(f"Generated negative case {label}: REJECTED")
+    print(f"Generated signature preflight cases: {len(documents)} PASS")
     print("Generated sequential valid-invalid-valid state: PASS")
     return 0
 
