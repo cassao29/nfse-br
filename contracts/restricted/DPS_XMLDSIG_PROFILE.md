@@ -90,6 +90,98 @@ the algorithms, transform order, reference form, `KeyInfo` shape, and
 certificate policy for the frozen restricted v1.01 DPS. Until then,
 `SIGNATURE_PROFILE_CONFIRMED` remains `NO`.
 
+## Diligência adicional V0.9.1
+
+The frozen restricted Annex I workbook remains byte-identical to the file
+linked by the Produção Restrita portal on 18 September 2026: 215,056 bytes,
+SHA-256
+`2ae2ac9f91efa9b64f0c9ed97acaf18bb7513b090fae39ba5bda59187e64d9e9`.
+It was inspected as OOXML in memory, including its rule sheets and comments;
+no official artifact was extracted into or added to the repository.
+
+The workbook adds current, applicable evidence about the DPS signature, but
+not about its algorithms:
+
+- `RN DPS_NFS-e!B642:K646` (rules 639–643, errors E0714–E0718) requires a
+  valid signature for DPS sent through the Web Service, validates certificate
+  dates, chain and revocation status, requires an ICP-Brasil root and version
+  3 certificate with the documented CPF/CNPJ `OtherName`, and binds the
+  signing certificate to the DPS issuer.
+- `LEIAUTE DPS_NFS-e` cells B416:H416 call the DPS signature XMLDSig and make it
+  mandatory for API submission, but its path places `Signature` below
+  `infDPS`. That path conflicts with both frozen `TCDPS` (where `Signature` is
+  a direct DPS child after `infDPS`) and `RN DPS_NFS-e!B642:C642`, whose path is
+  `NFSe/infNFSe/DPS/Signature`. The schema therefore remains the structural
+  authority; the layout path discrepancy should be clarified before a signer
+  is specified.
+- No cell or comment in the five worksheets names RSA, SHA, C14N,
+  `Reference`, `Transform`, `DigestMethod`, or `KeyInfo`. A generic “valid
+  signature” rejection does not select those values.
+- `RN_RECEPCAO_DPS!B2:G9` concerns the *transmission* certificate. Those rules
+  must not be used as the XML-signature certificate profile.
+
+Additional current official material was checked without using operational
+API methods:
+
+| Source inspected | Location and result | Bytes / SHA-256 captured on 2026-09-18 |
+| --- | --- | --- |
+| [Contributor API manual v1.2 (October 2025)](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual/manual-contribuintes-emissor-publico-api-sistema-nacional-nfs-e-v1-2-out2025.pdf) | Sections 1.3.1–1.3.2 delegate DPS schemas, layout, and business rules to Annex I; no XMLDSig algorithm profile | 188,158 / `ac2f36e34ff565cc36d67c5d67415c33cc09f27b2dea006e8da9bcd2ddce5581` |
+| [Nota Técnica SE/CGNFS-e 004 v2.0](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita/nt-004-se-cgnfse-novo-layout-rtc-v2-00-20251210.pdf) | No signature, RSA, SHA, or canonicalization requirement | 666,084 / `707524b2110a3af55a232110ead632abe14d745a60307f8dcc062ec220d4058f` |
+| [Perguntas e Respostas v1.00 (8 September 2026)](https://www.gov.br/nfse/pt-br/biblioteca/perguntas-e-respostas/perguntas-e-respostas-da-nfs-e/perguntas-e-respostas-nfse-v1-00-20260908.pdf) | Sections 17.1–17.3 confirm an enveloped signature on the element carrying the identifier and discuss E0717/E0718 and certificate checks; they name no signature, digest, or C14N algorithm | 1,140,924 / `aa45e008842f1c94e7e175f96df3f6354a23b45b6136db8ed87706d318b462f7` |
+
+The FAQ also creates a current-source conflict in certificate details. Section
+17.2 says `Basic Constraint = false`, while the literal text in
+`RN DPS_NFS-e!D644` says it must be `true` while simultaneously saying that
+the certificate cannot be a CA certificate. Section 17.1 adds Client
+Authentication to the key usages, whereas `D644` lists Digital Signature and
+Non Repudiation for the signature certificate. These differences cannot be
+silently reconciled by implementation.
+
+The result by requirement is therefore:
+
+| Requirement | V0.9.1 classification |
+| --- | --- |
+| signed element and `Id` | `HISTORICAL_ONLY` for exact `infDPS` targeting; the frozen XSD and local preflight establish structure, not the cryptographic reference policy |
+| exact `Reference/@URI` | `HISTORICAL_ONLY` |
+| canonicalization method, comments, and exclusivity | `HISTORICAL_ONLY` |
+| signature method | `HISTORICAL_ONLY` |
+| digest method | `HISTORICAL_ONLY` |
+| transforms and order | `UNCONFIRMED`; current FAQ confirms only the enveloped form |
+| `KeyInfo/X509Data` and chain composition | `HISTORICAL_ONLY` |
+| certificate validity, ICP-Brasil root, issuer binding, and CPF/CNPJ `OtherName` | `CONFIRMED_BY_APPLICABLE_OFFICIAL_SOURCE` |
+| Basic Constraints and complete Key Usage | `CONFLICTING` |
+
+No complete current signer profile is proposed. In particular, neither the
+RSA-SHA1/SHA-1 historical profile nor the RSA-SHA256/SHA-256 profile published
+for NFS-e Via is imported into the restricted DPS profile.
+
+### Draft technical inquiry (not sent)
+
+For the restricted v1.01 DPS identified by bundle SHA-256
+`6c7e0510d3ecff4454f291f4e10b742d27a4818f23aab181494f96d0ea79f3dc`
+and Annex I SHA-256
+`2ae2ac9f91efa9b64f0c9ed97acaf18bb7513b090fae39ba5bda59187e64d9e9`,
+please confirm:
+
+1. the exact `SignatureMethod`, `DigestMethod`, and
+   `CanonicalizationMethod` URIs, including comments/exclusive behavior;
+2. the exact ordered `Transform` list;
+3. whether the signed node is `infDPS` and whether `Reference/@URI` must be
+   exactly `#` followed by its unqualified `Id` value;
+4. the required `KeyInfo/X509Data` content and whether only the end-entity
+   certificate or a chain must be embedded;
+5. the intended Basic Constraints and Key Usage requirements, reconciling
+   Annex I rule 641 with FAQ sections 17.1–17.2; and
+6. whether `Signature` is the direct DPS child shown by `TCDPS` and rule 639,
+   notwithstanding the path printed in layout row 415.
+
+The current official [attendance page](https://www.gov.br/nfse/pt-br/canais-de-atendimento),
+updated 16 September 2026, states that
+the former `atendimento.nfs-e@rfb.gov.br` address is disabled. It directs a
+contributor to their municipality, which may then contact Receita Federal for
+guidance. That is the identified current channel; this draft has not been
+sent.
+
 ## Local structural preflight
 
 `nfse_br._xmlsig.preflight.inspect_unsigned_dps()` is a private, standard-
