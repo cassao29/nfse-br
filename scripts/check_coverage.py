@@ -14,12 +14,14 @@ GLOBAL_COMBINED_MINIMUM = 80
 F0_BRANCH_MINIMUM = 90
 SCHEMA_BRANCH_MINIMUM = 90
 XSD_BRANCH_MINIMUM = 90
+BUILDER_BRANCH_MINIMUM = 90
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _F0_ROOT = _PROJECT_ROOT / "src/nfse_br/_f0"
 _XSD_ROOT = _PROJECT_ROOT / "src/nfse_br/xsd"
 _SCHEMA_MODULE = "src/nfse_br/_f0/dps_schema_contract.py"
 _XSD_VALIDATOR_MODULE = "src/nfse_br/xsd/validator.py"
+_DPS_BUILDER_MODULE = "src/nfse_br/dps/builder.py"
 
 
 class CoverageGateError(ValueError):
@@ -51,11 +53,16 @@ def evaluate_report(
     *,
     expected_f0_paths: frozenset[str],
     expected_xsd_paths: frozenset[str],
-) -> tuple[GateResult, GateResult, GateResult, GateResult]:
-    """Validate a Coverage.py report and calculate the four required gates."""
+    expected_builder_paths: frozenset[str],
+) -> tuple[GateResult, GateResult, GateResult, GateResult, GateResult]:
+    """Validate a Coverage.py report and calculate the five required gates."""
     if _XSD_VALIDATOR_MODULE not in expected_xsd_paths:
         raise CoverageGateError(
             f"XSD scope is missing required module {_XSD_VALIDATOR_MODULE!r}"
+        )
+    if _DPS_BUILDER_MODULE not in expected_builder_paths:
+        raise CoverageGateError(
+            f"DPS builder scope is missing required module {_DPS_BUILDER_MODULE!r}"
         )
     meta = _mapping(report.get("meta"), context="meta")
     if meta.get("branch_coverage") is not True:
@@ -84,6 +91,11 @@ def evaluate_report(
     if missing_xsd:
         raise CoverageGateError(
             f"coverage report is missing XSD files: {sorted(missing_xsd)!r}"
+        )
+    missing_builder = expected_builder_paths - files.keys()
+    if missing_builder:
+        raise CoverageGateError(
+            f"coverage report is missing DPS builder files: {sorted(missing_builder)!r}"
         )
 
     f0_covered = 0
@@ -118,6 +130,15 @@ def evaluate_report(
         xsd_covered += covered
         xsd_total += total
 
+    builder_covered = 0
+    builder_total = 0
+    for path in expected_builder_paths:
+        file_data = files[path]
+        summary = _mapping(file_data.get("summary"), context=f"summary for {path!r}")
+        covered, total = _counts(summary, context=path, unit="branches")
+        builder_covered += covered
+        builder_total += total
+
     return (
         _gate(
             "Library combined",
@@ -142,6 +163,12 @@ def evaluate_report(
             covered=xsd_covered,
             total=xsd_total,
             minimum=XSD_BRANCH_MINIMUM,
+        ),
+        _gate(
+            "DPS builder branches",
+            covered=builder_covered,
+            total=builder_total,
+            minimum=BUILDER_BRANCH_MINIMUM,
         ),
     )
 
@@ -180,6 +207,16 @@ def expected_xsd_paths() -> frozenset[str]:
             f"XSD source tree is missing required module {_XSD_VALIDATOR_MODULE!r}"
         )
     return paths
+
+
+def expected_builder_paths() -> frozenset[str]:
+    """Return the explicitly gated DPS builder source module."""
+    path = _PROJECT_ROOT / _DPS_BUILDER_MODULE
+    if not path.is_file():
+        raise CoverageGateError(
+            f"DPS source tree is missing required module {_DPS_BUILDER_MODULE!r}"
+        )
+    return frozenset({_DPS_BUILDER_MODULE})
 
 
 def _counts(
@@ -249,6 +286,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             load_report(args.report),
             expected_f0_paths=expected_f0_paths(),
             expected_xsd_paths=expected_xsd_paths(),
+            expected_builder_paths=expected_builder_paths(),
         )
     except CoverageGateError as exc:
         print(f"Coverage gate error: {exc}", file=sys.stderr)

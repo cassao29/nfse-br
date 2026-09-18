@@ -16,6 +16,8 @@ _F0_PATHS = frozenset({_SCHEMA, _RESTRICTED, _F0_INIT})
 _XSD_INIT = "src/nfse_br/xsd/__init__.py"
 _XSD_VALIDATOR = "src/nfse_br/xsd/validator.py"
 _XSD_PATHS = frozenset({_XSD_INIT, _XSD_VALIDATOR})
+_DPS_BUILDER = "src/nfse_br/dps/builder.py"
+_BUILDER_PATHS = frozenset({_DPS_BUILDER})
 
 
 def _summary(*, covered: int, total: int) -> dict[str, object]:
@@ -35,6 +37,7 @@ def _report(
     global_lines: tuple[int, int] = (800, 900),
     global_branches: tuple[int, int] = (80, 100),
     xsd: tuple[int, int] = (90, 100),
+    builder: tuple[int, int] = (90, 100),
     branch_coverage: bool = True,
 ) -> dict[str, object]:
     return {
@@ -56,6 +59,7 @@ def _report(
             },
             _XSD_INIT: {"summary": _summary(covered=0, total=0)},
             _XSD_VALIDATOR: {"summary": _summary(covered=xsd[0], total=xsd[1])},
+            _DPS_BUILDER: {"summary": _summary(covered=builder[0], total=builder[1])},
         },
     }
 
@@ -65,13 +69,14 @@ def _results(report: dict[str, object]) -> tuple[check_coverage.GateResult, ...]
         report,
         expected_f0_paths=_F0_PATHS,
         expected_xsd_paths=_XSD_PATHS,
+        expected_builder_paths=_BUILDER_PATHS,
     )
 
 
 def test_module_203_of_226_fails_even_with_rounded_display() -> None:
     results = _results(_report(module=(203, 226)))
 
-    assert [result.passed for result in results] == [True, True, False, True]
+    assert [result.passed for result in results] == [True, True, False, True, True]
     assert results[2].percentage == pytest.approx(89.82300884955752)
 
 
@@ -95,6 +100,15 @@ def test_xsd_exactly_ninety_percent_passes_and_below_fails() -> None:
     assert passing[3].passed
     assert not failing[3].passed
     assert all(result.passed for result in failing[:3])
+
+
+def test_builder_exactly_ninety_percent_passes_and_below_fails() -> None:
+    passing = _results(_report(builder=(9, 10)))
+    failing = _results(_report(builder=(89, 100)))
+
+    assert passing[4].passed
+    assert not failing[4].passed
+    assert all(result.passed for result in failing[:4])
 
 
 def test_aggregate_f0_below_ninety_percent_fails() -> None:
@@ -147,7 +161,24 @@ def test_xsd_scope_must_explicitly_include_validator() -> None:
             _report(),
             expected_f0_paths=_F0_PATHS,
             expected_xsd_paths=frozenset({_XSD_INIT}),
+            expected_builder_paths=_BUILDER_PATHS,
         )
+
+
+def test_builder_scope_and_report_must_include_required_module() -> None:
+    with pytest.raises(check_coverage.CoverageGateError, match="required module"):
+        check_coverage.evaluate_report(
+            _report(),
+            expected_f0_paths=_F0_PATHS,
+            expected_xsd_paths=_XSD_PATHS,
+            expected_builder_paths=frozenset(),
+        )
+
+    report = _report()
+    files = cast(dict[str, object], report["files"])
+    del files[_DPS_BUILDER]
+    with pytest.raises(check_coverage.CoverageGateError, match="missing DPS builder"):
+        _results(report)
 
 
 def test_xsd_source_tree_without_validator_is_rejected(
@@ -163,6 +194,18 @@ def test_xsd_source_tree_without_validator_is_rejected(
 
     with pytest.raises(check_coverage.CoverageGateError, match="required module"):
         check_coverage.expected_xsd_paths()
+
+
+def test_builder_source_tree_without_module_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    monkeypatch.setattr(check_coverage, "_PROJECT_ROOT", project_root)
+
+    with pytest.raises(check_coverage.CoverageGateError, match="required module"):
+        check_coverage.expected_builder_paths()
 
 
 @pytest.mark.parametrize(
@@ -209,7 +252,8 @@ def test_cli_returns_zero_and_prints_all_passing_gates(
     assert "F0 branches" in output
     assert "DPS schema branches" in output
     assert "XSD validator branches" in output
-    assert output.count("PASS") == 4
+    assert "DPS builder branches" in output
+    assert output.count("PASS") == 5
 
 
 @pytest.mark.parametrize(
@@ -271,4 +315,5 @@ def test_unsafe_or_incomplete_f0_paths_are_rejected() -> None:
             _report(),
             expected_f0_paths=_F0_PATHS | {"src/nfse_br/_f0/future.py"},
             expected_xsd_paths=_XSD_PATHS,
+            expected_builder_paths=_BUILDER_PATHS,
         )
