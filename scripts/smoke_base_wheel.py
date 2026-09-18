@@ -17,17 +17,27 @@ _EXPECTED_REQUIREMENT = "lxml==6.1.3; extra == 'xsd'"
 
 _SMOKE_PROGRAM = r"""
 import importlib.util
+from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 from pathlib import Path
+from xml.etree import ElementTree
 
 assert importlib.util.find_spec("lxml") is None
 
 import nfse_br
 import nfse_br.domain
 import nfse_br.dps
-from nfse_br.domain import DomainValidationError
-from nfse_br.dps import DpsNumber
+import nfse_br.dps.builder
+from nfse_br.domain import (
+    CompetenceDate,
+    DomainValidationError,
+    FederalTaxId,
+    MunicipalityCode,
+)
+from nfse_br.dps import DpsNumber, DpsSeries
+from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
 
-for module in (nfse_br, nfse_br.domain, nfse_br.dps):
+for module in (nfse_br, nfse_br.domain, nfse_br.dps, nfse_br.dps.builder):
     module_path = Path(module.__file__).resolve()
     assert "site-packages" in module_path.parts, module_path
 
@@ -38,6 +48,33 @@ except DomainValidationError:
     pass
 else:
     raise AssertionError("DpsNumber(0) was unexpectedly accepted")
+
+draft = RestrictedDpsDraft(
+    issuer_tax_id=FederalTaxId.cnpj("12ABC6780001Z0"),
+    issue_municipality=MunicipalityCode("2927408"),
+    service_municipality=MunicipalityCode("3550308"),
+    series=DpsSeries("123"),
+    number=DpsNumber(42),
+    issued_at=datetime(
+        2026, 9, 17, 12, 0, 0,
+        tzinfo=timezone(timedelta(hours=-3)),
+    ),
+    competence=CompetenceDate(date(2026, 9, 17)),
+    application_version="nfse-br-test",
+    national_service_code="010101",
+    service_description="Servico sintetico",
+    service_amount=Decimal("1.00"),
+    op_simp_nac="1",
+    reg_esp_trib="0",
+    trib_issqn="1",
+    tp_ret_issqn="1",
+    ind_tot_trib="0",
+)
+xml = build_unsigned_dps(draft)
+root = ElementTree.fromstring(xml)
+assert root.tag == "{http://www.sped.fazenda.gov.br/nfse}DPS"
+namespace = "{http://www.sped.fazenda.gov.br/nfse}"
+assert root.findtext(f"{namespace}infDPS/{namespace}nDPS") == "42"
 
 try:
     import nfse_br.xsd
