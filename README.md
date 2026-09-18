@@ -68,9 +68,10 @@ validator.validate(xml_bytes)
 ```
 
 The constructor accepts only the pinned official ZIP bytes and never downloads
-schemas. `validate()` accepts at most 1 MiB of UTF-8 XML bytes, returns `None`
-on success, and otherwise raises a privacy-safe `XsdValidationError`. Each
-instance is intended for sequential use.
+schemas. `validate()` accepts at most 1 MiB of UTF-8 XML bytes, requires the
+exact `{http://www.sped.fazenda.gov.br/nfse}DPS` root, returns `None` on success,
+and otherwise raises a privacy-safe `XsdValidationError`. Each instance is
+intended for sequential use.
 
 This proves only safe parsing and conformance to the compiled restricted XSD.
 It does not verify signatures, certificates, fiscal semantics, authorization,
@@ -95,6 +96,7 @@ uv run --frozen --extra xsd pytest \
 uv run --frozen --extra xsd python scripts/check_coverage.py \
   build/coverage/coverage.json
 uv build
+python scripts/smoke_base_wheel.py dist/nfse_br-0.1.0-py3-none-any.whl
 ```
 
 The executable coverage gates require at least 80% combined coverage for the
@@ -102,6 +104,11 @@ library, 90% aggregate branch coverage for `src/nfse_br/_f0/`, and 90% branch
 coverage for `src/nfse_br/_f0/dps_schema_contract.py`, plus 90% aggregate branch
 coverage for `src/nfse_br/xsd/`. Gate decisions use exact counters from
 Coverage.py JSON rather than rounded display percentages.
+
+CI also installs the built base wheel into a fresh virtual environment without
+dependencies or the `xsd` extra. The official restricted ZIP is not distributed
+or fetched in CI; its end-to-end compilation remains the explicit local command
+documented with the frozen profile.
 
 ## License
 
