@@ -196,6 +196,10 @@ def test_rejects_wrong_namespace_and_unexpected_root_children() -> None:
     _reject(_serialize(root), "ambiguous_information_element")
 
     root = _root()
+    root.append(ElementTree.Element("{urn:wrong}infDPS"))
+    _reject(_serialize(root), "ambiguous_information_element")
+
+    root = _root()
     root.append(ElementTree.Element(f"{_Q}unexpected"))
     _reject(_serialize(root), "unexpected_root_structure")
 
@@ -210,6 +214,49 @@ def test_rejects_any_preexisting_signature_element(nested: bool) -> None:
     root = _root()
     _information(root).append(ElementTree.Element("{urn:other}Signature"))
     _reject(_serialize(root), "signature_already_present")
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("tpAmb", "1"),
+        ("tpAmb", " 2"),
+        ("tpEmit", "2"),
+        ("tpEmit", "1 "),
+    ],
+)
+def test_rejects_values_outside_the_local_builder_profile(
+    field: str,
+    value: str,
+) -> None:
+    root = _root()
+    _element(root, f"{_Q}infDPS/{_Q}{field}").text = value
+    _reject(_serialize(root), "unsupported_local_profile")
+
+
+def test_requires_local_profile_fields_to_be_unique_direct_simple_elements() -> None:
+    root = _root()
+    information = _information(root)
+    duplicate = ElementTree.Element(f"{_Q}tpAmb")
+    duplicate.text = "2"
+    information.append(duplicate)
+    _reject(_serialize(root), "ambiguous_profile_field")
+
+    root = _root()
+    information = _information(root)
+    environment = _element(information, f"{_Q}tpAmb")
+    information.remove(environment)
+    _element(information, f"{_Q}prest").append(environment)
+    _reject(_serialize(root), "ambiguous_profile_field")
+
+    root = _root()
+    _element(root, f"{_Q}infDPS/{_Q}tpEmit").tag = "{urn:wrong}tpEmit"
+    _reject(_serialize(root), "ambiguous_profile_field")
+
+    root = _root()
+    environment = _element(root, f"{_Q}infDPS/{_Q}tpAmb")
+    environment.append(ElementTree.Element(f"{_Q}extra"))
+    _reject(_serialize(root), "ambiguous_profile_field")
 
 
 @pytest.mark.parametrize("identity", [None, "", "DPS-not-valid"])
@@ -231,6 +278,8 @@ def test_requires_one_lexically_valid_target_id(identity: str | None) -> None:
         ("ID", "duplicate"),
         ("{http://www.w3.org/XML/1998/namespace}id", "duplicate"),
         ("{urn:attacker}Id", "duplicate"),
+        ("{urn:attacker}id", "duplicate"),
+        ("{urn:attacker}ID", "duplicate"),
     ],
 )
 def test_rejects_alternative_or_duplicate_identifiers(
@@ -242,10 +291,33 @@ def test_rejects_alternative_or_duplicate_identifiers(
     _reject(_serialize(root), "ambiguous_identifier")
 
 
-def test_rejects_alternative_identifier_on_target() -> None:
+@pytest.mark.parametrize(
+    "attribute",
+    [
+        "{http://www.w3.org/XML/1998/namespace}id",
+        "{urn:attacker}Id",
+        "{urn:attacker}id",
+        "{urn:attacker}ID",
+    ],
+)
+def test_rejects_alternative_identifier_on_target(attribute: str) -> None:
     root = _root()
-    _information(root).set("{http://www.w3.org/XML/1998/namespace}id", "duplicate")
+    _information(root).set(attribute, "duplicate")
     _reject(_serialize(root), "ambiguous_identifier")
+
+
+def test_rejects_rebound_prefix_identifier_on_target() -> None:
+    xml_bytes = _xml()
+    marker = b'<infDPS Id="'
+    if xml_bytes.count(marker) != 1:
+        pytest.fail("the synthetic fixture no longer has one unprefixed infDPS")
+    mutated = xml_bytes.replace(
+        marker,
+        b'<infDPS xmlns:alternate="urn:attacker" alternate:Id="shadow" Id="',
+        1,
+    )
+
+    _reject(mutated, "ambiguous_identifier")
 
 
 @pytest.mark.parametrize(
@@ -265,7 +337,7 @@ def test_rejects_duplicate_identity_fields_anywhere(path: str) -> None:
     _reject(_serialize(root), "ambiguous_identity_field")
 
 
-def test_rejects_identity_field_in_wrong_namespace_or_with_markup() -> None:
+def test_rejects_identity_field_in_wrong_namespace_or_with_child_content() -> None:
     root = _root()
     series = _element(root, f"{_Q}infDPS/{_Q}serie")
     series.tag = "{urn:wrong}serie"
@@ -274,6 +346,23 @@ def test_rejects_identity_field_in_wrong_namespace_or_with_markup() -> None:
     root = _root()
     series = _element(root, f"{_Q}infDPS/{_Q}serie")
     series.append(ElementTree.Element(f"{_Q}nested"))
+    _reject(_serialize(root), "ambiguous_identity_field")
+
+
+def test_rejects_mixed_identity_field_content() -> None:
+    root = _root()
+    number = _element(root, f"{_Q}infDPS/{_Q}nDPS")
+    number.append(ElementTree.Element(f"{_Q}extra"))
+    _reject(_serialize(root), "ambiguous_identity_field")
+
+
+def test_rejects_identity_value_present_only_in_a_descendant() -> None:
+    root = _root()
+    municipality = _element(root, f"{_Q}infDPS/{_Q}cLocEmi")
+    original_text = municipality.text
+    municipality.text = None
+    child = ElementTree.SubElement(municipality, f"{_Q}extra")
+    child.text = original_text
     _reject(_serialize(root), "ambiguous_identity_field")
 
 

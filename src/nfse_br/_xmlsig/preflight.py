@@ -37,6 +37,7 @@ def inspect_unsigned_dps(xml_bytes: bytes) -> str:
     """Return the unique verified ``infDPS`` Id from unsigned DPS bytes."""
     root = _parse_input(xml_bytes)
     information = _locate_information(root)
+    _verify_local_profile(information)
     identity = _target_identity(root, information)
     _verify_identity_fields(information, identity)
     return identity
@@ -79,6 +80,21 @@ def _locate_information(root: ElementTree.Element) -> ElementTree.Element:
     if children != [information]:
         raise SignaturePreflightError("unexpected_root_structure")
     return information
+
+
+def _verify_local_profile(information: ElementTree.Element) -> None:
+    environment = _unique_text(
+        information,
+        ("tpAmb",),
+        error_code="ambiguous_profile_field",
+    )
+    issuer_type = _unique_text(
+        information,
+        ("tpEmit",),
+        error_code="ambiguous_profile_field",
+    )
+    if environment != "2" or issuer_type != "1":
+        raise SignaturePreflightError("unsupported_local_profile")
 
 
 def _target_identity(
@@ -131,6 +147,8 @@ def _verify_identity_fields(
 def _unique_text(
     information: ElementTree.Element,
     path: tuple[str, ...],
+    *,
+    error_code: str = "ambiguous_identity_field",
 ) -> str:
     final_name = path[-1]
     matching = [
@@ -139,16 +157,16 @@ def _unique_text(
         if _local_name(element.tag) == final_name
     ]
     if len(matching) != 1 or matching[0].tag != _qualified(final_name):
-        raise SignaturePreflightError("ambiguous_identity_field")
+        raise SignaturePreflightError(error_code)
 
     current = information
     for name in path:
         children = [child for child in current if child.tag == _qualified(name)]
         if len(children) != 1:
-            raise SignaturePreflightError("ambiguous_identity_field")
+            raise SignaturePreflightError(error_code)
         current = children[0]
     if current is not matching[0] or list(current):
-        raise SignaturePreflightError("ambiguous_identity_field")
+        raise SignaturePreflightError(error_code)
     return current.text or ""
 
 
