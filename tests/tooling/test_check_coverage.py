@@ -141,6 +141,30 @@ def test_missing_xsd_file_is_rejected() -> None:
         _results(report)
 
 
+def test_xsd_scope_must_explicitly_include_validator() -> None:
+    with pytest.raises(check_coverage.CoverageGateError, match="required module"):
+        check_coverage.evaluate_report(
+            _report(),
+            expected_f0_paths=_F0_PATHS,
+            expected_xsd_paths=frozenset({_XSD_INIT}),
+        )
+
+
+def test_xsd_source_tree_without_validator_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    project_root = tmp_path / "project"
+    xsd_root = project_root / "src/nfse_br/xsd"
+    xsd_root.mkdir(parents=True)
+    (xsd_root / "__init__.py").write_text("", encoding="utf-8")
+    monkeypatch.setattr(check_coverage, "_PROJECT_ROOT", project_root)
+    monkeypatch.setattr(check_coverage, "_XSD_ROOT", xsd_root)
+
+    with pytest.raises(check_coverage.CoverageGateError, match="required module"):
+        check_coverage.expected_xsd_paths()
+
+
 @pytest.mark.parametrize(
     ("covered", "total", "error"),
     [

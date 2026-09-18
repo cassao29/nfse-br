@@ -19,6 +19,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _F0_ROOT = _PROJECT_ROOT / "src/nfse_br/_f0"
 _XSD_ROOT = _PROJECT_ROOT / "src/nfse_br/xsd"
 _SCHEMA_MODULE = "src/nfse_br/_f0/dps_schema_contract.py"
+_XSD_VALIDATOR_MODULE = "src/nfse_br/xsd/validator.py"
 
 
 class CoverageGateError(ValueError):
@@ -52,6 +53,10 @@ def evaluate_report(
     expected_xsd_paths: frozenset[str],
 ) -> tuple[GateResult, GateResult, GateResult, GateResult]:
     """Validate a Coverage.py report and calculate the four required gates."""
+    if _XSD_VALIDATOR_MODULE not in expected_xsd_paths:
+        raise CoverageGateError(
+            f"XSD scope is missing required module {_XSD_VALIDATOR_MODULE!r}"
+        )
     meta = _mapping(report.get("meta"), context="meta")
     if meta.get("branch_coverage") is not True:
         raise CoverageGateError("branch measurement is not enabled")
@@ -165,11 +170,16 @@ def expected_f0_paths() -> frozenset[str]:
 
 def expected_xsd_paths() -> frozenset[str]:
     """Return every Python source file in the optional XSD package."""
-    return frozenset(
+    paths = frozenset(
         path.relative_to(_PROJECT_ROOT).as_posix()
         for path in _XSD_ROOT.rglob("*.py")
         if path.is_file()
     )
+    if _XSD_VALIDATOR_MODULE not in paths:
+        raise CoverageGateError(
+            f"XSD source tree is missing required module {_XSD_VALIDATOR_MODULE!r}"
+        )
+    return paths
 
 
 def _counts(

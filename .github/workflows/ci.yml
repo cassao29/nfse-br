@@ -64,3 +64,6 @@ jobs:
 
       - name: Build distributions
         run: uv build
+
+      - name: Smoke-test base wheel without XSD dependencies
+        run: python scripts/smoke_base_wheel.py dist/nfse_br-0.1.0-py3-none-any.whl
