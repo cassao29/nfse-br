@@ -219,8 +219,10 @@ def test_rejects_any_preexisting_signature_element(nested: bool) -> None:
 @pytest.mark.parametrize(
     ("field", "value"),
     [
+        ("tpAmb", ""),
         ("tpAmb", "1"),
         ("tpAmb", " 2"),
+        ("tpEmit", ""),
         ("tpEmit", "2"),
         ("tpEmit", "1 "),
     ],
@@ -235,6 +237,11 @@ def test_rejects_values_outside_the_local_builder_profile(
 
 
 def test_requires_local_profile_fields_to_be_unique_direct_simple_elements() -> None:
+    root = _root()
+    information = _information(root)
+    information.remove(_element(information, f"{_Q}tpEmit"))
+    _reject(_serialize(root), "ambiguous_profile_field")
+
     root = _root()
     information = _information(root)
     duplicate = ElementTree.Element(f"{_Q}tpAmb")
