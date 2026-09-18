@@ -110,7 +110,7 @@ class _DenyByDefaultResolver(etree.Resolver):
 class RestrictedDpsXsdValidator:
     """Compile once and validate sequentially against the pinned restricted DPS XSD."""
 
-    __slots__ = ("_schema",)
+    __slots__ = ("_root_qname", "_schema")
 
     def __init__(self, bundle_bytes: bytes) -> None:
         """Verify and compile the exact frozen restricted schema bundle."""
@@ -124,6 +124,7 @@ class RestrictedDpsXsdValidator:
             archive_members = _restricted._read_safe_zip(bundle_bytes)
             profile = _official_schema_profile(archive_members)
             self._schema = _compile_schema(profile.members, profile.entrypoint)
+            self._root_qname = profile.root_qname
         except _restricted.ContractFreezeError:
             raise _error("bundle", "unsafe_archive") from None
         except XsdValidationError:
@@ -133,7 +134,7 @@ class RestrictedDpsXsdValidator:
 
     def validate(self, xml_bytes: bytes) -> None:
         """Validate one XML byte string, returning ``None`` only when it passes."""
-        _validate_xml(self._schema, xml_bytes)
+        _validate_xml(self._schema, xml_bytes, expected_root=self._root_qname)
 
 
 def _verify_bundle_pin(
@@ -147,7 +148,12 @@ def _verify_bundle_pin(
         raise _error("bundle", "digest_mismatch")
 
 
-def _validate_xml(schema: etree.XMLSchema, xml_bytes: bytes) -> None:
+def _validate_xml(
+    schema: etree.XMLSchema,
+    xml_bytes: bytes,
+    *,
+    expected_root: str,
+) -> None:
     """Apply the exact input policy and a precompiled schema."""
     if type(xml_bytes) is not bytes:
         raise _error("parse", "invalid_runtime_type")
@@ -172,6 +178,9 @@ def _validate_xml(schema: etree.XMLSchema, xml_bytes: bytes) -> None:
             line=line,
             column=column,
         ) from None
+
+    if document.tag != expected_root:
+        raise _error("schema", "unexpected_root")
 
     if not schema.validate(document):
         last_error = schema.error_log.last_error

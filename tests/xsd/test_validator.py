@@ -4,18 +4,23 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import json
 import sys
 import traceback
 from collections.abc import Mapping
+from pathlib import Path
 
 import pytest
 from lxml import etree
+from scripts import validate_official_dps_xsd as official_script
 
 from nfse_br.xsd import RestrictedDpsXsdValidator, XsdValidationError
 from nfse_br.xsd import validator as validator_module
 
 _XSD = "http://www.w3.org/2001/XMLSchema"
 _TEST_NS = "urn:nfse-br:test"
+_TEST_ROOT = f"{{{_TEST_NS}}}DPS"
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 _ROOT_SCHEMA = f"""\
 <?xml version="1.0" encoding="UTF-8"?>
@@ -23,6 +28,7 @@ _ROOT_SCHEMA = f"""\
  xmlns="{_TEST_NS}" elementFormDefault="qualified">
   <xs:include schemaLocation="types.xsd"/>
   <xs:element name="DPS" type="TCDPS"/>
+  <xs:element name="Other" type="xs:string"/>
 </xs:schema>
 """.encode()
 
@@ -45,6 +51,7 @@ _TYPE_SCHEMA = f"""\
 _VALID_XML = (
     f'<DPS xmlns="{_TEST_NS}"><nDPS>42</nDPS><description>ok</description></DPS>'
 ).encode()
+_OTHER_XML = f'<Other xmlns="{_TEST_NS}">schema-valid</Other>'.encode()
 
 
 def _members(**updates: bytes) -> dict[str, bytes]:
@@ -59,17 +66,21 @@ def _schema(members: Mapping[str, bytes] | None = None) -> etree.XMLSchema:
     return validator_module._compile_schema(closure, "root.xsd")
 
 
+def _validate(schema: etree.XMLSchema, xml: bytes) -> None:
+    validator_module._validate_xml(schema, xml, expected_root=_TEST_ROOT)
+
+
 def test_local_include_compiles_and_validates_sequentially() -> None:
     schema = _schema()
 
-    validator_module._validate_xml(schema, _VALID_XML)
+    _validate(schema, _VALID_XML)
     with pytest.raises(XsdValidationError, match="document_invalid"):
-        validator_module._validate_xml(schema, _VALID_XML.replace(b">42<", b">0<"))
-    validator_module._validate_xml(schema, _VALID_XML)
+        _validate(schema, _VALID_XML.replace(b">42<", b">0<"))
+    _validate(schema, _VALID_XML)
 
 
 def test_utf8_bom_input_is_accepted() -> None:
-    validator_module._validate_xml(_schema(), b"\xef\xbb\xbf" + _VALID_XML)
+    _validate(_schema(), b"\xef\xbb\xbf" + _VALID_XML)
 
 
 @pytest.mark.parametrize("number", [b"0", b"1000000000000000"])
@@ -77,7 +88,7 @@ def test_number_outside_schema_range_is_rejected(number: bytes) -> None:
     xml = _VALID_XML.replace(b">42<", b">" + number + b"<")
 
     with pytest.raises(XsdValidationError) as caught:
-        validator_module._validate_xml(_schema(), xml)
+        _validate(_schema(), xml)
 
     assert caught.value.phase == "schema"
     assert caught.value.code == "document_invalid"
@@ -102,7 +113,7 @@ def test_number_outside_schema_range_is_rejected(number: bytes) -> None:
 )
 def test_input_policy_rejects_unsafe_or_malformed_xml(xml: bytes, code: str) -> None:
     with pytest.raises(XsdValidationError) as caught:
-        validator_module._validate_xml(_schema(), xml)
+        _validate(_schema(), xml)
 
     assert caught.value.phase == "parse"
     assert caught.value.code == code
@@ -112,18 +123,58 @@ def test_input_requires_exact_bytes_and_enforces_size_before_parsing() -> None:
     schema = _schema()
     for value in ("<DPS/>", bytearray(b"<DPS/>"), memoryview(b"<DPS/>"), None):
         with pytest.raises(XsdValidationError, match="invalid_runtime_type"):
-            validator_module._validate_xml(schema, value)  # type: ignore[arg-type]
+            validator_module._validate_xml(
+                schema,
+                value,  # type: ignore[arg-type]
+                expected_root=_TEST_ROOT,
+            )
 
     oversized = b"<" + b"x" * validator_module.MAX_XML_BYTES
     with pytest.raises(XsdValidationError, match="document_too_large"):
-        validator_module._validate_xml(schema, oversized)
+        _validate(schema, oversized)
+
+
+def test_validation_is_bound_to_the_expected_root_qname() -> None:
+    schema = _schema()
+    assert schema.validate(etree.fromstring(_OTHER_XML))
+
+    with pytest.raises(XsdValidationError) as caught:
+        _validate(schema, _OTHER_XML)
+
+    assert caught.value.phase == "schema"
+    assert caught.value.code == "unexpected_root"
+
+
+def test_correct_root_namespace_is_prefix_independent() -> None:
+    prefixed = (
+        f'<nfse:DPS xmlns:nfse="{_TEST_NS}"><nfse:nDPS>42</nfse:nDPS>'
+        "<nfse:description>ok</nfse:description></nfse:DPS>"
+    ).encode()
+
+    _validate(_schema(), prefixed)
 
 
 @pytest.mark.parametrize(
     "xml",
     [
         b'<DPS xmlns="urn:wrong"><nDPS>42</nDPS><description>ok</description></DPS>',
-        f'<Other xmlns="{_TEST_NS}"/>'.encode(),
+        b"<DPS><nDPS>42</nDPS><description>ok</description></DPS>",
+        f'<dps xmlns="{_TEST_NS}"/>'.encode(),
+        _OTHER_XML,
+        f'<Wrapper xmlns="{_TEST_NS}">{_VALID_XML.decode()}</Wrapper>'.encode(),
+    ],
+)
+def test_wrong_root_identity_is_rejected_before_xsd_validation(xml: bytes) -> None:
+    with pytest.raises(XsdValidationError) as caught:
+        _validate(_schema(), xml)
+
+    assert caught.value.phase == "schema"
+    assert caught.value.code == "unexpected_root"
+
+
+@pytest.mark.parametrize(
+    "xml",
+    [
         f'<DPS xmlns="{_TEST_NS}"><description>ok</description></DPS>'.encode(),
         (
             f'<DPS xmlns="{_TEST_NS}"><description>ok</description>'
@@ -131,11 +182,9 @@ def test_input_requires_exact_bytes_and_enforces_size_before_parsing() -> None:
         ).encode(),
     ],
 )
-def test_schema_rejects_wrong_root_namespace_required_field_and_order(
-    xml: bytes,
-) -> None:
+def test_schema_rejects_missing_required_field_and_wrong_order(xml: bytes) -> None:
     with pytest.raises(XsdValidationError, match="document_invalid"):
-        validator_module._validate_xml(_schema(), xml)
+        _validate(_schema(), xml)
 
 
 def test_instance_schema_location_cannot_replace_compiled_schema() -> None:
@@ -146,18 +195,32 @@ def test_instance_schema_location_cannot_replace_compiled_schema() -> None:
 </DPS>""".encode()
 
     with pytest.raises(XsdValidationError, match="document_invalid"):
-        validator_module._validate_xml(_schema(), xml)
+        _validate(_schema(), xml)
 
 
-def test_xinclude_is_not_processed() -> None:
+def test_xinclude_is_not_processed(tmp_path: Path) -> None:
+    schema = _schema()
+    _validate(schema, _VALID_XML)
+    fragment = tmp_path / "nDPS.xml"
+    fragment.write_text(
+        f'<nDPS xmlns="{_TEST_NS}">42</nDPS>',
+        encoding="utf-8",
+    )
     xml = f"""\
 <DPS xmlns="{_TEST_NS}" xmlns:xi="http://www.w3.org/2001/XInclude">
- <xi:include href="file:///etc/passwd" parse="text"/>
+ <xi:include href="{fragment.as_uri()}" parse="xml"/>
  <description>ok</description>
 </DPS>""".encode()
 
-    with pytest.raises(XsdValidationError, match="document_invalid"):
-        validator_module._validate_xml(_schema(), xml)
+    parsed = etree.fromstring(xml, parser=validator_module._xml_parser(resources={}))
+    assert parsed[0].tag == "{http://www.w3.org/2001/XInclude}include"
+    assert parsed[0].get("href") == fragment.as_uri()
+
+    with pytest.raises(XsdValidationError) as caught:
+        _validate(schema, xml)
+
+    assert caught.value.phase == "schema"
+    assert caught.value.code == "document_invalid"
 
 
 def test_sensitive_input_is_absent_from_message_repr_and_traceback() -> None:
@@ -165,13 +228,144 @@ def test_sensitive_input_is_absent_from_message_repr_and_traceback() -> None:
     xml = _VALID_XML.replace(b">ok<", f">{sensitive}<extra/><".encode())
 
     with pytest.raises(XsdValidationError) as caught:
-        validator_module._validate_xml(_schema(), xml)
+        _validate(_schema(), xml)
 
     rendered = "".join(traceback.format_exception(caught.value))
     assert sensitive not in str(caught.value)
     assert sensitive not in repr(caught.value)
     assert sensitive not in rendered
     assert caught.value.__cause__ is None
+
+
+def test_unexpected_root_error_does_not_expose_received_qname() -> None:
+    sensitive = "12ABC6780001Z0"
+    xml = f'<Root xmlns="urn:{sensitive}"/>'.encode()
+
+    with pytest.raises(XsdValidationError) as caught:
+        _validate(_schema(), xml)
+
+    rendered = "".join(traceback.format_exception(caught.value))
+    assert caught.value.code == "unexpected_root"
+    assert sensitive not in str(caught.value)
+    assert sensitive not in repr(caught.value)
+    assert sensitive not in rendered
+
+
+def test_fixture_mutation_requires_one_target_and_changes_bytes() -> None:
+    original = b"before TARGET after"
+
+    assert (
+        official_script._replace_exactly_once(
+            original,
+            b"TARGET",
+            b"changed",
+            label="valid",
+        )
+        == b"before changed after"
+    )
+
+    with pytest.raises(official_script.FixtureMutationError, match="observed 0"):
+        official_script._replace_exactly_once(
+            original,
+            b"missing",
+            b"changed",
+            label="missing",
+        )
+    with pytest.raises(official_script.FixtureMutationError, match="observed 2"):
+        official_script._replace_exactly_once(
+            b"TARGET TARGET",
+            b"TARGET",
+            b"changed",
+            label="duplicate",
+        )
+
+
+def test_effective_fixture_mutation_is_rejected_by_the_engine() -> None:
+    invalid = official_script._replace_exactly_once(
+        _VALID_XML,
+        b">42<",
+        b">0<",
+        label="synthetic nDPS zero",
+    )
+    assert invalid != _VALID_XML
+    assert b">0<" in invalid
+
+    with pytest.raises(XsdValidationError, match="document_invalid"):
+        _validate(_schema(), invalid)
+
+
+def test_official_negative_fixtures_are_effective_and_specific() -> None:
+    cases = {case.label: case for case in official_script._negative_cases()}
+
+    assert all(case.xml != official_script._VALID_DPS for case in cases.values())
+    assert b"<nDPS>0</nDPS>" in cases["nDPS zero"].xml
+    assert b"<tpAmb>" not in cases["required field removed"].xml
+    assert (
+        b"<nDPS>42</nDPS>\n    <serie>123</serie>" in cases["field order changed"].xml
+    )
+    assert b'xmlns="urn:wrong"' in cases["root namespace changed"].xml
+    assert cases["isolated XMLDSig root"].xml.startswith(b"<Signature")
+    assert cases["isolated XMLDSig root"].expected_code == "unexpected_root"
+
+
+def test_runtime_profile_pins_match_frozen_evidence_and_documentation() -> None:
+    bundle_hash = "6c7e0510d3ecff4454f291f4e10b742d27a4818f23aab181494f96d0ea79f3dc"
+    manifest_hash = "2d8049958e7dcfa5e4e002a45cca8d526df83ab9c42b57eff2320017f85b3b8c"
+    contract_hash = "794c5904c4d81381d73050df63df541de587a08e195b7fb25f553937a43b67b0"
+    members = {
+        "DPS_v1.01.xsd": (
+            678,
+            "c7dab363d8cf7c83fc2b3b21e72cf669a51bd30947a5690685ea96c4b3e39dcd",
+        ),
+        "tiposComplexos_v1.01.xsd": (
+            114_148,
+            "6f792f408a33c11e799042a8d61cac7d1c9f5992c53e07e60ce75a15f157d1ac",
+        ),
+        "tiposSimples_v1.01.xsd": (
+            69_488,
+            "3d8171c9b7c9a82ecb48eed9a96485f2077006e7d21db6cd182839dd34dbb5e4",
+        ),
+        "xmldsig-core-schema.xsd": (
+            10_003,
+            "bf43998b2df1fedd9ed7d6914f91ab4d34958e8730c3b500cbe0b21e60335f11",
+        ),
+    }
+    manifest_path = _REPOSITORY_ROOT / "contracts/restricted/manifest.json"
+    contract_path = _REPOSITORY_ROOT / "contracts/restricted/dps-schema-contract.json"
+    documentation = (
+        _REPOSITORY_ROOT / "contracts/restricted/DPS_XSD_VALIDATOR.md"
+    ).read_text(encoding="utf-8")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    contract = json.loads(contract_path.read_text(encoding="utf-8"))
+
+    assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == manifest_hash
+    assert hashlib.sha256(contract_path.read_bytes()).hexdigest() == contract_hash
+    assert validator_module.RESTRICTED_XSD_BUNDLE_SIZE == 34_933
+    assert validator_module.RESTRICTED_XSD_BUNDLE_SHA256 == bundle_hash
+    assert validator_module._EXPECTED_ENTRYPOINT == "DPS_v1.01.xsd"
+    assert validator_module._EXPECTED_ROOT_QNAME == (
+        "{http://www.sped.fazenda.gov.br/nfse}DPS"
+    )
+    assert validator_module._EXPECTED_SCHEMA_MEMBERS == {
+        name: digest for name, (_, digest) in members.items()
+    }
+    assert manifest["xsd"]["size"] == 34_933
+    assert manifest["xsd"]["sha256"] == bundle_hash
+    assert contract["source"]["xsd_zip_size"] == 34_933
+    assert contract["source"]["xsd_zip_sha256"] == bundle_hash
+    assert contract["source"]["identity_manifest_sha256"] == manifest_hash
+    assert {
+        schema["path"]: (schema["size"], schema["sha256"])
+        for schema in contract["schemas"]
+    } == {
+        name: value
+        for name, value in members.items()
+        if name in {"tiposComplexos_v1.01.xsd", "tiposSimples_v1.01.xsd"}
+    }
+    assert "size:   34933 bytes" in documentation
+    assert f"sha256: {bundle_hash}" in documentation
+    for name, (size, digest) in members.items():
+        assert f"| `{name}` | {size} | `{digest}` |" in documentation
 
 
 @pytest.mark.parametrize(

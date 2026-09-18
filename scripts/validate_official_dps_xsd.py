@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from lxml import etree
@@ -44,6 +45,98 @@ _VALID_DPS = b"""<?xml version="1.0" encoding="UTF-8"?>
 </DPS>
 """
 
+_VALID_XMLDSIG_ROOT = b"""<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+  <SignedInfo>
+    <CanonicalizationMethod Algorithm="urn:synthetic"/>
+    <SignatureMethod Algorithm="urn:synthetic"/>
+    <Reference URI="">
+      <DigestMethod Algorithm="urn:synthetic"/>
+      <DigestValue>AA==</DigestValue>
+    </Reference>
+  </SignedInfo>
+  <SignatureValue>AA==</SignatureValue>
+</Signature>
+"""
+
+
+class FixtureMutationError(ValueError):
+    """Raised when an integration fixture cannot be changed unambiguously."""
+
+
+@dataclass(frozen=True, slots=True)
+class _NegativeCase:
+    label: str
+    xml: bytes
+    expected_code: str
+
+
+def _replace_exactly_once(
+    source: bytes,
+    target: bytes,
+    replacement: bytes,
+    *,
+    label: str,
+) -> bytes:
+    count = source.count(target)
+    if count != 1:
+        raise FixtureMutationError(
+            f"fixture mutation {label!r} expected one target, observed {count}"
+        )
+    mutated = source.replace(target, replacement, 1)
+    if mutated == source:
+        raise FixtureMutationError(f"fixture mutation {label!r} made no change")
+    return mutated
+
+
+def _negative_cases() -> tuple[_NegativeCase, ...]:
+    return (
+        _NegativeCase(
+            "nDPS zero",
+            _replace_exactly_once(
+                _VALID_DPS,
+                b"<nDPS>42</nDPS>",
+                b"<nDPS>0</nDPS>",
+                label="nDPS zero",
+            ),
+            "document_invalid",
+        ),
+        _NegativeCase(
+            "required field removed",
+            _replace_exactly_once(
+                _VALID_DPS,
+                b"    <tpAmb>2</tpAmb>\n",
+                b"",
+                label="required field removed",
+            ),
+            "document_invalid",
+        ),
+        _NegativeCase(
+            "field order changed",
+            _replace_exactly_once(
+                _VALID_DPS,
+                b"    <serie>123</serie>\n    <nDPS>42</nDPS>",
+                b"    <nDPS>42</nDPS>\n    <serie>123</serie>",
+                label="field order changed",
+            ),
+            "document_invalid",
+        ),
+        _NegativeCase(
+            "root namespace changed",
+            _replace_exactly_once(
+                _VALID_DPS,
+                b"http://www.sped.fazenda.gov.br/nfse",
+                b"urn:wrong",
+                label="root namespace changed",
+            ),
+            "unexpected_root",
+        ),
+        _NegativeCase(
+            "isolated XMLDSig root",
+            _VALID_XMLDSIG_ROOT,
+            "unexpected_root",
+        ),
+    )
+
 
 def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -63,28 +156,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         validator = RestrictedDpsXsdValidator(bundle)
         validator.validate(_VALID_DPS)
-        mutations = {
-            "nDPS zero": _VALID_DPS.replace(b"<nDPS>42</nDPS>", b"<nDPS>0</nDPS>"),
-            "required field removed": _VALID_DPS.replace(
-                b"    <tpAmb>2</tpAmb>\n", b""
-            ),
-            "field order changed": _VALID_DPS.replace(
-                b"    <serie>123</serie>\n    <nDPS>42</nDPS>",
-                b"    <nDPS>42</nDPS>\n    <serie>123</serie>",
-            ),
-            "root namespace changed": _VALID_DPS.replace(
-                b"http://www.sped.fazenda.gov.br/nfse", b"urn:wrong"
-            ),
-        }
-        for label, invalid in mutations.items():
+        negative_cases = _negative_cases()
+        for case in negative_cases:
             try:
-                validator.validate(invalid)
+                validator.validate(case.xml)
             except XsdValidationError as exc:
-                if exc.phase != "schema" or exc.code != "document_invalid":
+                if exc.phase != "schema" or exc.code != case.expected_code:
                     raise
             else:
-                print(f"Official integration: {label} was unexpectedly accepted.")
+                print(f"Official integration: {case.label} was unexpectedly accepted.")
                 return 1
+        validator.validate(_VALID_DPS)
+    except FixtureMutationError:
+        print("Official integration: fixture preparation failed.")
+        return 2
     except XsdValidationError as exc:
         print(f"Official integration: {exc}")
         return 1
@@ -93,8 +178,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"lxml: {'.'.join(map(str, etree.LXML_VERSION[:3]))}")
     print(f"libxml2: {'.'.join(map(str, etree.LIBXML_VERSION))}")
     print("Synthetic complete DPS: PASS")
-    for label in mutations:
-        print(f"Mutation {label}: REJECTED")
+    for case in negative_cases:
+        print(f"Negative case {case.label}: REJECTED")
+    print("Sequential valid-invalid-valid state: PASS")
     return 0
 
 
