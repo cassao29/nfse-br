@@ -5,7 +5,8 @@ ecosystem.
 
 The current 0.1 development line contains package infrastructure and local
 domain primitives. It does not yet implement fiscal models, DPS documents,
-schema validation, XML signatures, issuance, or transmission.
+XML generation, XML signatures, issuance, or transmission. Local DPS XSD
+validation is available through an optional dependency.
 
 ## Current scope
 
@@ -14,7 +15,7 @@ lexical CPF/CNPJ identifiers, IBGE municipality codes, competence dates, and a
 working local DPS identity value.
 
 CPF and CNPJ checksum validation is not implemented yet. Issuance,
-transmission, DPS XML, XSD validation, and XMLDSig are also outside the current
+transmission, DPS XML generation, and XMLDSig are also outside the current
 scope.
 
 ## DPS identity
@@ -50,27 +51,64 @@ The derived restricted DPS structural subset is recorded separately in
 manifest and official XSD ZIP by SHA-256, but remains repository evidence—not
 a runtime XSD validator or XML builder.
 
+## Local XSD validation
+
+Install the optional `xsd` extra to validate XML bytes locally against the
+exact frozen Produção Restrita bundle:
+
+```console
+uv sync --frozen --extra xsd
+```
+
+```python
+from nfse_br.xsd import RestrictedDpsXsdValidator
+
+validator = RestrictedDpsXsdValidator(bundle_bytes)
+validator.validate(xml_bytes)
+```
+
+The constructor accepts only the pinned official ZIP bytes and never downloads
+schemas. `validate()` accepts at most 1 MiB of UTF-8 XML bytes, requires the
+exact `{http://www.sped.fazenda.gov.br/nfse}DPS` root, returns `None` on success,
+and otherwise raises a privacy-safe `XsdValidationError`. Each instance is
+intended for sequential use.
+
+This proves only safe parsing and conformance to the compiled restricted XSD.
+It does not verify signatures, certificates, fiscal semantics, authorization,
+or SEFIN acceptance. See
+[`contracts/restricted/DPS_XSD_VALIDATOR.md`](contracts/restricted/DPS_XSD_VALIDATOR.md)
+for the compilation profile and explicit local integration command.
+
 ## Development
 
 The project requires Python 3.12 or 3.13 and uses
 [`uv`](https://docs.astral.sh/uv/) for project management.
 
 ```console
-uv sync --frozen
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src tests scripts/check_coverage.py
+uv sync --frozen --extra xsd
+uv run --frozen --extra xsd ruff check .
+uv run --frozen --extra xsd ruff format --check .
+uv run --frozen --extra xsd mypy src tests scripts
 mkdir -p build/coverage
-uv run pytest --cov=src/nfse_br --cov-branch --cov-report=term-missing \
+uv run --frozen --extra xsd pytest \
+  --cov=src/nfse_br --cov-branch --cov-report=term-missing \
   --cov-report=json:build/coverage/coverage.json --cov-fail-under=80
-uv run python scripts/check_coverage.py build/coverage/coverage.json
+uv run --frozen --extra xsd python scripts/check_coverage.py \
+  build/coverage/coverage.json
 uv build
+python scripts/smoke_base_wheel.py dist/nfse_br-0.1.0-py3-none-any.whl
 ```
 
 The executable coverage gates require at least 80% combined coverage for the
 library, 90% aggregate branch coverage for `src/nfse_br/_f0/`, and 90% branch
-coverage for `src/nfse_br/_f0/dps_schema_contract.py`. Gate decisions use the
-exact counters from Coverage.py JSON rather than rounded display percentages.
+coverage for `src/nfse_br/_f0/dps_schema_contract.py`, plus 90% aggregate branch
+coverage for `src/nfse_br/xsd/`. Gate decisions use exact counters from
+Coverage.py JSON rather than rounded display percentages.
+
+CI also installs the built base wheel into a fresh virtual environment without
+dependencies or the `xsd` extra. The official restricted ZIP is not distributed
+or fetched in CI; its end-to-end compilation remains the explicit local command
+documented with the frozen profile.
 
 ## License
 
