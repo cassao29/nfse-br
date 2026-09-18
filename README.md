@@ -3,10 +3,11 @@
 `nfse-br` is an open-source Python toolkit for Brazil's National NFS-e
 ecosystem.
 
-The current 0.1 development line contains package infrastructure and local
-domain primitives. It does not yet implement fiscal models, DPS documents,
-XML generation, XML signatures, issuance, or transmission. Local DPS XSD
-validation is available through an optional dependency.
+The current 0.1 development line contains package infrastructure, local domain
+primitives, and a deliberately small unsigned restricted DPS builder. It does
+not implement a complete fiscal model, XML signatures, issuance, or
+transmission. Local DPS XSD validation is available through an optional
+dependency.
 
 ## Current scope
 
@@ -15,8 +16,8 @@ lexical CPF/CNPJ identifiers, IBGE municipality codes, competence dates, and a
 working local DPS identity value.
 
 CPF and CNPJ checksum validation is not implemented yet. Issuance,
-transmission, DPS XML generation, and XMLDSig are also outside the current
-scope.
+transmission, complete DPS XML generation, and XMLDSig are also outside the
+current scope.
 
 ## DPS identity
 
@@ -79,6 +80,28 @@ or SEFIN acceptance. See
 [`contracts/restricted/DPS_XSD_VALIDATOR.md`](contracts/restricted/DPS_XSD_VALIDATOR.md)
 for the compilation profile and explicit local integration command.
 
+## Unsigned restricted DPS builder
+
+`nfse_br.dps.builder` constructs deterministic unsigned XML for one explicit
+restricted-profile subset: CNPJ provider, national service location, service
+code and description, service amount, and caller-supplied minimal tax codes.
+It derives `infDPS@Id` from the same municipality, CNPJ, series, and number
+written to the XML.
+
+```python
+from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
+
+xml_bytes = build_unsigned_dps(draft)
+```
+
+Building uses only the standard library and does not implicitly validate,
+sign, transmit, read files, or access the network. The optional validator is a
+separate explicit call. Monetary values use exact `Decimal` input with no
+silent rounding, and the timestamp must already contain an allowed whole-hour
+UTC offset. See
+[`contracts/restricted/DPS_UNSIGNED_BUILDER.md`](contracts/restricted/DPS_UNSIGNED_BUILDER.md)
+for the supported mapping and limits.
+
 ## Development
 
 The project requires Python 3.12 or 3.13 and uses
@@ -100,10 +123,11 @@ python scripts/smoke_base_wheel.py dist/nfse_br-0.1.0-py3-none-any.whl
 ```
 
 The executable coverage gates require at least 80% combined coverage for the
-library, 90% aggregate branch coverage for `src/nfse_br/_f0/`, and 90% branch
-coverage for `src/nfse_br/_f0/dps_schema_contract.py`, plus 90% aggregate branch
-coverage for `src/nfse_br/xsd/`. Gate decisions use exact counters from
-Coverage.py JSON rather than rounded display percentages.
+library, 90% aggregate branch coverage for `src/nfse_br/_f0/`, 90% branch
+coverage for `src/nfse_br/_f0/dps_schema_contract.py`, 90% aggregate branch
+coverage for `src/nfse_br/xsd/`, and 90% branch coverage for
+`src/nfse_br/dps/builder.py`. Gate decisions use exact counters from Coverage.py
+JSON rather than rounded display percentages.
 
 CI also installs the built base wheel into a fresh virtual environment without
 dependencies or the `xsd` extra. The official restricted ZIP is not distributed
