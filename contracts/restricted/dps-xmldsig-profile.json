@@ -1,0 +1,121 @@
+{
+  "environment": "restricted",
+  "scope": "dps_xmldsig_preflight",
+  "signature_profile_confirmed": false,
+  "transmission_ready": false,
+  "evidence_bindings": {
+    "restricted_bundle": {
+      "sha256": "6c7e0510d3ecff4454f291f4e10b742d27a4818f23aab181494f96d0ea79f3dc",
+      "size": 34933
+    },
+    "v0_4_manifest_sha256": "2d8049958e7dcfa5e4e002a45cca8d526df83ab9c42b57eff2320017f85b3b8c",
+    "v0_5_contract_sha256": "794c5904c4d81381d73050df63df541de587a08e195b7fb25f553937a43b67b0",
+    "schema_members": {
+      "DPS_v1.01.xsd": {
+        "sha256": "c7dab363d8cf7c83fc2b3b21e72cf669a51bd30947a5690685ea96c4b3e39dcd",
+        "size": 678
+      },
+      "tiposComplexos_v1.01.xsd": {
+        "sha256": "6f792f408a33c11e799042a8d61cac7d1c9f5992c53e07e60ce75a15f157d1ac",
+        "size": 114148
+      },
+      "tiposSimples_v1.01.xsd": {
+        "sha256": "3d8171c9b7c9a82ecb48eed9a96485f2077006e7d21db6cd182839dd34dbb5e4",
+        "size": 69488
+      },
+      "xmldsig-core-schema.xsd": {
+        "sha256": "bf43998b2df1fedd9ed7d6914f91ab4d34958e8730c3b500cbe0b21e60335f11",
+        "size": 10003
+      }
+    }
+  },
+  "sources": [
+    {
+      "classification": "official_current",
+      "location": "Produção Restrita; NFSe-ESQUEMAS_XSD-PRODREST-v1.01-20260727",
+      "title": "Documentação técnica - Produção Restrita",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita"
+    },
+    {
+      "classification": "official_current",
+      "location": "API - Manual de Contribuintes - Emissor Público; versão 1.2, outubro de 2025",
+      "title": "Documentação técnica atual",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual"
+    },
+    {
+      "classification": "official_historical",
+      "location": "versão 1.00.02, 14/09/2022; seções 6.1.3-6.1.5; páginas PDF 24-27",
+      "title": "Manual Integrado do Sistema Nacional NFS-e",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/leiaute-e-esquemas-antigos/manualintegradosnnfse_v1-00-02-producao.pdf"
+    },
+    {
+      "classification": "normative_standard",
+      "location": "seções 4.2-4.5, 6 e 8",
+      "title": "XML Signature Syntax and Processing Version 1.1",
+      "url": "https://www.w3.org/TR/xmldsig-core1/"
+    },
+    {
+      "classification": "security_guidance",
+      "location": "seções 3.1 e 3.1.5; Best Practices 12-14",
+      "title": "XML Signature Best Practices",
+      "url": "https://www.w3.org/TR/xmldsig-bestpractices/"
+    }
+  ],
+  "official_frozen_schema_observations": {
+    "algorithm_attributes": {
+      "CanonicalizationMethod": "xs:anyURI",
+      "DigestMethod": "xs:anyURI",
+      "SignatureMethod": "xs:anyURI",
+      "Transform": "xs:anyURI"
+    },
+    "algorithm_values_fixed_or_enumerated": false,
+    "dps_signature_position": "direct child after infDPS",
+    "dps_signature_cardinality": "0..1",
+    "key_info_cardinality": "0..1",
+    "reference_cardinality": "1..unbounded",
+    "reference_uri_cardinality": "0..1",
+    "schema_revision": "1.2 (2013-04-16); schema version attribute 0.1",
+    "signature_children": [
+      "SignedInfo",
+      "SignatureValue",
+      "KeyInfo?",
+      "Object*"
+    ],
+    "transforms_cardinality": "0..1 container; 1..unbounded Transform children",
+    "x509_certificate_type": "xs:base64Binary"
+  },
+  "historical_profile_only": {
+    "canonicalization_method": "http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
+    "digest_method": "http://www.w3.org/2000/09/xmldsig#sha1",
+    "key_info_shape": "KeyInfo/X509Data/X509Certificate with end certificate only",
+    "reference_uri": "fragment reference to the signed element Id",
+    "signature_method": "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
+    "target": "infDPS",
+    "transforms_in_order": [
+      "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+      "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
+    ]
+  },
+  "local_preflight_policy": {
+    "accepted_document": "unsigned DPS version 1.01 from the current restricted builder subset",
+    "identifier_policy": "only the unqualified Id attribute on the unique direct infDPS target",
+    "identity_fields": [
+      "cLocEmi",
+      "prest/CNPJ",
+      "serie",
+      "nDPS"
+    ],
+    "reject_alternative_identifiers": true,
+    "reject_existing_signature": true,
+    "target": "{http://www.sped.fazenda.gov.br/nfse}DPS/{http://www.sped.fazenda.gov.br/nfse}infDPS"
+  },
+  "unconfirmed_for_current_restricted_profile": [
+    "canonicalization algorithm",
+    "signature algorithm",
+    "digest algorithm",
+    "transform list and order",
+    "required Reference URI form",
+    "required KeyInfo and X509Data shape",
+    "certificate policy"
+  ]
+}

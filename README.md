@@ -102,6 +102,21 @@ UTC offset. See
 [`contracts/restricted/DPS_UNSIGNED_BUILDER.md`](contracts/restricted/DPS_UNSIGNED_BUILDER.md)
 for the supported mapping and limits.
 
+## XML signature preflight
+
+The private `nfse_br._xmlsig` package performs a fail-closed structural check
+of unsigned builder output before any future signature operation. It requires
+the unique direct `infDPS`, rejects pre-existing signatures and alternative
+identifiers, and recomputes the target Id from `cLocEmi`, provider CNPJ,
+series, and DPS number. It does not sign, verify cryptography, or replace XSD
+validation.
+
+The frozen XMLDSig schema defines grammar but leaves algorithm attributes as
+open URIs. The detailed RSA-SHA1/SHA-1/C14N profile found in official material
+belongs to the historical v1.00.02 manual and is not treated as confirmation
+for the current restricted v1.01 bundle. See
+[`contracts/restricted/DPS_XMLDSIG_PROFILE.md`](contracts/restricted/DPS_XMLDSIG_PROFILE.md).
+
 ## Development
 
 The project requires Python 3.12 or 3.13 and uses
@@ -126,8 +141,9 @@ The executable coverage gates require at least 80% combined coverage for the
 library, 90% aggregate branch coverage for `src/nfse_br/_f0/`, 90% branch
 coverage for `src/nfse_br/_f0/dps_schema_contract.py`, 90% aggregate branch
 coverage for `src/nfse_br/xsd/`, and 90% branch coverage for
-`src/nfse_br/dps/builder.py`. Gate decisions use exact counters from Coverage.py
-JSON rather than rounded display percentages.
+`src/nfse_br/dps/builder.py`, and 90% branch coverage for
+`src/nfse_br/_xmlsig/preflight.py`. Gate decisions use exact counters from
+Coverage.py JSON rather than rounded display percentages.
 
 CI also installs the built base wheel into a fresh virtual environment without
 dependencies or the `xsd` extra. The official restricted ZIP is not distributed
