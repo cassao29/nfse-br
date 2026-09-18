@@ -33,3 +33,9 @@ the reviewed DPS structural subset from the same XSD ZIP and binds itself to
 the immutable identity manifest by SHA-256. See
 [`DPS_SCHEMA_CONTRACT.md`](DPS_SCHEMA_CONTRACT.md) for its exact scope and
 reproduction command.
+
+The XMLDSig grammar and the private unsigned-DPS structural preflight are
+documented separately in
+[`DPS_XMLDSIG_PROFILE.md`](DPS_XMLDSIG_PROFILE.md). The frozen XSD leaves
+algorithm URIs open, while the detailed algorithm profile located so far is
+historical; consequently `SIGNATURE_PROFILE_CONFIRMED` remains `NO`.

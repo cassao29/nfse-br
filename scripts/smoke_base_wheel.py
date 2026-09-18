@@ -28,6 +28,8 @@ import nfse_br
 import nfse_br.domain
 import nfse_br.dps
 import nfse_br.dps.builder
+import nfse_br._xmlsig.preflight
+from nfse_br._xmlsig.preflight import inspect_unsigned_dps
 from nfse_br.domain import (
     CompetenceDate,
     DomainValidationError,
@@ -37,7 +39,13 @@ from nfse_br.domain import (
 from nfse_br.dps import DpsNumber, DpsSeries
 from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
 
-for module in (nfse_br, nfse_br.domain, nfse_br.dps, nfse_br.dps.builder):
+for module in (
+    nfse_br,
+    nfse_br.domain,
+    nfse_br.dps,
+    nfse_br.dps.builder,
+    nfse_br._xmlsig.preflight,
+):
     module_path = Path(module.__file__).resolve()
     assert "site-packages" in module_path.parts, module_path
 
@@ -75,6 +83,7 @@ root = ElementTree.fromstring(xml)
 assert root.tag == "{http://www.sped.fazenda.gov.br/nfse}DPS"
 namespace = "{http://www.sped.fazenda.gov.br/nfse}"
 assert root.findtext(f"{namespace}infDPS/{namespace}nDPS") == "42"
+assert inspect_unsigned_dps(xml) == root.find(f"{namespace}infDPS").get("Id")
 
 try:
     import nfse_br.xsd

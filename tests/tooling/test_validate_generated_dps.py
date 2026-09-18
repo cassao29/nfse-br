@@ -8,6 +8,7 @@ from xml.etree import ElementTree
 import pytest
 from scripts import validate_generated_dps
 
+from nfse_br._xmlsig.preflight import inspect_unsigned_dps
 from nfse_br.dps.builder import build_unsigned_dps
 
 _NS = {"n": "http://www.sped.fazenda.gov.br/nfse"}
@@ -71,6 +72,10 @@ def test_valid_integration_cases_change_one_supported_value_at_a_time() -> None:
         label: ElementTree.fromstring(build_unsigned_dps(draft))
         for label, draft in cases
     }
+    assert all(
+        inspect_unsigned_dps(build_unsigned_dps(draft)).startswith("DPS")
+        for _label, draft in cases
+    )
     assert (
         documents["non-breaking-space description"].findtext(
             ".//n:xDescServ", namespaces=_NS
