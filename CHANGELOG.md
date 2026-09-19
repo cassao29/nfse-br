@@ -45,4 +45,3 @@
 - The production environment is unsupported.
 - End-to-end validation with the pinned official bundle is a local release
   gate and is not executed in CI by design.
-

@@ -21,4 +21,3 @@ The policy covers vulnerabilities in the distributed `nfse-br` package and
 its documented command-line interface. It does not make gov.br, SEFIN, PyPI,
 GitHub, `lxml`, or other third-party services part of this project's security
 boundary.
-
