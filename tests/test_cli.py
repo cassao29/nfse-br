@@ -301,7 +301,9 @@ def test_fifo_is_rejected_by_a_real_entry_point_without_blocking(
 ) -> None:
     fifo = tmp_path / "sensitive fifo"
     document = tmp_path / "document.xml"
-    os.mkfifo(fifo)
+    mkfifo = getattr(os, "mkfifo", None)
+    assert mkfifo is not None
+    mkfifo(fifo)
     completed = subprocess.run(
         [
             sys.executable,
