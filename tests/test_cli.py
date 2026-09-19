@@ -8,7 +8,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Never
+from typing import BinaryIO, Never, cast
 
 import pytest
 
@@ -123,14 +123,190 @@ def test_file_reader_accepts_only_bounded_regular_local_files(tmp_path: Path) ->
 
     link = tmp_path / "link"
     link.symlink_to(regular)
-    with pytest.raises(cli._OperationalError, match="file_unreadable"):
-        cli._read_regular_file(link, limit=4)
+    if hasattr(os, "O_NOFOLLOW"):
+        with pytest.raises(cli._OperationalError, match="file_unreadable"):
+            cli._read_regular_file(link, limit=4)
+    else:
+        assert cli._read_regular_file(link, limit=4) == b"1234"
 
     if hasattr(os, "mkfifo"):
         fifo = tmp_path / "fifo"
         os.mkfifo(fifo)
         with pytest.raises(cli._OperationalError, match="not_regular_file"):
             cli._read_regular_file(fifo, limit=4)
+
+
+def test_reader_classifies_the_descriptor_after_a_controlled_path_swap(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "target"
+    original = tmp_path / "original"
+    target.write_bytes(b"safe")
+    real_open = os.open
+    swapped = False
+
+    def swap_then_open(path: os.PathLike[str] | str, flags: int) -> int:
+        nonlocal swapped
+        if not swapped and Path(path) == target:
+            target.rename(original)
+            target.mkdir()
+            swapped = True
+        return real_open(path, flags)
+
+    monkeypatch.setattr(os, "open", swap_then_open)
+
+    with pytest.raises(cli._OperationalError, match="not_regular_file"):
+        cli._read_regular_file(target, limit=4)
+    assert swapped
+
+
+def test_reader_detects_growth_after_the_descriptor_is_opened(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "growing"
+    target.write_bytes(b"1234")
+    real_fdopen = os.fdopen
+
+    def grow_then_fdopen(descriptor: int, mode: str) -> BinaryIO:
+        with target.open("ab") as growing:
+            growing.write(b"5")
+        return cast(BinaryIO, real_fdopen(descriptor, mode))
+
+    monkeypatch.setattr(os, "fdopen", grow_then_fdopen)
+
+    with pytest.raises(cli._OperationalError, match="file_too_large"):
+        cli._read_regular_file(target, limit=4)
+
+
+def test_reader_closes_descriptors_on_success_and_rejection(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    regular = tmp_path / "regular"
+    regular.write_bytes(b"data")
+    real_open = os.open
+    descriptors: list[int] = []
+
+    def track_open(path: os.PathLike[str] | str, flags: int) -> int:
+        descriptor = real_open(path, flags)
+        descriptors.append(descriptor)
+        return descriptor
+
+    monkeypatch.setattr(os, "open", track_open)
+
+    assert cli._read_regular_file(regular, limit=4) == b"data"
+    with pytest.raises(OSError):
+        os.fstat(descriptors[-1])
+
+    with pytest.raises(cli._OperationalError, match="not_regular_file"):
+        cli._read_regular_file(tmp_path, limit=4)
+    with pytest.raises(OSError):
+        os.fstat(descriptors[-1])
+
+
+def test_windows_drive_path_is_not_misclassified_as_a_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: list[Path] = []
+
+    def unavailable(path: os.PathLike[str] | str, _flags: int) -> Never:
+        observed.append(Path(path))
+        raise OSError
+
+    monkeypatch.setattr(os, "open", unavailable)
+
+    with pytest.raises(cli._OperationalError, match="file_unreadable"):
+        cli._read_regular_file(Path(r"C:\dados\DPS.xml"), limit=4)
+    assert observed == [Path(r"C:\dados\DPS.xml")]
+
+
+@pytest.mark.skipif(
+    not hasattr(os, "mkfifo") or not hasattr(os, "O_NONBLOCK"),
+    reason="POSIX FIFO and non-blocking open are required",
+)
+def test_fifo_is_rejected_by_a_real_entry_point_without_blocking(
+    tmp_path: Path,
+) -> None:
+    fifo = tmp_path / "sensitive fifo"
+    document = tmp_path / "document.xml"
+    os.mkfifo(fifo)
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-m",
+            "nfse_br",
+            "check-unsigned",
+            str(document),
+            "--bundle",
+            str(fifo),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+    )
+
+    assert completed.returncode == 2
+    assert _payload(completed.stdout) == {
+        "status": "error",
+        "stage": "bundle_read",
+        "code": "not_regular_file",
+        "transmission_ready": False,
+    }
+    assert completed.stderr == ""
+    assert str(fifo) not in completed.stdout
+
+
+def test_real_entry_points_suppress_argparse_values_and_usage() -> None:
+    sensitive_document = "documento sigiloso á <CPF>.xml"
+    sensitive_bundle = "bundle sigiloso ç <TOKEN>.zip"
+    console = Path(sys.executable).with_name("nfse-br")
+    entry_points = (
+        [str(console)],
+        [sys.executable, "-I", "-m", "nfse_br"],
+    )
+    cases = (
+        ["subcomando-sigiloso"],
+        ["check-unsigned"],
+        ["check-unsigned", sensitive_document, "--bundle"],
+        [
+            "check-unsigned",
+            sensitive_document,
+            "--bundle",
+            sensitive_bundle,
+            "--opcao-sigilosa",
+        ],
+        [
+            "check-unsigned",
+            sensitive_document,
+            "--bundle",
+            sensitive_bundle,
+            "argumento-excedente-sigiloso",
+        ],
+    )
+
+    for entry_point in entry_points:
+        for arguments in cases:
+            completed = subprocess.run(
+                [*entry_point, *arguments],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=3,
+            )
+            assert completed.returncode == 2
+            assert _payload(completed.stdout) == {
+                "status": "error",
+                "stage": "usage",
+                "code": "invalid_arguments",
+                "transmission_ready": False,
+            }
+            assert completed.stderr == ""
+            assert sensitive_document not in completed.stdout
+            assert sensitive_bundle not in completed.stdout
 
 
 def test_missing_extra_is_a_controlled_operational_error(
@@ -146,6 +322,27 @@ def test_missing_extra_is_a_controlled_operational_error(
         "status": "error",
         "stage": "dependency",
         "code": "xsd_extra_missing",
+        "transmission_ready": False,
+    }
+
+
+def test_broken_optional_import_is_not_reported_as_a_missing_extra(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bundle, document = _paths(tmp_path)
+
+    def broken_import() -> Never:
+        raise ModuleNotFoundError("synthetic broken dependency", name="other")
+
+    monkeypatch.setattr(cli, "_import_xsd_components", broken_import)
+
+    assert cli.main(["check-unsigned", str(document), "--bundle", str(bundle)]) == 2
+    assert _payload(capsys.readouterr().out) == {
+        "status": "error",
+        "stage": "dependency",
+        "code": "xsd_import_failed",
         "transmission_ready": False,
     }
 
@@ -226,6 +423,7 @@ def test_success_passes_the_same_xml_bytes_to_both_checks(
             observed["xsd"] = xml_bytes
 
     def preflight(xml_bytes: bytes) -> str:
+        document.write_bytes(b"changed after the one bounded read")
         observed["preflight"] = xml_bytes
         return "controlled-id"
 
@@ -246,6 +444,7 @@ def test_success_passes_the_same_xml_bytes_to_both_checks(
     assert observed["bundle"] == b"bundle"
     assert observed["xsd"] == b"<DPS/>"
     assert observed["xsd"] is observed["preflight"]
+    assert document.read_bytes() == b"changed after the one bounded read"
 
 
 @pytest.mark.parametrize("phase", ["parse", "schema"])

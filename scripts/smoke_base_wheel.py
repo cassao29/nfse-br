@@ -102,6 +102,51 @@ for command in (
     assert completed.stdout
     assert completed.stderr == ""
 
+sensitive_document = "documento sigiloso á <CPF>.xml"
+sensitive_bundle = "bundle sigiloso ç <TOKEN>.zip"
+entry_points = (
+    [str(console)],
+    [sys.executable, "-I", "-m", "nfse_br"],
+)
+invalid_argument_cases = (
+    ["subcomando-sigiloso"],
+    ["check-unsigned"],
+    ["check-unsigned", sensitive_document, "--bundle"],
+    [
+        "check-unsigned",
+        sensitive_document,
+        "--bundle",
+        sensitive_bundle,
+        "--opcao-sigilosa",
+    ],
+    [
+        "check-unsigned",
+        sensitive_document,
+        "--bundle",
+        sensitive_bundle,
+        "argumento-excedente-sigiloso",
+    ],
+)
+for entry_point in entry_points:
+    for arguments in invalid_argument_cases:
+        completed = subprocess.run(
+            [*entry_point, *arguments],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert completed.returncode == 2, completed
+        assert completed.stderr == ""
+        assert completed.stdout.count("\n") == 1
+        assert json.loads(completed.stdout) == {
+            "status": "error",
+            "stage": "usage",
+            "code": "invalid_arguments",
+            "transmission_ready": False,
+        }
+        assert sensitive_document not in completed.stdout
+        assert sensitive_bundle not in completed.stdout
+
 bundle_path = Path("bundle.zip")
 document_path = Path("document.xml")
 bundle_path.write_bytes(b"bundle")
