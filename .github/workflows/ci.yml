@@ -45,7 +45,7 @@ jobs:
         run: uv run --frozen --extra xsd ruff format --check .
 
       - name: Type-check
-        run: uv run --frozen --extra xsd mypy src tests scripts
+        run: uv run --frozen --extra xsd mypy src tests scripts examples
 
       - name: Test
         run: |
@@ -107,7 +107,7 @@ jobs:
         run: uv run --frozen --extra xsd ruff format --check .
 
       - name: Type-check
-        run: uv run --frozen --extra xsd mypy src tests scripts
+        run: uv run --frozen --extra xsd mypy src tests scripts examples
 
       - name: Prepare coverage directory
         shell: pwsh
