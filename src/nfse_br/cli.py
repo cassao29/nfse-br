@@ -123,7 +123,10 @@ def _import_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
 
 def _read_regular_file(path: Path, *, limit: int) -> bytes:
     raw_path = os.fspath(path)
-    parsed = urlsplit(raw_path)
+    try:
+        parsed = urlsplit(raw_path)
+    except ValueError:
+        raise _OperationalError("invalid_file_location") from None
     windows_drive = len(parsed.scheme) == 1 and raw_path[1:2] == ":"
     if (
         (parsed.scheme and not windows_drive)

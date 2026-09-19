@@ -222,6 +222,68 @@ def test_windows_drive_path_is_not_misclassified_as_a_url(
     assert observed == [Path(r"C:\dados\DPS.xml")]
 
 
+@pytest.mark.parametrize(
+    "malformed_location",
+    [
+        "//[sigiloso",
+        "//[sigiloso]",
+        "//sigiloso／host/bundle.zip",
+    ],
+)
+def test_malformed_file_locations_are_rejected_before_open(
+    malformed_location: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def unexpected_open(_path: os.PathLike[str] | str, _flags: int) -> Never:
+        raise AssertionError("malformed locations must be rejected before open")
+
+    monkeypatch.setattr(os, "open", unexpected_open)
+
+    with pytest.raises(cli._OperationalError, match="invalid_file_location"):
+        cli._read_regular_file(Path(malformed_location), limit=4)
+
+
+@pytest.mark.parametrize(
+    "malformed_location",
+    [
+        "//[sigiloso",
+        "//[sigiloso]",
+        "//sigiloso／host/bundle.zip",
+    ],
+)
+def test_real_entry_points_control_malformed_file_locations(
+    malformed_location: str,
+) -> None:
+    console = Path(sys.executable).with_name("nfse-br")
+    entry_points = (
+        [str(console)],
+        [sys.executable, "-I", "-m", "nfse_br"],
+    )
+
+    for entry_point in entry_points:
+        completed = subprocess.run(
+            [
+                *entry_point,
+                "check-unsigned",
+                "documento.xml",
+                "--bundle",
+                malformed_location,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        assert completed.returncode == 2
+        assert completed.stdout == (
+            '{"status":"error","stage":"bundle_read",'
+            '"code":"invalid_file_location","transmission_ready":false}\n'
+        )
+        assert completed.stderr == ""
+        assert "sigiloso" not in completed.stdout
+        assert "sigiloso" not in completed.stderr
+
+
 @pytest.mark.skipif(
     not hasattr(os, "mkfifo") or not hasattr(os, "O_NONBLOCK"),
     reason="POSIX FIFO and non-blocking open are required",
