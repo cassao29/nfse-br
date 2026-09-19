@@ -18,6 +18,7 @@ BUILDER_BRANCH_MINIMUM = 90
 XMLSIG_PREFLIGHT_BRANCH_MINIMUM = 90
 CLI_BRANCH_MINIMUM = 90
 CNPJ_BRANCH_MINIMUM = 90
+CPF_BRANCH_MINIMUM = 90
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _F0_ROOT = _PROJECT_ROOT / "src/nfse_br/_f0"
@@ -28,6 +29,7 @@ _DPS_BUILDER_MODULE = "src/nfse_br/dps/builder.py"
 _XMLSIG_PREFLIGHT_MODULE = "src/nfse_br/_xmlsig/preflight.py"
 _CLI_MODULE = "src/nfse_br/cli.py"
 _CNPJ_MODULE = "src/nfse_br/domain/cnpj.py"
+_CPF_MODULE = "src/nfse_br/domain/cpf.py"
 
 
 class CoverageGateError(ValueError):
@@ -63,6 +65,7 @@ def evaluate_report(
     expected_xmlsig_paths: frozenset[str],
     expected_cli_paths: frozenset[str],
     expected_cnpj_paths: frozenset[str],
+    expected_cpf_paths: frozenset[str],
 ) -> tuple[
     GateResult,
     GateResult,
@@ -72,8 +75,9 @@ def evaluate_report(
     GateResult,
     GateResult,
     GateResult,
+    GateResult,
 ]:
-    """Validate a Coverage.py report and calculate the eight required gates."""
+    """Validate a Coverage.py report and calculate the nine required gates."""
     if _XSD_VALIDATOR_MODULE not in expected_xsd_paths:
         raise CoverageGateError(
             f"XSD scope is missing required module {_XSD_VALIDATOR_MODULE!r}"
@@ -93,6 +97,8 @@ def evaluate_report(
         raise CoverageGateError(
             f"CNPJ scope is missing required module {_CNPJ_MODULE!r}"
         )
+    if _CPF_MODULE not in expected_cpf_paths:
+        raise CoverageGateError(f"CPF scope is missing required module {_CPF_MODULE!r}")
     meta = _mapping(report.get("meta"), context="meta")
     if meta.get("branch_coverage") is not True:
         raise CoverageGateError("branch measurement is not enabled")
@@ -141,6 +147,11 @@ def evaluate_report(
     if missing_cnpj:
         raise CoverageGateError(
             f"coverage report is missing CNPJ files: {sorted(missing_cnpj)!r}"
+        )
+    missing_cpf = expected_cpf_paths - files.keys()
+    if missing_cpf:
+        raise CoverageGateError(
+            f"coverage report is missing CPF files: {sorted(missing_cpf)!r}"
         )
 
     f0_covered = 0
@@ -211,6 +222,15 @@ def evaluate_report(
         cnpj_covered += covered
         cnpj_total += total
 
+    cpf_covered = 0
+    cpf_total = 0
+    for path in expected_cpf_paths:
+        file_data = files[path]
+        summary = _mapping(file_data.get("summary"), context=f"summary for {path!r}")
+        covered, total = _counts(summary, context=path, unit="branches")
+        cpf_covered += covered
+        cpf_total += total
+
     return (
         _gate(
             "Library combined",
@@ -259,6 +279,12 @@ def evaluate_report(
             covered=cnpj_covered,
             total=cnpj_total,
             minimum=CNPJ_BRANCH_MINIMUM,
+        ),
+        _gate(
+            "CPF check-digit branches",
+            covered=cpf_covered,
+            total=cpf_total,
+            minimum=CPF_BRANCH_MINIMUM,
         ),
     )
 
@@ -340,6 +366,16 @@ def expected_cnpj_paths() -> frozenset[str]:
     return frozenset({_CNPJ_MODULE})
 
 
+def expected_cpf_paths() -> frozenset[str]:
+    """Return the explicitly gated CPF check-digit module."""
+    path = _PROJECT_ROOT / _CPF_MODULE
+    if not path.is_file():
+        raise CoverageGateError(
+            f"CPF source tree is missing required module {_CPF_MODULE!r}"
+        )
+    return frozenset({_CPF_MODULE})
+
+
 def _counts(
     summary: Mapping[str, object],
     *,
@@ -411,6 +447,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             expected_xmlsig_paths=expected_xmlsig_paths(),
             expected_cli_paths=expected_cli_paths(),
             expected_cnpj_paths=expected_cnpj_paths(),
+            expected_cpf_paths=expected_cpf_paths(),
         )
     except CoverageGateError as exc:
         print(f"Coverage gate error: {exc}", file=sys.stderr)

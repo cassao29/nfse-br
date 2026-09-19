@@ -31,6 +31,7 @@ import nfse_br
 import nfse_br.cli
 import nfse_br.domain
 import nfse_br.domain.cnpj
+import nfse_br.domain.cpf
 import nfse_br.dps
 import nfse_br.dps.builder
 import nfse_br._xmlsig.preflight
@@ -42,6 +43,7 @@ from nfse_br.domain import (
     MunicipalityCode,
 )
 from nfse_br.domain.cnpj import validate_cnpj_check_digits
+from nfse_br.domain.cpf import validate_cpf_check_digits
 from nfse_br.dps import DpsNumber, DpsSeries
 from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
 
@@ -50,6 +52,7 @@ for module in (
     nfse_br.cli,
     nfse_br.domain,
     nfse_br.domain.cnpj,
+    nfse_br.domain.cpf,
     nfse_br.dps,
     nfse_br.dps.builder,
     nfse_br._xmlsig.preflight,
@@ -72,6 +75,14 @@ except DomainValidationError:
     pass
 else:
     raise AssertionError("Invalid CNPJ check digits were unexpectedly accepted")
+
+validate_cpf_check_digits(FederalTaxId.cpf("11144477735"))
+try:
+    validate_cpf_check_digits(FederalTaxId.cpf("12345678901"))
+except DomainValidationError:
+    pass
+else:
+    raise AssertionError("Invalid CPF check digits were unexpectedly accepted")
 
 draft = RestrictedDpsDraft(
     issuer_tax_id=FederalTaxId.cnpj("12ABC6780001Z0"),
