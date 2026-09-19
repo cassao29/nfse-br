@@ -64,9 +64,31 @@ The library currently provides immutable primitives for NFS-e environments,
 lexical CPF/CNPJ identifiers, IBGE municipality codes, competence dates, and a
 working local DPS identity value.
 
-CPF and CNPJ checksum validation is not implemented yet. Issuance,
-transmission, complete DPS XML generation, and XMLDSig are also outside the
-current scope.
+Explicit CNPJ check-digit validation is available separately from lexical
+construction. CPF checksum validation, issuance, transmission, complete DPS
+XML generation, and XMLDSig remain outside the current scope.
+
+## Explicit CNPJ check digits
+
+`FederalTaxId.cnpj()` deliberately remains lexical and normalizes ASCII letters
+to uppercase. Call the separate validator when mathematical CNPJ check digits
+are required:
+
+```python
+from nfse_br.domain import FederalTaxId
+from nfse_br.domain.cnpj import validate_cnpj_check_digits
+
+identifier = FederalTaxId.cnpj("12ABC34501DE35")
+validate_cnpj_check_digits(identifier)
+```
+
+The implementation follows the Receita Federal
+[CNPJ check-digit manual](https://www.gov.br/receitafederal/pt-br/centrais-de-conteudo/publicacoes/documentos-tecnicos/cnpj/manual-dv-cnpj.pdf),
+pages 3–4: ASCII value minus 48, the documented modulo-11 weights, and two
+numeric check digits. It also explicitly rejects the all-zero identifier.
+A correct checksum does not establish registration, cadastral status,
+ownership, fiscal authorization, or permission to transmit. CPF checksum is
+not implemented, and `check-unsigned` does not call this validator.
 
 ## DPS identity
 
@@ -208,8 +230,9 @@ coverage for `src/nfse_br/_f0/dps_schema_contract.py`, 90% aggregate branch
 coverage for `src/nfse_br/xsd/`, and 90% branch coverage for
 `src/nfse_br/dps/builder.py`, and 90% branch coverage for
 `src/nfse_br/_xmlsig/preflight.py`, and 90% branch coverage for
-`src/nfse_br/cli.py`. Gate decisions use exact counters from Coverage.py JSON
-rather than rounded display percentages.
+`src/nfse_br/cli.py`, and 90% branch coverage for
+`src/nfse_br/domain/cnpj.py`. Gate decisions use exact counters from Coverage.py
+JSON rather than rounded display percentages.
 
 CI also installs the built base wheel into a fresh virtual environment without
 dependencies or the `xsd` extra. The official restricted ZIP is not distributed
