@@ -64,11 +64,28 @@ The library currently provides immutable primitives for NFS-e environments,
 lexical CPF/CNPJ identifiers, IBGE municipality codes, competence dates, and a
 working local DPS identity value.
 
-Explicit CNPJ check-digit validation is available separately from lexical
-construction. CPF checksum validation, issuance, transmission, complete DPS
-XML generation, and XMLDSig remain outside the current scope.
+Explicit CPF and CNPJ check-digit validation is available separately from
+lexical construction. Issuance, transmission, complete DPS XML generation,
+and XMLDSig remain outside the current scope.
 
-## Explicit CNPJ check digits
+## Explicit CPF and CNPJ check digits
+
+`FederalTaxId.cpf()` deliberately remains lexical. Call the separate validator
+when mathematical CPF check digits are required:
+
+```python
+from nfse_br.domain import FederalTaxId
+from nfse_br.domain.cpf import validate_cpf_check_digits
+
+identifier = FederalTaxId.cpf("11144477735")
+validate_cpf_check_digits(identifier)
+```
+
+The CPF calculation follows the two-stage modulo-11 algorithm described by
+the [UFSC technical teaching material](https://canzian.prof.ufsc.br/fisicacomjavascript/exemplos/cpf/index.html).
+That reference is technical rather than an official Receita Federal standard.
+The validator additionally rejects all ten repeated-digit sequences as local
+policy; it deliberately accepts `12345678909` under the mathematical rule.
 
 `FederalTaxId.cnpj()` deliberately remains lexical and normalizes ASCII letters
 to uppercase. Call the separate validator when mathematical CNPJ check digits
@@ -86,9 +103,9 @@ The implementation follows the Receita Federal
 [CNPJ check-digit manual](https://www.gov.br/receitafederal/pt-br/centrais-de-conteudo/publicacoes/documentos-tecnicos/cnpj/manual-dv-cnpj.pdf),
 pages 3–4: ASCII value minus 48, the documented modulo-11 weights, and two
 numeric check digits. It also explicitly rejects the all-zero identifier.
-A correct checksum does not establish registration, cadastral status,
-ownership, fiscal authorization, or permission to transmit. CPF checksum is
-not implemented, and `check-unsigned` does not call this validator.
+A correct CPF or CNPJ checksum does not establish registration, cadastral
+status, ownership, fiscal authorization, or permission to transmit.
+`check-unsigned` does not call either validator.
 
 ## DPS identity
 
@@ -231,7 +248,8 @@ coverage for `src/nfse_br/xsd/`, and 90% branch coverage for
 `src/nfse_br/dps/builder.py`, and 90% branch coverage for
 `src/nfse_br/_xmlsig/preflight.py`, and 90% branch coverage for
 `src/nfse_br/cli.py`, and 90% branch coverage for
-`src/nfse_br/domain/cnpj.py`. Gate decisions use exact counters from Coverage.py
+`src/nfse_br/domain/cnpj.py`, and 90% branch coverage for
+`src/nfse_br/domain/cpf.py`. Gate decisions use exact counters from Coverage.py
 JSON rather than rounded display percentages.
 
 CI also installs the built base wheel into a fresh virtual environment without
