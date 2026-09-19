@@ -114,7 +114,8 @@ def test_file_reader_accepts_only_bounded_regular_local_files(tmp_path: Path) ->
     oversized.write_bytes(b"12345")
     with pytest.raises(cli._OperationalError, match="file_too_large"):
         cli._read_regular_file(oversized, limit=4)
-    with pytest.raises(cli._OperationalError, match="not_regular_file"):
+    directory_error = "file_unreadable" if os.name == "nt" else "not_regular_file"
+    with pytest.raises(cli._OperationalError, match=directory_error):
         cli._read_regular_file(tmp_path, limit=4)
     with pytest.raises(cli._OperationalError, match="file_unreadable"):
         cli._read_regular_file(tmp_path / "missing", limit=4)
@@ -164,7 +165,8 @@ def test_reader_classifies_the_descriptor_after_a_controlled_path_swap(
 
     monkeypatch.setattr(os, "open", swap_then_open)
 
-    with pytest.raises(cli._OperationalError, match="not_regular_file"):
+    directory_error = "file_unreadable" if os.name == "nt" else "not_regular_file"
+    with pytest.raises(cli._OperationalError, match=directory_error):
         cli._read_regular_file(target, limit=4)
     assert swapped
 
@@ -208,10 +210,16 @@ def test_reader_closes_descriptors_on_success_and_rejection(
     with pytest.raises(OSError):
         os.fstat(descriptors[-1])
 
-    with pytest.raises(cli._OperationalError, match="not_regular_file"):
+    descriptor_count = len(descriptors)
+    directory_error = "file_unreadable" if os.name == "nt" else "not_regular_file"
+    with pytest.raises(cli._OperationalError, match=directory_error):
         cli._read_regular_file(tmp_path, limit=4)
-    with pytest.raises(OSError):
-        os.fstat(descriptors[-1])
+    if os.name == "nt":
+        assert len(descriptors) == descriptor_count
+    else:
+        assert len(descriptors) == descriptor_count + 1
+        with pytest.raises(OSError):
+            os.fstat(descriptors[-1])
 
 
 def test_windows_drive_path_is_not_misclassified_as_a_url(
