@@ -25,6 +25,9 @@ classifiers = [
 ]
 dependencies = []
 
+[project.scripts]
+nfse-br = "nfse_br.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/cassao29/nfse-br"
 Issues = "https://github.com/cassao29/nfse-br/issues"

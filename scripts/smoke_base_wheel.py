@@ -17,6 +17,9 @@ _EXPECTED_REQUIREMENT = "lxml==6.1.3; extra == 'xsd'"
 
 _SMOKE_PROGRAM = r"""
 import importlib.util
+import json
+import subprocess
+import sys
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -25,6 +28,7 @@ from xml.etree import ElementTree
 assert importlib.util.find_spec("lxml") is None
 
 import nfse_br
+import nfse_br.cli
 import nfse_br.domain
 import nfse_br.dps
 import nfse_br.dps.builder
@@ -41,6 +45,7 @@ from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
 
 for module in (
     nfse_br,
+    nfse_br.cli,
     nfse_br.domain,
     nfse_br.dps,
     nfse_br.dps.builder,
@@ -84,6 +89,96 @@ assert root.tag == "{http://www.sped.fazenda.gov.br/nfse}DPS"
 namespace = "{http://www.sped.fazenda.gov.br/nfse}"
 assert root.findtext(f"{namespace}infDPS/{namespace}nDPS") == "42"
 assert inspect_unsigned_dps(xml) == root.find(f"{namespace}infDPS").get("Id")
+
+console = Path(sys.executable).with_name("nfse-br")
+for command in (
+    [str(console), "--help"],
+    [str(console), "--version"],
+    [sys.executable, "-I", "-m", "nfse_br", "--help"],
+    [sys.executable, "-I", "-m", "nfse_br", "--version"],
+):
+    completed = subprocess.run(command, check=False, capture_output=True, text=True)
+    assert completed.returncode == 0, completed
+    assert completed.stdout
+    assert completed.stderr == ""
+
+sensitive_document = "documento sigiloso á <CPF>.xml"
+sensitive_bundle = "bundle sigiloso ç <TOKEN>.zip"
+entry_points = (
+    [str(console)],
+    [sys.executable, "-I", "-m", "nfse_br"],
+)
+invalid_argument_cases = (
+    ["subcomando-sigiloso"],
+    ["check-unsigned"],
+    ["check-unsigned", sensitive_document, "--bundle"],
+    [
+        "check-unsigned",
+        sensitive_document,
+        "--bundle",
+        sensitive_bundle,
+        "--opcao-sigilosa",
+    ],
+    [
+        "check-unsigned",
+        sensitive_document,
+        "--bundle",
+        sensitive_bundle,
+        "argumento-excedente-sigiloso",
+    ],
+)
+for entry_point in entry_points:
+    for arguments in invalid_argument_cases:
+        completed = subprocess.run(
+            [*entry_point, *arguments],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert completed.returncode == 2, completed
+        assert completed.stderr == ""
+        assert completed.stdout.count("\n") == 1
+        assert json.loads(completed.stdout) == {
+            "status": "error",
+            "stage": "usage",
+            "code": "invalid_arguments",
+            "transmission_ready": False,
+        }
+        assert sensitive_document not in completed.stdout
+        assert sensitive_bundle not in completed.stdout
+
+bundle_path = Path("bundle.zip")
+document_path = Path("document.xml")
+bundle_path.write_bytes(b"bundle")
+document_path.write_bytes(xml)
+for command in (
+    [
+        str(console),
+        "check-unsigned",
+        str(document_path),
+        "--bundle",
+        str(bundle_path),
+    ],
+    [
+        sys.executable,
+        "-I",
+        "-m",
+        "nfse_br",
+        "check-unsigned",
+        str(document_path),
+        "--bundle",
+        str(bundle_path),
+    ],
+):
+    completed = subprocess.run(command, check=False, capture_output=True, text=True)
+    assert completed.returncode == 2, completed
+    assert completed.stderr == ""
+    assert json.loads(completed.stdout) == {
+        "status": "error",
+        "stage": "dependency",
+        "code": "xsd_extra_missing",
+        "transmission_ready": False,
+    }
 
 try:
     import nfse_br.xsd

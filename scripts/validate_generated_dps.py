@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import json
+import subprocess
+import sys
+import tempfile
 from collections.abc import Sequence
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta, timezone
@@ -140,11 +144,57 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _run_cli_case(
+    *,
+    bundle_path: Path,
+    document: bytes,
+    expected_exit: int,
+    expected_status: str,
+    expected_stage: str,
+    expected_code: str | None,
+) -> None:
+    with tempfile.TemporaryDirectory(prefix="nfse-br-cli-integration-") as directory:
+        document_path = Path(directory) / "document.xml"
+        document_path.write_bytes(document)
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "nfse_br",
+                "check-unsigned",
+                str(document_path),
+                "--bundle",
+                str(bundle_path),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    try:
+        payload = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        raise GeneratedMutationError("CLI integration returned invalid JSON") from None
+    expected = {
+        "status": expected_status,
+        "stage": expected_stage,
+        "code": expected_code,
+        "transmission_ready": False,
+    }
+    if (
+        completed.returncode != expected_exit
+        or completed.stderr
+        or completed.stdout.count("\n") != 1
+        or payload != expected
+    ):
+        raise GeneratedMutationError("CLI integration result did not match")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run explicit local builder-to-validator integration without network I/O."""
     args = _parse_args(argv)
     try:
-        bundle = args.bundle.read_bytes()
+        bundle_path = args.bundle.resolve(strict=True)
+        bundle = bundle_path.read_bytes()
     except OSError:
         print("Generated DPS integration: bundle could not be read.")
         return 2
@@ -171,6 +221,38 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(f"Generated DPS integration: {label} was accepted.")
                 return 1
         validator.validate(base)
+
+        xsd_valid_outside_local_profile = _replace_once(
+            base,
+            b"<tpAmb>2</tpAmb>",
+            b"<tpAmb>1</tpAmb>",
+        )
+        validator.validate(xsd_valid_outside_local_profile)
+
+        _run_cli_case(
+            bundle_path=bundle_path,
+            document=base,
+            expected_exit=0,
+            expected_status="ok",
+            expected_stage="complete",
+            expected_code=None,
+        )
+        _run_cli_case(
+            bundle_path=bundle_path,
+            document=invalid_documents[0][1],
+            expected_exit=1,
+            expected_status="rejected",
+            expected_stage="xsd_schema",
+            expected_code="document_invalid",
+        )
+        _run_cli_case(
+            bundle_path=bundle_path,
+            document=xsd_valid_outside_local_profile,
+            expected_exit=1,
+            expected_status="rejected",
+            expected_stage="preflight",
+            expected_code="unsupported_local_profile",
+        )
     except GeneratedMutationError:
         print("Generated DPS integration: mutation preparation failed.")
         return 2
@@ -184,6 +266,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Generated negative case {label}: REJECTED")
     print(f"Generated signature preflight cases: {len(documents)} PASS")
     print("Generated sequential valid-invalid-valid state: PASS")
+    print("Generated CLI valid/XSD-invalid/local-profile cases: PASS")
     return 0
 
 

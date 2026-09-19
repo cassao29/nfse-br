@@ -117,6 +117,34 @@ belongs to the historical v1.00.02 manual and is not treated as confirmation
 for the current restricted v1.01 bundle. See
 [`contracts/restricted/DPS_XMLDSIG_PROFILE.md`](contracts/restricted/DPS_XMLDSIG_PROFILE.md).
 
+## Unsigned DPS check CLI
+
+Install the optional XSD support and check one local unsigned DPS against the
+pinned restricted schema and structural preflight:
+
+```console
+pip install 'nfse-br[xsd]'
+nfse-br check-unsigned documento.xml --bundle esquemas.zip
+python -m nfse_br check-unsigned documento.xml --bundle esquemas.zip
+```
+
+The command reads only explicitly named regular files, classifying the opened
+descriptor rather than relying on a prior path check. Symbolic links are
+rejected where the platform provides `O_NOFOLLOW`; otherwise the opened target
+must itself be a regular file. XML input is limited to 1 MiB and the bundle
+read to the pinned profile size. The command writes one JSON object to stdout:
+exit code `0` means both checks passed, `1` means the document was rejected,
+and `2` means usage, dependency, file, or bundle preparation failed. For
+example:
+
+```json
+{"status":"ok","stage":"complete","code":null,"transmission_ready":false}
+```
+
+`--help`, `--version`, package import, and the unsigned builder remain usable
+without `lxml`. A successful result is not fiscal authorization, signature
+validation, or permission to transmit.
+
 ## Development
 
 The project requires Python 3.12 or 3.13 and uses
@@ -142,8 +170,9 @@ library, 90% aggregate branch coverage for `src/nfse_br/_f0/`, 90% branch
 coverage for `src/nfse_br/_f0/dps_schema_contract.py`, 90% aggregate branch
 coverage for `src/nfse_br/xsd/`, and 90% branch coverage for
 `src/nfse_br/dps/builder.py`, and 90% branch coverage for
-`src/nfse_br/_xmlsig/preflight.py`. Gate decisions use exact counters from
-Coverage.py JSON rather than rounded display percentages.
+`src/nfse_br/_xmlsig/preflight.py`, and 90% branch coverage for
+`src/nfse_br/cli.py`. Gate decisions use exact counters from Coverage.py JSON
+rather than rounded display percentages.
 
 CI also installs the built base wheel into a fresh virtual environment without
 dependencies or the `xsd` extra. The official restricted ZIP is not distributed
