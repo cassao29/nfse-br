@@ -9,6 +9,55 @@ not implement a complete fiscal model, XML signatures, issuance, or
 transmission. Local DPS XSD validation is available through an optional
 dependency.
 
+## Quickstart from a checkout
+
+This path uses the repository checkout directly; it does not assume a PyPI
+release. It requires Python 3.12 or 3.13 and `uv` (CI currently uses
+`uv 0.12.13`).
+
+```console
+git clone https://github.com/cassao29/nfse-br.git
+cd nfse-br
+uv sync --frozen
+uv run --frozen python -c "from pathlib import Path; Path('build/quickstart').mkdir(parents=True, exist_ok=True)"
+uv run --frozen python examples/build_unsigned_dps.py --output build/quickstart/dps.xml
+```
+
+The last command prints `Unsigned synthetic DPS written.` and creates
+`build/quickstart/dps.xml`. It refuses to overwrite an existing file. The
+example uses fixed synthetic data and writes the exact bytes returned by
+`build_unsigned_dps()`; generation needs neither `lxml`, a schema bundle, nor
+network access after the checkout has been installed.
+
+Schema validation is a separate operation. First, explicitly obtain and audit
+the pinned official restricted artifacts:
+
+```console
+uv run --frozen python scripts/f0_freeze_restricted.py --work-dir .f0/restricted --manifest contracts/restricted/manifest.json
+```
+
+That preparation step accesses `gov.br`, validates the discovered artifacts
+against the frozen evidence, and writes the ignored bundle as
+`.f0/restricted/restricted-xsd.zip`. It is never called by the example or the
+validator. With the bundle present, install the optional XSD support and check
+the generated document:
+
+```console
+uv sync --frozen --extra xsd
+uv run --frozen --extra xsd nfse-br check-unsigned build/quickstart/dps.xml --bundle .f0/restricted/restricted-xsd.zip
+```
+
+Success emits exactly:
+
+```json
+{"status":"ok","stage":"complete","code":null,"transmission_ready":false}
+```
+
+Exit code `0` means XSD validation and the unsigned-DPS structural preflight
+passed. Exit code `1` means the document was rejected; `2` means usage,
+dependency, file, or bundle preparation failed. Passing these checks is not
+fiscal authorization, signature validation, or permission to transmit.
+
 ## Current scope
 
 The library currently provides immutable primitives for NFS-e environments,
@@ -32,9 +81,10 @@ not define a software/API series allocation convention.
 Lexically distinct series values that produce the same padded component map to
 the same logical `DpsIdentity` value and therefore compare as equal identities.
 
-The DPS identity contract implemented here is suitable for local deterministic
-work and testing only. Transmission remains gated on freezing and auditing the
-exact official environment-specific XSD/layout bundle.
+The DPS identity contract is backed by frozen official restricted-environment
+XSD and layout bytes and is suitable for local deterministic work and testing.
+Transmission remains unavailable: the supported DPS subset is deliberately
+limited and the current XMLDSig algorithm profile is not confirmed.
 
 ## Contract evidence
 
@@ -44,13 +94,15 @@ SHA-256 provenance and audited facets are recorded in
 `contracts/restricted/manifest.json`; downloaded artifacts remain under the
 ignored `.f0/` directory and are not redistributed.
 
-This evidence covers only DPS identity and series facets. Transmission remains
-unavailable and `transmission_ready` remains `false`.
+The identity manifest covers the DPS identity and series facets. The separate
+structural contract covers the reviewed builder/validator subset. Neither
+artifact confirms the current XMLDSig algorithms, fiscal authorization, or
+transmission; `transmission_ready` remains `false`.
 
 The derived restricted DPS structural subset is recorded separately in
 `contracts/restricted/dps-schema-contract.json`. It is bound to the identity
-manifest and official XSD ZIP by SHA-256, but remains repository evidence—not
-a runtime XSD validator or XML builder.
+manifest and official XSD ZIP by SHA-256 and remains repository evidence; the
+runtime does not load that JSON as configuration.
 
 ## Local XSD validation
 
@@ -59,13 +111,6 @@ exact frozen Produção Restrita bundle:
 
 ```console
 uv sync --frozen --extra xsd
-```
-
-```python
-from nfse_br.xsd import RestrictedDpsXsdValidator
-
-validator = RestrictedDpsXsdValidator(bundle_bytes)
-validator.validate(xml_bytes)
 ```
 
 The constructor accepts only the pinned official ZIP bytes and never downloads
@@ -88,17 +133,11 @@ code and description, service amount, and caller-supplied minimal tax codes.
 It derives `infDPS@Id` from the same municipality, CNPJ, series, and number
 written to the XML.
 
-```python
-from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
-
-xml_bytes = build_unsigned_dps(draft)
-```
-
 Building uses only the standard library and does not implicitly validate,
 sign, transmit, read files, or access the network. The optional validator is a
 separate explicit call. Monetary values use exact `Decimal` input with no
 silent rounding, and the timestamp must already contain an allowed whole-hour
-UTC offset. See
+UTC offset. The executable example in the quickstart supplies every field. See
 [`contracts/restricted/DPS_UNSIGNED_BUILDER.md`](contracts/restricted/DPS_UNSIGNED_BUILDER.md)
 for the supported mapping and limits.
 
@@ -119,13 +158,11 @@ for the current restricted v1.01 bundle. See
 
 ## Unsigned DPS check CLI
 
-Install the optional XSD support and check one local unsigned DPS against the
-pinned restricted schema and structural preflight:
+After following the checkout quickstart, check one local unsigned DPS against
+the pinned restricted schema and structural preflight:
 
 ```console
-pip install 'nfse-br[xsd]'
-nfse-br check-unsigned documento.xml --bundle esquemas.zip
-python -m nfse_br check-unsigned documento.xml --bundle esquemas.zip
+uv run --frozen --extra xsd nfse-br check-unsigned build/quickstart/dps.xml --bundle .f0/restricted/restricted-xsd.zip
 ```
 
 The command reads only explicitly named regular files, classifying the opened
@@ -154,7 +191,7 @@ The project requires Python 3.12 or 3.13 and uses
 uv sync --frozen --extra xsd
 uv run --frozen --extra xsd ruff check .
 uv run --frozen --extra xsd ruff format --check .
-uv run --frozen --extra xsd mypy src tests scripts
+uv run --frozen --extra xsd mypy src tests scripts examples
 mkdir -p build/coverage
 uv run --frozen --extra xsd pytest \
   --cov=src/nfse_br --cov-branch --cov-report=term-missing \
