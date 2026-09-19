@@ -16,6 +16,7 @@ SCHEMA_BRANCH_MINIMUM = 90
 XSD_BRANCH_MINIMUM = 90
 BUILDER_BRANCH_MINIMUM = 90
 XMLSIG_PREFLIGHT_BRANCH_MINIMUM = 90
+CLI_BRANCH_MINIMUM = 90
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _F0_ROOT = _PROJECT_ROOT / "src/nfse_br/_f0"
@@ -24,6 +25,7 @@ _SCHEMA_MODULE = "src/nfse_br/_f0/dps_schema_contract.py"
 _XSD_VALIDATOR_MODULE = "src/nfse_br/xsd/validator.py"
 _DPS_BUILDER_MODULE = "src/nfse_br/dps/builder.py"
 _XMLSIG_PREFLIGHT_MODULE = "src/nfse_br/_xmlsig/preflight.py"
+_CLI_MODULE = "src/nfse_br/cli.py"
 
 
 class CoverageGateError(ValueError):
@@ -57,6 +59,7 @@ def evaluate_report(
     expected_xsd_paths: frozenset[str],
     expected_builder_paths: frozenset[str],
     expected_xmlsig_paths: frozenset[str],
+    expected_cli_paths: frozenset[str],
 ) -> tuple[
     GateResult,
     GateResult,
@@ -64,8 +67,9 @@ def evaluate_report(
     GateResult,
     GateResult,
     GateResult,
+    GateResult,
 ]:
-    """Validate a Coverage.py report and calculate the six required gates."""
+    """Validate a Coverage.py report and calculate the seven required gates."""
     if _XSD_VALIDATOR_MODULE not in expected_xsd_paths:
         raise CoverageGateError(
             f"XSD scope is missing required module {_XSD_VALIDATOR_MODULE!r}"
@@ -79,6 +83,8 @@ def evaluate_report(
             "XML signature preflight scope is missing required module "
             f"{_XMLSIG_PREFLIGHT_MODULE!r}"
         )
+    if _CLI_MODULE not in expected_cli_paths:
+        raise CoverageGateError(f"CLI scope is missing required module {_CLI_MODULE!r}")
     meta = _mapping(report.get("meta"), context="meta")
     if meta.get("branch_coverage") is not True:
         raise CoverageGateError("branch measurement is not enabled")
@@ -117,6 +123,11 @@ def evaluate_report(
         raise CoverageGateError(
             "coverage report is missing XML signature preflight files: "
             f"{sorted(missing_xmlsig)!r}"
+        )
+    missing_cli = expected_cli_paths - files.keys()
+    if missing_cli:
+        raise CoverageGateError(
+            f"coverage report is missing CLI files: {sorted(missing_cli)!r}"
         )
 
     f0_covered = 0
@@ -169,6 +180,15 @@ def evaluate_report(
         xmlsig_covered += covered
         xmlsig_total += total
 
+    cli_covered = 0
+    cli_total = 0
+    for path in expected_cli_paths:
+        file_data = files[path]
+        summary = _mapping(file_data.get("summary"), context=f"summary for {path!r}")
+        covered, total = _counts(summary, context=path, unit="branches")
+        cli_covered += covered
+        cli_total += total
+
     return (
         _gate(
             "Library combined",
@@ -205,6 +225,12 @@ def evaluate_report(
             covered=xmlsig_covered,
             total=xmlsig_total,
             minimum=XMLSIG_PREFLIGHT_BRANCH_MINIMUM,
+        ),
+        _gate(
+            "CLI branches",
+            covered=cli_covered,
+            total=cli_total,
+            minimum=CLI_BRANCH_MINIMUM,
         ),
     )
 
@@ -264,6 +290,16 @@ def expected_xmlsig_paths() -> frozenset[str]:
             f"{_XMLSIG_PREFLIGHT_MODULE!r}"
         )
     return frozenset({_XMLSIG_PREFLIGHT_MODULE})
+
+
+def expected_cli_paths() -> frozenset[str]:
+    """Return the explicitly gated command-line interface module."""
+    path = _PROJECT_ROOT / _CLI_MODULE
+    if not path.is_file():
+        raise CoverageGateError(
+            f"CLI source tree is missing required module {_CLI_MODULE!r}"
+        )
+    return frozenset({_CLI_MODULE})
 
 
 def _counts(
@@ -335,6 +371,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             expected_xsd_paths=expected_xsd_paths(),
             expected_builder_paths=expected_builder_paths(),
             expected_xmlsig_paths=expected_xmlsig_paths(),
+            expected_cli_paths=expected_cli_paths(),
         )
     except CoverageGateError as exc:
         print(f"Coverage gate error: {exc}", file=sys.stderr)
