@@ -222,6 +222,24 @@ def test_reader_closes_descriptors_on_success_and_rejection(
             os.fstat(descriptors[-1])
 
 
+def test_reader_rejects_and_closes_an_open_non_regular_descriptor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    read_descriptor, write_descriptor = os.pipe()
+    os.close(write_descriptor)
+
+    def open_pipe(_path: os.PathLike[str] | str, _flags: int) -> int:
+        return read_descriptor
+
+    monkeypatch.setattr(os, "open", open_pipe)
+
+    with pytest.raises(cli._OperationalError, match="not_regular_file"):
+        cli._read_regular_file(tmp_path / "synthetic-pipe", limit=4)
+    with pytest.raises(OSError):
+        os.fstat(read_descriptor)
+
+
 def test_windows_drive_path_is_not_misclassified_as_a_url(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
