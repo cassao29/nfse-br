@@ -108,8 +108,14 @@ def _load_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
     if importlib.util.find_spec("lxml") is None:
         raise _OperationalError("xsd_extra_missing")
 
-    # Import only for the command that needs the optional dependency. Import
-    # failures with an installed lxml are intentionally not relabelled.
+    try:
+        return _import_xsd_components()
+    except ImportError:
+        raise _OperationalError("xsd_import_failed") from None
+
+
+def _import_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
+    """Import the optional validator only after confirming lxml is present."""
     from nfse_br.xsd import RestrictedDpsXsdValidator, XsdValidationError
 
     return RestrictedDpsXsdValidator, XsdValidationError
@@ -118,7 +124,12 @@ def _load_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
 def _read_regular_file(path: Path, *, limit: int) -> bytes:
     raw_path = os.fspath(path)
     parsed = urlsplit(raw_path)
-    if parsed.scheme or parsed.netloc:
+    windows_drive = len(parsed.scheme) == 1 and raw_path[1:2] == ":"
+    if (
+        (parsed.scheme and not windows_drive)
+        or parsed.netloc
+        or raw_path.startswith(("//", "\\\\"))
+    ):
         raise _OperationalError("invalid_file_location")
 
     flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)

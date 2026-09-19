@@ -128,11 +128,14 @@ nfse-br check-unsigned documento.xml --bundle esquemas.zip
 python -m nfse_br check-unsigned documento.xml --bundle esquemas.zip
 ```
 
-The command reads only explicitly named regular files, limits XML input to 1
-MiB, and limits the bundle read to the pinned profile size. It writes one JSON
-object to stdout: exit code `0` means both checks passed, `1` means the document
-was rejected, and `2` means usage, dependency, file, or bundle preparation
-failed. For example:
+The command reads only explicitly named regular files, classifying the opened
+descriptor rather than relying on a prior path check. Symbolic links are
+rejected where the platform provides `O_NOFOLLOW`; otherwise the opened target
+must itself be a regular file. XML input is limited to 1 MiB and the bundle
+read to the pinned profile size. The command writes one JSON object to stdout:
+exit code `0` means both checks passed, `1` means the document was rejected,
+and `2` means usage, dependency, file, or bundle preparation failed. For
+example:
 
 ```json
 {"status":"ok","stage":"complete","code":null,"transmission_ready":false}
