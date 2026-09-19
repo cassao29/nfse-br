@@ -32,17 +32,23 @@ authorize a tag, GitHub Release, TestPyPI upload, or PyPI upload.
 - [ ] Execute the README quickstart from a clean checkout and validate the
   generated XML locally with the pinned official bundle.
 - [ ] Run the repository's secret scan over every commit to be released.
-- [ ] Enable and verify GitHub Private Vulnerability Reporting. Do not release
-  while the private reporting channel described in `SECURITY.md` is absent.
+- [x] GitHub Private Vulnerability Reporting is configured and was verified
+  through the repository API on 2026-09-19.
 - [ ] Confirm the `0.1.0` tag does not already exist locally or remotely.
 - [ ] Confirm the `nfse-br` project name is available on PyPI and that the
-  releasing account or organization controls it before any upload. A public
-  404 alone does not establish ownership.
+  releasing account or organization can create/control it immediately before
+  the first publish.
 - [ ] Decide explicitly whether to use TestPyPI; it is optional and must not be
   treated as production publication.
 - [ ] Obtain explicit authorization before creating the tag, GitHub Release,
   TestPyPI upload, PyPI project, trusted-publishing configuration, or PyPI
   upload.
+
+A 404 response for <https://pypi.org/project/nfse-br/> indicates that no public
+project is currently visible at that URL, but does not reserve the name or
+guarantee that it will remain available. Recheck it immediately before the
+first publish; this is a release-time check rather than a blocker for the local
+release candidate.
 
 The official restricted bundle integration remains a local gate:
 `OFFICIAL_BUNDLE_E2E_IN_CI = NOT_RUN_BY_DESIGN`. Passing package and schema

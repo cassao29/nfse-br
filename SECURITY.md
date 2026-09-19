@@ -11,11 +11,11 @@ report, but are not separate supported release lines.
 Do not open a public issue containing credentials, certificates, private keys,
 real fiscal documents, taxpayer data, or an exploitable vulnerability.
 
-GitHub Private Vulnerability Reporting is the intended private reporting
-channel for this repository. It is not yet enabled, so enabling and verifying
-that channel is an administrative blocker for the 0.1.0 release. Until it is
-available, do not send sensitive material through a public issue or pull
-request. No private email address is advertised by this project.
+Use this repository's
+[GitHub Private Vulnerability Reporting](https://github.com/cassao29/nfse-br/security/advisories)
+channel to report a vulnerability privately. Do not send sensitive material
+through a public issue or pull request. No private email address is advertised
+by this project.
 
 The policy covers vulnerabilities in the distributed `nfse-br` package and
 its documented command-line interface. It does not make gov.br, SEFIN, PyPI,
