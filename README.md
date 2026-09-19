@@ -9,6 +9,30 @@ not implement a complete fiscal model, XML signatures, issuance, or
 transmission. Local DPS XSD validation is available through an optional
 dependency.
 
+## Release 0.1.0 contract
+
+The supported public surface for 0.1.0 is deliberately small:
+
+- domain primitives from `nfse_br.domain`;
+- opt-in CPF and CNPJ check-digit validation from their documented domain
+  submodules;
+- `DpsSeries`, `DpsNumber`, and `DpsIdentity` from `nfse_br.dps`;
+- `RestrictedDpsDraft` and `build_unsigned_dps` from
+  `nfse_br.dps.builder`;
+- `RestrictedDpsXsdValidator` and `XsdValidationError` from `nfse_br.xsd`,
+  when the `xsd` extra is installed; and
+- the `nfse-br check-unsigned` command.
+
+Modules below `nfse_br._f0` and `nfse_br._xmlsig`, together with freeze and
+schema-contract tooling, are private or experimental implementation details.
+They may change without being treated as public API.
+
+Version 0.1.0 does not support issuance or transmission, HTTP/SEFIN calls,
+XMLDSig signing or cryptographic verification, certificate or private-key
+handling, production-environment operation, a complete fiscal model, or
+number allocation and persistence. See the [changelog](CHANGELOG.md) for the
+release summary and known limitations.
+
 ## Quickstart from a checkout
 
 This path uses the repository checkout directly; it does not assume a PyPI
@@ -260,3 +284,7 @@ documented with the frozen profile.
 ## License
 
 MIT
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development instructions and
+[SECURITY.md](SECURITY.md) for the vulnerability-reporting policy. The
+maintainer release procedure is in [docs/RELEASE.md](docs/RELEASE.md).
