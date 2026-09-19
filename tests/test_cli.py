@@ -136,6 +136,14 @@ def test_file_reader_accepts_only_bounded_regular_local_files(tmp_path: Path) ->
             cli._read_regular_file(fifo, limit=4)
 
 
+def test_file_reader_preserves_binary_bytes(tmp_path: Path) -> None:
+    payload = b"first\r\nsecond\x1a\x00\x80\xff"
+    regular = tmp_path / "dados binarios acentuados á.bin"
+    regular.write_bytes(payload)
+
+    assert cli._read_regular_file(regular, limit=len(payload)) == payload
+
+
 def test_reader_classifies_the_descriptor_after_a_controlled_path_swap(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
