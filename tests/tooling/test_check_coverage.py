@@ -27,6 +27,8 @@ _CNPJ = "src/nfse_br/domain/cnpj.py"
 _CNPJ_PATHS = frozenset({_CNPJ})
 _CPF = "src/nfse_br/domain/cpf.py"
 _CPF_PATHS = frozenset({_CPF})
+_NFSE_ACCESS_KEY = "src/nfse_br/nfse/access_key.py"
+_NFSE_ACCESS_KEY_PATHS = frozenset({_NFSE_ACCESS_KEY})
 
 
 def _summary(*, covered: int, total: int) -> dict[str, object]:
@@ -51,6 +53,7 @@ def _report(
     cli: tuple[int, int] = (90, 100),
     cnpj: tuple[int, int] = (90, 100),
     cpf: tuple[int, int] = (90, 100),
+    nfse_access_key: tuple[int, int] = (90, 100),
     branch_coverage: bool = True,
 ) -> dict[str, object]:
     return {
@@ -80,6 +83,12 @@ def _report(
             _CLI: {"summary": _summary(covered=cli[0], total=cli[1])},
             _CNPJ: {"summary": _summary(covered=cnpj[0], total=cnpj[1])},
             _CPF: {"summary": _summary(covered=cpf[0], total=cpf[1])},
+            _NFSE_ACCESS_KEY: {
+                "summary": _summary(
+                    covered=nfse_access_key[0],
+                    total=nfse_access_key[1],
+                )
+            },
         },
     }
 
@@ -94,6 +103,7 @@ def _results(report: dict[str, object]) -> tuple[check_coverage.GateResult, ...]
         expected_cli_paths=_CLI_PATHS,
         expected_cnpj_paths=_CNPJ_PATHS,
         expected_cpf_paths=_CPF_PATHS,
+        expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
     )
 
 
@@ -104,6 +114,7 @@ def test_module_203_of_226_fails_even_with_rounded_display() -> None:
         True,
         True,
         False,
+        True,
         True,
         True,
         True,
@@ -181,6 +192,15 @@ def test_cpf_exactly_ninety_percent_passes_and_below_fails() -> None:
     assert all(result.passed for result in failing[:8])
 
 
+def test_nfse_access_key_exactly_ninety_percent_passes_and_below_fails() -> None:
+    passing = _results(_report(nfse_access_key=(9, 10)))
+    failing = _results(_report(nfse_access_key=(89, 100)))
+
+    assert passing[9].passed
+    assert not failing[9].passed
+    assert all(result.passed for result in failing[:9])
+
+
 def test_aggregate_f0_below_ninety_percent_fails() -> None:
     results = _results(_report(module=(90, 100), restricted=(8, 10)))
 
@@ -237,6 +257,7 @@ def test_xsd_scope_must_explicitly_include_validator() -> None:
             expected_cli_paths=_CLI_PATHS,
             expected_cnpj_paths=_CNPJ_PATHS,
             expected_cpf_paths=_CPF_PATHS,
+            expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
         )
 
 
@@ -251,6 +272,7 @@ def test_xsd_scope_must_explicitly_include_nfse_validator() -> None:
             expected_cli_paths=_CLI_PATHS,
             expected_cnpj_paths=_CNPJ_PATHS,
             expected_cpf_paths=_CPF_PATHS,
+            expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
         )
 
 
@@ -265,6 +287,7 @@ def test_builder_scope_and_report_must_include_required_module() -> None:
             expected_cli_paths=_CLI_PATHS,
             expected_cnpj_paths=_CNPJ_PATHS,
             expected_cpf_paths=_CPF_PATHS,
+            expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
         )
 
     report = _report()
@@ -285,6 +308,7 @@ def test_xmlsig_scope_and_report_must_include_preflight() -> None:
             expected_cli_paths=_CLI_PATHS,
             expected_cnpj_paths=_CNPJ_PATHS,
             expected_cpf_paths=_CPF_PATHS,
+            expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
         )
 
     report = _report()
@@ -308,6 +332,7 @@ def test_cli_scope_and_report_must_include_required_module() -> None:
             expected_cli_paths=frozenset(),
             expected_cnpj_paths=_CNPJ_PATHS,
             expected_cpf_paths=_CPF_PATHS,
+            expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
         )
 
     report = _report()
@@ -328,6 +353,7 @@ def test_cnpj_scope_and_report_must_include_required_module() -> None:
             expected_cli_paths=_CLI_PATHS,
             expected_cnpj_paths=frozenset(),
             expected_cpf_paths=_CPF_PATHS,
+            expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
         )
 
     report = _report()
@@ -348,12 +374,37 @@ def test_cpf_scope_and_report_must_include_required_module() -> None:
             expected_cli_paths=_CLI_PATHS,
             expected_cnpj_paths=_CNPJ_PATHS,
             expected_cpf_paths=frozenset(),
+            expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
         )
 
     report = _report()
     files = cast(dict[str, object], report["files"])
     del files[_CPF]
     with pytest.raises(check_coverage.CoverageGateError, match="missing CPF files"):
+        _results(report)
+
+
+def test_nfse_access_key_scope_and_report_must_include_required_module() -> None:
+    with pytest.raises(check_coverage.CoverageGateError, match="required module"):
+        check_coverage.evaluate_report(
+            _report(),
+            expected_f0_paths=_F0_PATHS,
+            expected_xsd_paths=_XSD_PATHS,
+            expected_builder_paths=_BUILDER_PATHS,
+            expected_xmlsig_paths=_XMLSIG_PATHS,
+            expected_cli_paths=_CLI_PATHS,
+            expected_cnpj_paths=_CNPJ_PATHS,
+            expected_cpf_paths=_CPF_PATHS,
+            expected_nfse_access_key_paths=frozenset(),
+        )
+
+    report = _report()
+    files = cast(dict[str, object], report["files"])
+    del files[_NFSE_ACCESS_KEY]
+    with pytest.raises(
+        check_coverage.CoverageGateError,
+        match="missing NFS-e access-key files",
+    ):
         _results(report)
 
 
@@ -432,6 +483,18 @@ def test_cpf_source_tree_without_module_is_rejected(
         check_coverage.expected_cpf_paths()
 
 
+def test_nfse_access_key_source_tree_without_module_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    monkeypatch.setattr(check_coverage, "_PROJECT_ROOT", project_root)
+
+    with pytest.raises(check_coverage.CoverageGateError, match="required access-key"):
+        check_coverage.expected_nfse_access_key_paths()
+
+
 @pytest.mark.parametrize(
     ("covered", "total", "error"),
     [
@@ -481,7 +544,8 @@ def test_cli_returns_zero_and_prints_all_passing_gates(
     assert "CLI branches" in output
     assert "CNPJ check-digit branches" in output
     assert "CPF check-digit branches" in output
-    assert output.count("PASS") == 9
+    assert "NFS-e access-key branches" in output
+    assert output.count("PASS") == 10
 
 
 @pytest.mark.parametrize(
@@ -548,4 +612,5 @@ def test_unsafe_or_incomplete_f0_paths_are_rejected() -> None:
             expected_cli_paths=_CLI_PATHS,
             expected_cnpj_paths=_CNPJ_PATHS,
             expected_cpf_paths=_CPF_PATHS,
+            expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
         )

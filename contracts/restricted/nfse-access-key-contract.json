@@ -1,0 +1,21 @@
+{
+  "authority": "official_frozen",
+  "base": "xs:string",
+  "bundle": {
+    "sha256": "6c7e0510d3ecff4454f291f4e10b742d27a4818f23aab181494f96d0ea79f3dc",
+    "size": 34933
+  },
+  "environment": "restricted",
+  "facets": {
+    "maxLength": 50,
+    "pattern": "[0-9]{6}([0-9A-Z]{14})[0-9]{30}",
+    "whiteSpace": "preserve"
+  },
+  "source_member": {
+    "path": "tiposSimples_v1.01.xsd",
+    "sha256": "3d8171c9b7c9a82ecb48eed9a96485f2077006e7d21db6cd182839dd34dbb5e4",
+    "size": 69488
+  },
+  "transmission_ready": false,
+  "type": "TSChaveNFSe"
+}

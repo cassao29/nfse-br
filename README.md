@@ -87,11 +87,32 @@ fiscal authorization, signature validation, or permission to transmit.
 
 The library currently provides immutable primitives for NFS-e environments,
 lexical CPF/CNPJ identifiers, IBGE municipality codes, competence dates, and a
-working local DPS identity value.
+working local DPS identity value. It also provides an exact lexical primitive
+for NFS-e access keys from the frozen restricted XSD contract.
 
 Explicit CPF and CNPJ check-digit validation is available separately from
 lexical construction. Issuance, transmission, complete DPS XML generation,
 and XMLDSig remain outside the current scope.
+
+## NFS-e access key
+
+`NfseAccessKey` is the immutable lexical primitive for the 50-position
+`TSChaveNFSe` value defined by the frozen restricted XSD. It preserves the
+input exactly and accepts only the uppercase ASCII format declared by that
+schema:
+
+```python
+from nfse_br.nfse import NfseAccessKey
+
+key = NfseAccessKey("000000SYNTHETIC00000000000000000000000000000000000")
+print(key)
+```
+
+Construction proves only lexical conformance. It does not check that a key
+exists, reconstruct or decompose one, establish fiscal authorization or
+authenticity, query a service, or transmit anything. See
+[`contracts/restricted/NFSE_ACCESS_KEY.md`](contracts/restricted/NFSE_ACCESS_KEY.md)
+for the exact frozen facets and source pins.
 
 ## Explicit CPF and CNPJ check digits
 

@@ -34,6 +34,7 @@ import nfse_br.domain.cnpj
 import nfse_br.domain.cpf
 import nfse_br.dps
 import nfse_br.dps.builder
+import nfse_br.nfse
 import nfse_br._xmlsig.preflight
 from nfse_br._xmlsig.preflight import inspect_unsigned_dps
 from nfse_br.domain import (
@@ -46,6 +47,7 @@ from nfse_br.domain.cnpj import validate_cnpj_check_digits
 from nfse_br.domain.cpf import validate_cpf_check_digits
 from nfse_br.dps import DpsNumber, DpsSeries
 from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
+from nfse_br.nfse import NfseAccessKey
 
 for module in (
     nfse_br,
@@ -55,6 +57,7 @@ for module in (
     nfse_br.domain.cpf,
     nfse_br.dps,
     nfse_br.dps.builder,
+    nfse_br.nfse,
     nfse_br._xmlsig.preflight,
 ):
     module_path = Path(module.__file__).resolve()
@@ -67,6 +70,17 @@ except DomainValidationError:
     pass
 else:
     raise AssertionError("DpsNumber(0) was unexpectedly accepted")
+
+synthetic_access_key = "000000SYNTHETIC00000" + "0" * 30
+access_key = NfseAccessKey(synthetic_access_key)
+assert str(access_key) == synthetic_access_key
+assert synthetic_access_key not in repr(access_key)
+try:
+    NfseAccessKey(synthetic_access_key[:-1] + "!")
+except DomainValidationError:
+    pass
+else:
+    raise AssertionError("Invalid NFS-e access key was unexpectedly accepted")
 
 validate_cnpj_check_digits(FederalTaxId.cnpj("12ABC34501DE35"))
 try:
