@@ -15,7 +15,8 @@ _F0_INIT = "src/nfse_br/_f0/__init__.py"
 _F0_PATHS = frozenset({_SCHEMA, _RESTRICTED, _F0_INIT})
 _XSD_INIT = "src/nfse_br/xsd/__init__.py"
 _XSD_VALIDATOR = "src/nfse_br/xsd/validator.py"
-_XSD_PATHS = frozenset({_XSD_INIT, _XSD_VALIDATOR})
+_NFSE_XSD_VALIDATOR = "src/nfse_br/xsd/nfse_validator.py"
+_XSD_PATHS = frozenset({_XSD_INIT, _XSD_VALIDATOR, _NFSE_XSD_VALIDATOR})
 _DPS_BUILDER = "src/nfse_br/dps/builder.py"
 _BUILDER_PATHS = frozenset({_DPS_BUILDER})
 _XMLSIG_PREFLIGHT = "src/nfse_br/_xmlsig/preflight.py"
@@ -71,6 +72,7 @@ def _report(
             },
             _XSD_INIT: {"summary": _summary(covered=0, total=0)},
             _XSD_VALIDATOR: {"summary": _summary(covered=xsd[0], total=xsd[1])},
+            _NFSE_XSD_VALIDATOR: {"summary": _summary(covered=0, total=0)},
             _DPS_BUILDER: {"summary": _summary(covered=builder[0], total=builder[1])},
             _XMLSIG_PREFLIGHT: {
                 "summary": _summary(covered=xmlsig[0], total=xmlsig[1])
@@ -214,10 +216,11 @@ def test_missing_module_and_disabled_branch_measurement_are_rejected() -> None:
         _results(_report(branch_coverage=False))
 
 
-def test_missing_xsd_file_is_rejected() -> None:
+@pytest.mark.parametrize("missing_path", [_XSD_VALIDATOR, _NFSE_XSD_VALIDATOR])
+def test_missing_xsd_file_is_rejected(missing_path: str) -> None:
     report = _report()
     files = cast(dict[str, object], report["files"])
-    del files[_XSD_VALIDATOR]
+    del files[missing_path]
 
     with pytest.raises(check_coverage.CoverageGateError, match="missing XSD files"):
         _results(report)
@@ -228,7 +231,21 @@ def test_xsd_scope_must_explicitly_include_validator() -> None:
         check_coverage.evaluate_report(
             _report(),
             expected_f0_paths=_F0_PATHS,
-            expected_xsd_paths=frozenset({_XSD_INIT}),
+            expected_xsd_paths=frozenset({_XSD_INIT, _NFSE_XSD_VALIDATOR}),
+            expected_builder_paths=_BUILDER_PATHS,
+            expected_xmlsig_paths=_XMLSIG_PATHS,
+            expected_cli_paths=_CLI_PATHS,
+            expected_cnpj_paths=_CNPJ_PATHS,
+            expected_cpf_paths=_CPF_PATHS,
+        )
+
+
+def test_xsd_scope_must_explicitly_include_nfse_validator() -> None:
+    with pytest.raises(check_coverage.CoverageGateError, match="required module"):
+        check_coverage.evaluate_report(
+            _report(),
+            expected_f0_paths=_F0_PATHS,
+            expected_xsd_paths=frozenset({_XSD_INIT, _XSD_VALIDATOR}),
             expected_builder_paths=_BUILDER_PATHS,
             expected_xmlsig_paths=_XMLSIG_PATHS,
             expected_cli_paths=_CLI_PATHS,

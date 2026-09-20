@@ -4,6 +4,7 @@ Install ``nfse-br[xsd]`` to use this module.
 """
 
 try:
+    from nfse_br.xsd.nfse_validator import RecoveredNfseValidator
     from nfse_br.xsd.validator import RestrictedDpsXsdValidator, XsdValidationError
 except ModuleNotFoundError as exc:
     if exc.name != "lxml":
@@ -13,4 +14,8 @@ except ModuleNotFoundError as exc:
         "install it with `pip install nfse-br[xsd]`."
     ) from None
 
-__all__ = ["RestrictedDpsXsdValidator", "XsdValidationError"]
+__all__ = [
+    "RecoveredNfseValidator",
+    "RestrictedDpsXsdValidator",
+    "XsdValidationError",
+]

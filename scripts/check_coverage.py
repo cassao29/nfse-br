@@ -25,6 +25,7 @@ _F0_ROOT = _PROJECT_ROOT / "src/nfse_br/_f0"
 _XSD_ROOT = _PROJECT_ROOT / "src/nfse_br/xsd"
 _SCHEMA_MODULE = "src/nfse_br/_f0/dps_schema_contract.py"
 _XSD_VALIDATOR_MODULE = "src/nfse_br/xsd/validator.py"
+_NFSE_XSD_VALIDATOR_MODULE = "src/nfse_br/xsd/nfse_validator.py"
 _DPS_BUILDER_MODULE = "src/nfse_br/dps/builder.py"
 _XMLSIG_PREFLIGHT_MODULE = "src/nfse_br/_xmlsig/preflight.py"
 _CLI_MODULE = "src/nfse_br/cli.py"
@@ -81,6 +82,10 @@ def evaluate_report(
     if _XSD_VALIDATOR_MODULE not in expected_xsd_paths:
         raise CoverageGateError(
             f"XSD scope is missing required module {_XSD_VALIDATOR_MODULE!r}"
+        )
+    if _NFSE_XSD_VALIDATOR_MODULE not in expected_xsd_paths:
+        raise CoverageGateError(
+            f"XSD scope is missing required module {_NFSE_XSD_VALIDATOR_MODULE!r}"
         )
     if _DPS_BUILDER_MODULE not in expected_builder_paths:
         raise CoverageGateError(
@@ -321,6 +326,10 @@ def expected_xsd_paths() -> frozenset[str]:
     if _XSD_VALIDATOR_MODULE not in paths:
         raise CoverageGateError(
             f"XSD source tree is missing required module {_XSD_VALIDATOR_MODULE!r}"
+        )
+    if _NFSE_XSD_VALIDATOR_MODULE not in paths:
+        raise CoverageGateError(
+            f"XSD source tree is missing required module {_NFSE_XSD_VALIDATOR_MODULE!r}"
         )
     return paths
 

@@ -1,9 +1,9 @@
-"""Fail-closed local validation against the frozen restricted DPS schema."""
+"""Fail-closed local validation against frozen restricted schemas."""
 
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import PurePosixPath, PureWindowsPath
 from typing import TYPE_CHECKING
@@ -49,7 +49,7 @@ _EXPECTED_SCHEMA_MEMBERS = {
 
 
 class XsdValidationError(ValueError):
-    """A privacy-safe failure while preparing or validating restricted DPS XML."""
+    """A privacy-safe failure while preparing or validating restricted XML."""
 
     def __init__(
         self,
@@ -119,18 +119,10 @@ class RestrictedDpsXsdValidator:
             expected_size=RESTRICTED_XSD_BUNDLE_SIZE,
             expected_sha256=RESTRICTED_XSD_BUNDLE_SHA256,
         )
-
-        try:
-            archive_members = _restricted._read_safe_zip(bundle_bytes)
-            profile = _official_schema_profile(archive_members)
-            self._schema = _compile_schema(profile.members, profile.entrypoint)
-            self._root_qname = profile.root_qname
-        except _restricted.ContractFreezeError:
-            raise _error("bundle", "unsafe_archive") from None
-        except XsdValidationError:
-            raise
-        except (OSError, etree.LxmlError):
-            raise _error("bundle", "schema_compile_failed") from None
+        self._schema, self._root_qname = _compile_bundle_profile(
+            bundle_bytes,
+            profile_builder=_official_schema_profile,
+        )
 
     def validate(self, xml_bytes: bytes) -> None:
         """Validate one XML byte string, returning ``None`` only when it passes."""
@@ -163,7 +155,7 @@ def _validate_xml(
         raise _error("parse", "document_too_large")
 
     try:
-        _restricted._parse_safe_xml(xml_bytes, source="DPS input")
+        _restricted._parse_safe_xml(xml_bytes, source="XML input")
     except _restricted.ContractFreezeError:
         raise _error("parse", "unsafe_or_malformed_xml") from None
 
@@ -193,18 +185,36 @@ def _validate_xml(
 
 
 def _official_schema_profile(members: Mapping[str, bytes]) -> _SchemaProfile:
+    return _pinned_schema_profile(
+        members,
+        discover_entrypoint=_discover_dps_entrypoint,
+        expected_entrypoint=_EXPECTED_ENTRYPOINT,
+        expected_root_qname=_EXPECTED_ROOT_QNAME,
+        expected_members=_EXPECTED_SCHEMA_MEMBERS,
+    )
+
+
+def _pinned_schema_profile(
+    members: Mapping[str, bytes],
+    *,
+    discover_entrypoint: Callable[[Mapping[str, bytes]], tuple[str, str]],
+    expected_entrypoint: str,
+    expected_root_qname: str,
+    expected_members: Mapping[str, str],
+) -> _SchemaProfile:
+    """Discover one schema closure and require its complete frozen identity."""
     xsd_members = {
         name: data for name, data in members.items() if name.casefold().endswith(".xsd")
     }
-    entrypoint, root_qname = _discover_dps_entrypoint(xsd_members)
+    entrypoint, root_qname = discover_entrypoint(xsd_members)
     closure = _schema_closure(xsd_members, entrypoint=entrypoint)
     observed = {
         name: hashlib.sha256(data).hexdigest() for name, data in closure.items()
     }
     if (
-        entrypoint != _EXPECTED_ENTRYPOINT
-        or root_qname != _EXPECTED_ROOT_QNAME
-        or observed != _EXPECTED_SCHEMA_MEMBERS
+        entrypoint != expected_entrypoint
+        or root_qname != expected_root_qname
+        or observed != expected_members
     ):
         raise _error("bundle", "schema_profile_mismatch")
     return _SchemaProfile(
@@ -212,6 +222,25 @@ def _official_schema_profile(members: Mapping[str, bytes]) -> _SchemaProfile:
         root_qname=root_qname,
         members=closure,
     )
+
+
+def _compile_bundle_profile(
+    bundle_bytes: bytes,
+    *,
+    profile_builder: Callable[[Mapping[str, bytes]], _SchemaProfile],
+) -> tuple[etree.XMLSchema, str]:
+    """Read a safe archive and compile the selected pinned schema profile."""
+    try:
+        archive_members = _restricted._read_safe_zip(bundle_bytes)
+        profile = profile_builder(archive_members)
+        schema = _compile_schema(profile.members, profile.entrypoint)
+    except _restricted.ContractFreezeError:
+        raise _error("bundle", "unsafe_archive") from None
+    except XsdValidationError:
+        raise
+    except (OSError, etree.LxmlError):
+        raise _error("bundle", "schema_compile_failed") from None
+    return schema, profile.root_qname
 
 
 def _discover_dps_entrypoint(members: Mapping[str, bytes]) -> tuple[str, str]:
@@ -269,7 +298,10 @@ def _schema_closure(
 def _resolve_member_location(current: str, location: str) -> str:
     if not location or "\\" in location or "\x00" in location:
         raise _error("bundle", "unsafe_schema_location")
-    parsed = urlsplit(location)
+    try:
+        parsed = urlsplit(location)
+    except ValueError:
+        raise _error("bundle", "unsafe_schema_location") from None
     windows = PureWindowsPath(location)
     path = PurePosixPath(location)
     if (
