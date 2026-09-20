@@ -29,24 +29,138 @@
       }
     }
   },
+  "current_evidence_refresh": {
+    "as_of": "2026-09-20",
+    "api_documentation_access": {
+      "catalogue_confirmed": true,
+      "content_retrieved": false,
+      "result": "ADN documentation failed TLS retrieval and SEFIN documentation returned HTTP 403 from the review environment; no requirement is attributed to inaccessible content"
+    },
+    "decision_matrix": {
+      "basic_constraints": {
+        "classification": "CONFLICTING",
+        "evidence": "FAQ section 17.2 says false; current Annex I says true while also saying the certificate must not be a CA"
+      },
+      "canonicalization_method": {
+        "classification": "HISTORICAL_ONLY",
+        "evidence": "applicable v1.01 schemas use open xs:anyURI and no current source selects comments or exclusivity behavior"
+      },
+      "certificate_chain_embedding": {
+        "classification": "UNCONFIRMED",
+        "evidence": "current chain-validation rules do not define the XML-embedded chain composition"
+      },
+      "certificate_validity_identity_and_trust": {
+        "classification": "CURRENT_CONFIRMED",
+        "evidence": "current Annex I and FAQ support validity, ICP-Brasil root, issuer binding, and CPF/CNPJ OtherName checks"
+      },
+      "digest_method": {
+        "classification": "HISTORICAL_ONLY",
+        "evidence": "applicable v1.01 schemas use open xs:anyURI; SHA-1 is fixed only in historical or v1.00 material"
+      },
+      "key_info_x509data_representation": {
+        "classification": "HISTORICAL_ONLY",
+        "evidence": "current sources impose certificate checks but do not define the embedded KeyInfo representation"
+      },
+      "key_usage": {
+        "classification": "CONFLICTING",
+        "evidence": "current Annex I lists Digital Signature and Non Repudiation; current FAQ also lists Client Authentication"
+      },
+      "reference_uri": {
+        "classification": "HISTORICAL_ONLY",
+        "evidence": "no current source fixes a fragment URI composed from the unqualified infDPS Id"
+      },
+      "signature_method": {
+        "classification": "HISTORICAL_ONLY",
+        "evidence": "applicable v1.01 schemas use open xs:anyURI; RSA-SHA1 is fixed only in historical or v1.00 material"
+      },
+      "signature_position": {
+        "classification": "CONFLICTING",
+        "evidence": "v1.01 XSD and the signature rule place Signature directly below DPS; the layout row prints it below infDPS"
+      },
+      "signed_target": {
+        "classification": "CURRENT_PARTIAL",
+        "evidence": "current FAQ requires the element carrying the identifier to be signed but does not name infDPS"
+      },
+      "transforms_in_order": {
+        "classification": "CURRENT_PARTIAL",
+        "evidence": "current FAQ confirms the enveloped form but not the complete ordered transform list"
+      }
+    },
+    "production_artifacts": {
+      "annex_i": {
+        "name": "ANEXO_I-SEFIN_ADN-DPS_NFSe-SNNFSe-v1.01-20260209",
+        "sha256": "de5bc492959eadc8bfa7540e16939995924f2188f743648eaf84d3b31e9eeb7c",
+        "size": 215196
+      },
+      "schema_bundle": {
+        "name": "NFSe-ESQUEMAS_XSD-v1.01-20260209",
+        "sha256": "e7935cbd9470527c6cc32984c1b2263e614183bf0139ce2733eaaed2de9a8072",
+        "size": 65640
+      },
+      "v1_00_xmldsig_member": {
+        "path": "Schemas/1.00/xmldsig-core-schema.xsd",
+        "profile": "fixed C14N 1.0, RSA-SHA1, SHA-1, and exactly two transforms; not imported by DPS v1.01",
+        "sha256": "d87432c5f6ebb2bd61a1de357797401c203f14daefde834b73946f25f926a216",
+        "size": 3406
+      },
+      "v1_01_xmldsig_member": {
+        "path": "Schemas/1.01/xmldsig-core-schema.xsd",
+        "profile": "algorithm attributes are open xs:anyURI values",
+        "sha256": "49848f732663aecb618d72ad6130c5c3240f0a10f3a1a8544b7d48a6c726046f",
+        "size": 10610
+      }
+    },
+    "signature_profile_confirmed": false,
+    "technical_inquiry_ready": true
+  },
   "sources": [
     {
       "classification": "official_current",
-      "location": "Produção Restrita; NFSe-ESQUEMAS_XSD-PRODREST-v1.01-20260727",
+      "location": "página atualizada em 28/07/2026; NFSe-ESQUEMAS_XSD-PRODREST-v1.01-20260727; ANEXO_I-SEFIN_ADN-DPS_NFSe-SNNFSe-PRODREST-v1.01-20260209",
       "title": "Documentação técnica - Produção Restrita",
       "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita"
     },
     {
       "classification": "official_current",
-      "location": "API - Manual de Contribuintes - Emissor Público; versão 1.2, outubro de 2025",
-      "title": "Documentação técnica atual",
+      "location": "nome do portal: versão 1.2, outubro de 2025; histórico interno: versão 1.0, 17/03/2025; seções 1.3.1-1.3.2",
+      "sha256": "ac2f36e34ff565cc36d67c5d67415c33cc09f27b2dea006e8da9bcd2ddce5581",
+      "size": 188158,
+      "title": "API - Manual de Contribuintes - Emissor Público",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual/manual-contribuintes-emissor-publico-api-sistema-nacional-nfs-e-v1-2-out2025.pdf"
+    },
+    {
+      "classification": "official_current",
+      "location": "página atualizada em 15/08/2026; NFSe-ESQUEMAS_XSD-v1.01-20260209; ANEXO_I-SEFIN_ADN-DPS_NFSe-SNNFSe-v1.01-20260209",
+      "title": "Documentação técnica atual de Produção",
       "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual"
+    },
+    {
+      "classification": "official_current",
+      "location": "versão 1.00, 08/09/2026; seções 17.1-17.3; páginas PDF 77-78",
+      "sha256": "aa45e008842f1c94e7e175f96df3f6354a23b45b6136db8ed87706d318b462f7",
+      "size": 1140924,
+      "title": "Perguntas e Respostas NFS-e",
+      "url": "https://www.gov.br/nfse/pt-br/perguntas-frequentes/perguntas-e-respostas-nfse-v1-00-20260908.pdf"
+    },
+    {
+      "classification": "official_current_catalogue",
+      "location": "página atualizada em 20/08/2026; endpoints ADN e SEFIN de Produção e Produção Restrita",
+      "title": "APIs de Produção Restrita e Produção",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao"
     },
     {
       "classification": "official_historical",
       "location": "versão 1.00.02, 14/09/2022; seções 6.1.3-6.1.5; páginas PDF 24-27",
       "title": "Manual Integrado do Sistema Nacional NFS-e",
       "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/leiaute-e-esquemas-antigos/manualintegradosnnfse_v1-00-02-producao.pdf"
+    },
+    {
+      "classification": "official_historical",
+      "location": "versão 1.01.00 Homologação, 14/10/2022; seções 6.1.3-6.1.5; páginas impressas 27-30",
+      "sha256": "3babab9ae2882ffd9a2471152d470a96a51d3cc013a05e6830f30ef89578eb41",
+      "size": 6582639,
+      "title": "Manual Integrado do Sistema Nacional NFS-e - Homologação",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/eventos_NFS-e/evento-tecnico-setembro-de-2022/manualintegradosnnfse_v1-01-00-homologacao.pdf"
     },
     {
       "classification": "normative_standard",
@@ -110,12 +224,16 @@
     "target": "{http://www.sped.fazenda.gov.br/nfse}DPS/{http://www.sped.fazenda.gov.br/nfse}infDPS"
   },
   "unconfirmed_for_current_restricted_profile": [
+    "exact signed target",
     "canonicalization algorithm",
     "signature algorithm",
     "digest algorithm",
     "transform list and order",
     "required Reference URI form",
     "required KeyInfo and X509Data shape",
-    "certificate policy"
+    "certificate chain embedding",
+    "Basic Constraints",
+    "complete Key Usage",
+    "Signature position"
   ]
 }
