@@ -40,6 +40,10 @@ authorize a tag, GitHub Release, TestPyPI upload, or PyPI upload.
   the first publish.
 - [ ] Decide explicitly whether to use TestPyPI; it is optional and must not be
   treated as production publication.
+- [ ] Create and protect the `pypi` GitHub Environment before configuring the
+  publisher. Require manual approval and restrict deployments to release tags.
+- [ ] Configure the Pending Trusted Publisher only after rechecking the project
+  name and obtaining explicit authorization.
 - [ ] Obtain explicit authorization before creating the tag, GitHub Release,
   TestPyPI upload, PyPI project, trusted-publishing configuration, or PyPI
   upload.
@@ -49,6 +53,41 @@ project is currently visible at that URL, but does not reserve the name or
 guarantee that it will remain available. Recheck it immediately before the
 first publish; this is a release-time check rather than a blocker for the local
 release candidate.
+
+## Future Trusted Publisher identity
+
+The future Pending Trusted Publisher must use this exact identity:
+
+| Field | Value |
+| --- | --- |
+| PyPI project | `nfse-br` |
+| Owner | `cassao29` |
+| Repository | `nfse-br` |
+| Workflow | `release.yml` |
+| Environment | `pypi` |
+
+Do not configure it until a later, explicitly authorized release step. A
+Pending Trusted Publisher creates the project only on its first successful
+publish; it does not reserve the name. Revalidate `nfse-br` immediately before
+configuration and publication.
+
+Create the `pypi` GitHub Environment before the publisher. Require a reviewer
+and manual approval, restrict deployment to release tags, and configure no
+PyPI secret. If the repository plan cannot enforce one of these protections,
+stop and review that limitation instead of silently weakening the boundary.
+
+The dedicated `Release` workflow runs only for `vMAJOR.MINOR.PATCH` tag pushes.
+Its `build` job has read-only repository access and no OIDC permission. The
+`publish-pypi` job has no checkout, receives only the verified distribution
+artifact from `build`, and has only `actions: read` plus `id-token: write`.
+The official PyPA action uses Trusted Publishing, uploads attestations, and is
+configured to fail rather than hide an already-published version.
+
+The future release order is: validate `main`, configure the protected
+environment and publisher with explicit authorization, create the explicit
+tag, build, approve the `pypi` deployment, publish and verify PyPI provenance,
+then create a deliberate GitHub Release. The workflow does not create or move
+tags, create GitHub Releases, or write repository contents.
 
 The official restricted bundle integration remains a local gate:
 `OFFICIAL_BUNDLE_E2E_IN_CI = NOT_RUN_BY_DESIGN`. Passing package and schema
