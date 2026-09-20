@@ -127,7 +127,7 @@ API methods:
 | --- | --- | --- |
 | [Contributor API manual v1.2 (October 2025)](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual/manual-contribuintes-emissor-publico-api-sistema-nacional-nfs-e-v1-2-out2025.pdf) | Sections 1.3.1–1.3.2 delegate DPS schemas, layout, and business rules to Annex I; no XMLDSig algorithm profile | 188,158 / `ac2f36e34ff565cc36d67c5d67415c33cc09f27b2dea006e8da9bcd2ddce5581` |
 | [Nota Técnica SE/CGNFS-e 004 v2.0](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita/nt-004-se-cgnfse-novo-layout-rtc-v2-00-20251210.pdf) | No signature, RSA, SHA, or canonicalization requirement | 666,084 / `707524b2110a3af55a232110ead632abe14d745a60307f8dcc062ec220d4058f` |
-| [Perguntas e Respostas v1.00 (8 September 2026)](https://www.gov.br/nfse/pt-br/biblioteca/perguntas-e-respostas/perguntas-e-respostas-da-nfs-e/perguntas-e-respostas-nfse-v1-00-20260908.pdf) | Sections 17.1–17.3 confirm an enveloped signature on the element carrying the identifier and discuss E0717/E0718 and certificate checks; they name no signature, digest, or C14N algorithm | 1,140,924 / `aa45e008842f1c94e7e175f96df3f6354a23b45b6136db8ed87706d318b462f7` |
+| [Perguntas e Respostas v1.00 (8 September 2026)](https://www.gov.br/nfse/pt-br/perguntas-frequentes/perguntas-e-respostas-nfse-v1-00-20260908.pdf) | Sections 17.1–17.3 confirm an enveloped signature on the element carrying the identifier and discuss E0717/E0718 and certificate checks; they name no signature, digest, or C14N algorithm | 1,140,924 / `aa45e008842f1c94e7e175f96df3f6354a23b45b6136db8ed87706d318b462f7` |
 
 The FAQ also creates a current-source conflict in certificate details. Section
 17.2 says `Basic Constraint = false`, while the literal text in
@@ -155,31 +155,122 @@ No complete current signer profile is proposed. In particular, neither the
 RSA-SHA1/SHA-1 historical profile nor the RSA-SHA256/SHA-256 profile published
 for NFS-e Via is imported into the restricted DPS profile.
 
-### Draft technical inquiry (not sent)
+## Diligência adicional V0.20.2 (20 de setembro de 2026)
 
-For the restricted v1.01 DPS identified by bundle SHA-256
-`6c7e0510d3ecff4454f291f4e10b742d27a4818f23aab181494f96d0ea79f3dc`
-and Annex I SHA-256
-`2ae2ac9f91efa9b64f0c9ed97acaf18bb7513b090fae39ba5bda59187e64d9e9`,
-please confirm:
+The current Production and Produção Restrita catalogues, their linked v1.01
+artifacts, the current contributor API manual, the current FAQ, and the
+official API catalogue were checked again. No current applicable source was
+found that completes the XMLDSig algorithm profile.
 
-1. the exact `SignatureMethod`, `DigestMethod`, and
-   `CanonicalizationMethod` URIs, including comments/exclusive behavior;
-2. the exact ordered `Transform` list;
-3. whether the signed node is `infDPS` and whether `Reference/@URI` must be
-   exactly `#` followed by its unqualified `Id` value;
-4. the required `KeyInfo/X509Data` content and whether only the end-entity
-   certificate or a chain must be embedded;
-5. the intended Basic Constraints and Key Usage requirements, reconciling
-   Annex I rule 641 with FAQ sections 17.1–17.2; and
-6. whether `Signature` is the direct DPS child shown by `TCDPS` and rule 639,
-   notwithstanding the path printed in layout row 415.
+| Current official source | Version/location | Result |
+| --- | --- | --- |
+| [Documentação Atual](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual) | Page updated 15 August 2026; `NFSe-ESQUEMAS_XSD-v1.01-20260209`; `ANEXO_I-SEFIN_ADN-DPS_NFSe-SNNFSe-v1.01-20260209` | The current Production artifacts were inspected in full. The v1.01 schema leaves algorithm URIs open, and the Annex I does not name them. |
+| [Produção Restrita](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita) | Page updated 28 July 2026; `NFSe-ESQUEMAS_XSD-PRODREST-v1.01-20260727`; `ANEXO_I-SEFIN_ADN-DPS_NFSe-SNNFSe-PRODREST-v1.01-20260209` | The downloaded files remain byte-identical to the frozen restricted evidence. No algorithm requirement was added. |
+| [Contributor API manual](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual/manual-contribuintes-emissor-publico-api-sistema-nacional-nfs-e-v1-2-out2025.pdf) | Portal filename: v1.2, October 2025; internal history: v1.0, 17 March 2025; sections 1.3.1–1.3.2 | Delegates DPS schemas, layout, and rules to Annex I. It does not specify the XMLDSig algorithms or representation. |
+| [Perguntas e Respostas](https://www.gov.br/nfse/pt-br/perguntas-frequentes/perguntas-e-respostas-nfse-v1-00-20260908.pdf) | v1.00, 8 September 2026; sections 17.1–17.3, PDF pp. 77–78 | Confirms an enveloped signature on the element carrying the identifier and gives certificate rules, but no algorithm URIs, complete transform list, reference form, or `KeyInfo` representation. |
+| [APIs de Produção Restrita e Produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao) | Page updated 20 August 2026 | Identifies the current ADN and SEFIN documentation endpoints. Their documentation content could not be retrieved from this environment (TLS failure for ADN and HTTP 403 for SEFIN); no operational API method was called and no requirement is attributed to an inaccessible document. |
+
+The downloaded current Production artifacts were recorded without adding
+their raw bytes to the repository:
+
+| Artifact | Size | SHA-256 |
+| --- | ---: | --- |
+| `NFSe-ESQUEMAS_XSD-v1.01-20260209` | 65,640 | `e7935cbd9470527c6cc32984c1b2263e614183bf0139ce2733eaaed2de9a8072` |
+| `ANEXO_I-SEFIN_ADN-DPS_NFSe-SNNFSe-v1.01-20260209` | 215,196 | `de5bc492959eadc8bfa7540e16939995924f2188f743648eaf84d3b31e9eeb7c` |
+
+The Production ZIP contains separate `Schemas/1.00` and `Schemas/1.01`
+closures. Its 3,406-byte `Schemas/1.00/xmldsig-core-schema.xsd` (SHA-256
+`d87432c5f6ebb2bd61a1de357797401c203f14daefde834b73946f25f926a216`)
+fixes C14N 1.0, RSA-SHA1, SHA-1, and exactly two transforms. That file does
+not govern DPS v1.01. `Schemas/1.01/tiposComplexos_v1.01.xsd` imports the
+10,610-byte `Schemas/1.01/xmldsig-core-schema.xsd` (SHA-256
+`49848f732663aecb618d72ad6130c5c3240f0a10f3a1a8544b7d48a6c726046f`),
+whose algorithm attributes are open `xs:anyURI` values. The frozen restricted
+v1.01 schema behaves the same way. The colocated v1.00 profile therefore
+cannot be treated as the current v1.01 profile.
+
+The Production Annex I repeats the same material findings as the restricted
+workbook. `LEIAUTE DPS_NFS-e` row 416 (printed item 415) places `Signature`
+below `infDPS`, while `RN DPS_NFS-e` row 645 (printed rule 642, E0714) and the
+v1.01 `TCDPS` schema place it directly below `DPS`. Rows 646–649 (printed
+rules 643–646) contain certificate checks but no XMLDSig algorithm or
+representation. The full Production and restricted workbooks contain no cell
+or comment naming `SignatureMethod`, `DigestMethod`,
+`CanonicalizationMethod`, `Reference`, `Transform`, `X509Data`,
+`X509Certificate`, RSA, SHA, C14N, or `EndCertOnly`.
+
+The official integrated manuals v1.00.02 and v1.01.00 Homologação are dated
+2022 and remain historical evidence. Their RSA-SHA1/SHA-1/C14N 1.0 profile is
+not promoted merely because the current Production ZIP retains a separate
+v1.00 schema closure. The inspected 6,582,639-byte v1.01.00 Homologação PDF,
+dated 14 October 2022, has SHA-256
+`3babab9ae2882ffd9a2471152d470a96a51d3cc013a05e6830f30ef89578eb41`;
+sections 6.1.3–6.1.5 (printed pp. 27–30) contain the historical profile.
+
+### Evidence matrix after the refresh
+
+| Requirement | Classification | Current evidence and remaining gap |
+| --- | --- | --- |
+| signed target | `CURRENT_PARTIAL` | The FAQ requires signing the element carrying the identifier, but does not name `infDPS`; the exact target is historical only. |
+| exact `Reference/@URI` | `HISTORICAL_ONLY` | No current source fixes `#` plus the unqualified `Id`. |
+| `CanonicalizationMethod` | `HISTORICAL_ONLY` | The applicable v1.01 schemas use open `xs:anyURI`; no current source selects comments or exclusivity behavior. |
+| `SignatureMethod` | `HISTORICAL_ONLY` | The applicable v1.01 schemas use open `xs:anyURI`; RSA-SHA1 is fixed only in historical/v1.00 material. |
+| `DigestMethod` | `HISTORICAL_ONLY` | The applicable v1.01 schemas use open `xs:anyURI`; SHA-1 is fixed only in historical/v1.00 material. |
+| transforms and order | `CURRENT_PARTIAL` | The FAQ confirms the enveloped form, but not the complete ordered transform list. |
+| `KeyInfo/X509Data` representation | `HISTORICAL_ONLY` | Current sources impose certificate checks but do not define whether or how the end certificate or chain is embedded. |
+| certificate chain embedding | `UNCONFIRMED` | Current chain validation rules do not define the XML-embedded chain composition. |
+| Basic Constraints | `CONFLICTING` | FAQ section 17.2 says `false`; Annex I says `true` while also saying the certificate must not be a CA. |
+| Key Usage | `CONFLICTING` | Annex I lists Digital Signature and Non Repudiation; FAQ section 17.1 additionally lists Client Authentication. |
+| `Signature` position | `CONFLICTING` | v1.01 XSD and signature rule place it directly below `DPS`; the layout row prints it below `infDPS`. |
+| certificate validity, ICP-Brasil root, issuer binding, and CPF/CNPJ `OtherName` | `CURRENT_CONFIRMED` | Annex I rules 643–646 in Production (640–643 restricted) and FAQ sections 17.1–17.2 currently support these checks. |
+
+Because the target, reference, algorithms, complete ordered transforms, and
+`KeyInfo` representation are not all confirmed by an applicable current
+official source, the decision remains fail-closed:
+
+```text
+SIGNATURE_PROFILE_CONFIRMED = NO
+SIGNING_IMPLEMENTED = NO
+TRANSMISSION_READY = NO
+```
+
+### Final technical inquiry (ready, not sent)
+
+```text
+Assunto: Confirmação do perfil XMLDSig da DPS v1.01 no ambiente nacional
+
+Para implementar de forma interoperável a assinatura da DPS v1.01, pedimos
+a confirmação do perfil XMLDSig aplicável ao bundle de Produção Restrita
+NFSe-ESQUEMAS_XSD-PRODREST-v1.01-20260727 e ao Anexo I
+ANEXO_I-SEFIN_ADN-DPS_NFSe-SNNFSe-PRODREST-v1.01-20260209.
+
+Favor confirmar expressamente:
+
+1. a URI de SignatureMethod;
+2. a URI de DigestMethod;
+3. a URI de CanonicalizationMethod, inclusive uso de comentários e forma
+   exclusiva ou inclusiva;
+4. a lista ordenada de Transform/@Algorithm;
+5. o elemento assinado e a forma exata de Reference/@URI, inclusive se deve
+   ser "#" seguido do Id não qualificado de infDPS;
+6. a composição obrigatória de KeyInfo/X509Data: somente o certificado final
+   em X509Certificate ou também a cadeia;
+7. os requisitos de Basic Constraints e Key Usage, diante da diferença entre
+   o Anexo I e as seções 17.1–17.2 do Perguntas e Respostas v1.00 de
+   08/09/2026; e
+8. a posição correta de Signature, pois o XSD v1.01 e a regra E0714 a colocam
+   como filha direta de DPS após infDPS, enquanto a linha de leiaute a imprime
+   abaixo de infDPS.
+
+Esta consulta trata apenas do perfil nacional da DPS v1.01; não pressupõe
+regras de NF-e, ABRASF municipal ou NFS-e Via e não contém dados fiscais,
+certificado ou chave privada.
+```
 
 The current official [attendance page](https://www.gov.br/nfse/pt-br/canais-de-atendimento),
-updated 16 September 2026, states that
-the former `atendimento.nfs-e@rfb.gov.br` address is disabled. It directs a
-contributor to their municipality, which may then contact Receita Federal for
-guidance. That is the identified current channel; this draft has not been
+updated 16 September 2026, disables the former direct support email and
+directs contributors to their municipality, which may contact Receita
+Federal. That is the identified current route. The inquiry above has not been
 sent.
 
 ## Local structural preflight
