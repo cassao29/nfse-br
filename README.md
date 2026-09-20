@@ -88,11 +88,33 @@ fiscal authorization, signature validation, or permission to transmit.
 The library currently provides immutable primitives for NFS-e environments,
 lexical CPF/CNPJ identifiers, IBGE municipality codes, competence dates, and a
 working local DPS identity value. It also provides an exact lexical primitive
-for NFS-e access keys from the frozen restricted XSD contract.
+for NFS-e identifiers and access keys from the frozen restricted XSD contract.
 
 Explicit CPF and CNPJ check-digit validation is available separately from
 lexical construction. Issuance, transmission, complete DPS XML generation,
 and XMLDSig remain outside the current scope.
+
+## NFS-e identifier
+
+`NfseId` is the immutable lexical primitive for the 53-position
+`NFSe/infNFSe/@Id` value defined by `TSIdNFSe`. It preserves the input exactly
+and accepts only the uppercase ASCII format declared by the frozen restricted
+XSD contract:
+
+```python
+from nfse_br.nfse import NfseId
+
+nfse_id = NfseId("NFS" + "0" * 9 + "SYNTHETIC00000" + "0" * 27)
+print(nfse_id)
+```
+
+Construction proves only lexical conformance. It does not establish that an
+identifier exists, is authorized or authentic, and it does not query or
+transmit anything. `NfseId` deliberately provides no conversion to
+`NfseAccessKey`: the current official evidence confirms their semantic
+relationship but their frozen XSD lexical languages conflict. See
+[`contracts/restricted/NFSE_IDENTITY.md`](contracts/restricted/NFSE_IDENTITY.md)
+for the evidence and fail-closed decision.
 
 ## NFS-e access key
 
@@ -312,8 +334,10 @@ coverage for `src/nfse_br/xsd/`, and 90% branch coverage for
 `src/nfse_br/_xmlsig/preflight.py`, and 90% branch coverage for
 `src/nfse_br/cli.py`, and 90% branch coverage for
 `src/nfse_br/domain/cnpj.py`, and 90% branch coverage for
-`src/nfse_br/domain/cpf.py`. Gate decisions use exact counters from Coverage.py
-JSON rather than rounded display percentages.
+`src/nfse_br/domain/cpf.py`, and 90% branch coverage for each of
+`src/nfse_br/nfse/access_key.py` and `src/nfse_br/nfse/identifier.py`. Gate
+decisions use exact counters from Coverage.py JSON rather than rounded display
+percentages.
 
 CI also installs the built base wheel into a fresh virtual environment without
 dependencies or the `xsd` extra. The official restricted ZIP is not distributed

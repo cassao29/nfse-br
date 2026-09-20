@@ -20,6 +20,7 @@ CLI_BRANCH_MINIMUM = 90
 CNPJ_BRANCH_MINIMUM = 90
 CPF_BRANCH_MINIMUM = 90
 NFSE_ACCESS_KEY_BRANCH_MINIMUM = 90
+NFSE_ID_BRANCH_MINIMUM = 90
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _F0_ROOT = _PROJECT_ROOT / "src/nfse_br/_f0"
@@ -33,6 +34,7 @@ _CLI_MODULE = "src/nfse_br/cli.py"
 _CNPJ_MODULE = "src/nfse_br/domain/cnpj.py"
 _CPF_MODULE = "src/nfse_br/domain/cpf.py"
 _NFSE_ACCESS_KEY_MODULE = "src/nfse_br/nfse/access_key.py"
+_NFSE_ID_MODULE = "src/nfse_br/nfse/identifier.py"
 
 
 class CoverageGateError(ValueError):
@@ -70,6 +72,7 @@ def evaluate_report(
     expected_cnpj_paths: frozenset[str],
     expected_cpf_paths: frozenset[str],
     expected_nfse_access_key_paths: frozenset[str],
+    expected_nfse_id_paths: frozenset[str],
 ) -> tuple[
     GateResult,
     GateResult,
@@ -81,8 +84,9 @@ def evaluate_report(
     GateResult,
     GateResult,
     GateResult,
+    GateResult,
 ]:
-    """Validate a Coverage.py report and calculate the ten required gates."""
+    """Validate a Coverage.py report and calculate the eleven required gates."""
     if _XSD_VALIDATOR_MODULE not in expected_xsd_paths:
         raise CoverageGateError(
             f"XSD scope is missing required module {_XSD_VALIDATOR_MODULE!r}"
@@ -112,6 +116,10 @@ def evaluate_report(
         raise CoverageGateError(
             "NFS-e access-key scope is missing required module "
             f"{_NFSE_ACCESS_KEY_MODULE!r}"
+        )
+    if _NFSE_ID_MODULE not in expected_nfse_id_paths:
+        raise CoverageGateError(
+            f"NFS-e identifier scope is missing required module {_NFSE_ID_MODULE!r}"
         )
     meta = _mapping(report.get("meta"), context="meta")
     if meta.get("branch_coverage") is not True:
@@ -172,6 +180,12 @@ def evaluate_report(
         raise CoverageGateError(
             "coverage report is missing NFS-e access-key files: "
             f"{sorted(missing_nfse_access_key)!r}"
+        )
+    missing_nfse_id = expected_nfse_id_paths - files.keys()
+    if missing_nfse_id:
+        raise CoverageGateError(
+            "coverage report is missing NFS-e identifier files: "
+            f"{sorted(missing_nfse_id)!r}"
         )
 
     f0_covered = 0
@@ -260,6 +274,15 @@ def evaluate_report(
         nfse_access_key_covered += covered
         nfse_access_key_total += total
 
+    nfse_id_covered = 0
+    nfse_id_total = 0
+    for path in expected_nfse_id_paths:
+        file_data = files[path]
+        summary = _mapping(file_data.get("summary"), context=f"summary for {path!r}")
+        covered, total = _counts(summary, context=path, unit="branches")
+        nfse_id_covered += covered
+        nfse_id_total += total
+
     return (
         _gate(
             "Library combined",
@@ -320,6 +343,12 @@ def evaluate_report(
             covered=nfse_access_key_covered,
             total=nfse_access_key_total,
             minimum=NFSE_ACCESS_KEY_BRANCH_MINIMUM,
+        ),
+        _gate(
+            "NFS-e identifier branches",
+            covered=nfse_id_covered,
+            total=nfse_id_total,
+            minimum=NFSE_ID_BRANCH_MINIMUM,
         ),
     )
 
@@ -426,6 +455,17 @@ def expected_nfse_access_key_paths() -> frozenset[str]:
     return frozenset({_NFSE_ACCESS_KEY_MODULE})
 
 
+def expected_nfse_id_paths() -> frozenset[str]:
+    """Return the explicitly gated NFS-e identifier primitive."""
+    path = _PROJECT_ROOT / _NFSE_ID_MODULE
+    if not path.is_file():
+        raise CoverageGateError(
+            "NFS-e source tree is missing required identifier module "
+            f"{_NFSE_ID_MODULE!r}"
+        )
+    return frozenset({_NFSE_ID_MODULE})
+
+
 def _counts(
     summary: Mapping[str, object],
     *,
@@ -499,6 +539,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             expected_cnpj_paths=expected_cnpj_paths(),
             expected_cpf_paths=expected_cpf_paths(),
             expected_nfse_access_key_paths=expected_nfse_access_key_paths(),
+            expected_nfse_id_paths=expected_nfse_id_paths(),
         )
     except CoverageGateError as exc:
         print(f"Coverage gate error: {exc}", file=sys.stderr)
