@@ -1,0 +1,60 @@
+{
+  "capture_date": "2026-09-20",
+  "contract_confirmed": false,
+  "implementation_ready": false,
+  "openapi": null,
+  "operation": "POST /nfse",
+  "raw_artifact_versioned": false,
+  "resources": [
+    {
+      "bytes": 1233,
+      "environment": "restricted",
+      "http_status": 403,
+      "media_type": "text/html",
+      "role": "documentation_ui",
+      "sha256": "c55f527e536de44c7980fecece7428ae5a765647495e47008a8a54fa1e434736",
+      "url": "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/docs/index"
+    },
+    {
+      "bytes": 1233,
+      "environment": "production",
+      "http_status": 403,
+      "media_type": "text/html",
+      "role": "documentation_ui",
+      "sha256": "c55f527e536de44c7980fecece7428ae5a765647495e47008a8a54fa1e434736",
+      "url": "https://sefin.nfse.gov.br/SefinNacional/docs/index"
+    },
+    {
+      "bytes": 1233,
+      "environment": "restricted",
+      "http_status": 403,
+      "media_type": "text/html",
+      "role": "openapi_candidate",
+      "sha256": "c55f527e536de44c7980fecece7428ae5a765647495e47008a8a54fa1e434736",
+      "url": "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/swagger/docs/v1"
+    },
+    {
+      "bytes": 1233,
+      "environment": "production",
+      "http_status": 403,
+      "media_type": "text/html",
+      "role": "openapi_candidate",
+      "sha256": "c55f527e536de44c7980fecece7428ae5a765647495e47008a8a54fa1e434736",
+      "url": "https://sefin.nfse.gov.br/SefinNacional/swagger/docs/v1"
+    }
+  ],
+  "result": "official_openapi_unavailable",
+  "schema": null,
+  "third_party_contract_data_used": false,
+  "transmission_ready": false,
+  "unconfirmed": [
+    "documented HTTP statuses",
+    "success schema",
+    "error schema",
+    "idDps/idDPS casing",
+    "required fields",
+    "nullability",
+    "tipoAmbiente enum",
+    "MensagemProcessamento schema"
+  ]
+}
