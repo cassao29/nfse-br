@@ -19,8 +19,9 @@ The supported public surface for 0.1.0 is deliberately small:
 - `DpsSeries`, `DpsNumber`, and `DpsIdentity` from `nfse_br.dps`;
 - `RestrictedDpsDraft` and `build_unsigned_dps` from
   `nfse_br.dps.builder`;
-- `RestrictedDpsXsdValidator` and `XsdValidationError` from `nfse_br.xsd`,
-  when the `xsd` extra is installed; and
+- `RestrictedDpsXsdValidator`, `RecoveredNfseValidator`, and
+  `XsdValidationError` from `nfse_br.xsd`, when the `xsd` extra is installed;
+  and
 - the `nfse-br check-unsigned` command.
 
 Modules below `nfse_br._f0` and `nfse_br._xmlsig`, together with freeze and
@@ -187,6 +188,23 @@ It does not verify signatures, certificates, fiscal semantics, authorization,
 or SEFIN acceptance. See
 [`contracts/restricted/DPS_XSD_VALIDATOR.md`](contracts/restricted/DPS_XSD_VALIDATOR.md)
 for the compilation profile and explicit local integration command.
+
+Already-recovered NFS-e XML bytes can be checked separately against the NFS-e
+entrypoint from the same pinned bundle:
+
+```python
+from nfse_br.xsd import RecoveredNfseValidator
+
+validator = RecoveredNfseValidator(bundle_bytes)
+validator.validate(nfse_xml_bytes)
+```
+
+This validates XML structure against the pinned restricted XSD bundle. It does
+not verify XML signatures, fiscal authorization, or transport origin. The
+library still has no POST-response parser, Base64/GZip recovery, HTTP client,
+or transmission support. See
+[`contracts/restricted/NFSE_RECOVERED_VALIDATOR.md`](contracts/restricted/NFSE_RECOVERED_VALIDATOR.md)
+for the exact NFS-e closure and local integration command.
 
 ## Unsigned restricted DPS builder
 
