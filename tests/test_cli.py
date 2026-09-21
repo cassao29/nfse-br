@@ -1,4 +1,4 @@
-"""Tests for the local unsigned-DPS command-line interface."""
+"""Tests for the local NFS-e and unsigned-DPS command-line interface."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ import pytest
 
 from nfse_br import cli
 from nfse_br._xmlsig.preflight import SignaturePreflightError
+from nfse_br.nfse import NfseConsistencyError, NfseDocumentError
 
 
 class _FakeXsdError(ValueError):
@@ -43,7 +44,12 @@ def test_help_version_and_import_do_not_load_lxml(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     assert cli.main(["--help"]) == 0
-    assert "check-unsigned" in capsys.readouterr().out
+    help_output = capsys.readouterr().out
+    assert "check-unsigned" in help_output
+    assert "check-nfse" in help_output
+
+    assert cli.main(["check-nfse", "--help"]) == 0
+    assert "already-recovered NFS-e XML" in capsys.readouterr().out
 
     assert cli.main(["--version"]) == 0
     assert capsys.readouterr().out == "nfse-br 0.1.0\n"
@@ -87,6 +93,11 @@ def test_parser_exit_can_emit_only_a_controlled_static_message(
         ["check-unsigned"],
         ["check-unsigned", "secret-document.xml"],
         ["check-unsigned", "document.xml", "--unknown", "secret-value"],
+        ["check-nfse"],
+        ["check-nfse", "secret-document.xml"],
+        ["check-nfse", "secret-document.xml", "--bundle"],
+        ["check-nfse", "document.xml", "--unknown", "secret-value"],
+        ["check-nfse", "document.xml", "--bundle", "bundle.zip", "extra"],
     ],
 )
 def test_invalid_arguments_are_controlled_and_do_not_echo_values(
@@ -285,7 +296,9 @@ def test_malformed_file_locations_are_rejected_before_open(
         "//sigiloso／host/bundle.zip",
     ],
 )
+@pytest.mark.parametrize("command", ["check-unsigned", "check-nfse"])
 def test_real_entry_points_control_malformed_file_locations(
+    command: str,
     malformed_location: str,
 ) -> None:
     console = Path(sys.executable).with_name("nfse-br")
@@ -298,7 +311,7 @@ def test_real_entry_points_control_malformed_file_locations(
         completed = subprocess.run(
             [
                 *entry_point,
-                "check-unsigned",
+                command,
                 "documento.xml",
                 "--bundle",
                 malformed_location,
@@ -322,7 +335,9 @@ def test_real_entry_points_control_malformed_file_locations(
     not hasattr(os, "mkfifo") or not hasattr(os, "O_NONBLOCK"),
     reason="POSIX FIFO and non-blocking open are required",
 )
+@pytest.mark.parametrize("command", ["check-unsigned", "check-nfse"])
 def test_fifo_is_rejected_by_a_real_entry_point_without_blocking(
+    command: str,
     tmp_path: Path,
 ) -> None:
     fifo = tmp_path / "sensitive fifo"
@@ -336,7 +351,7 @@ def test_fifo_is_rejected_by_a_real_entry_point_without_blocking(
             "-I",
             "-m",
             "nfse_br",
-            "check-unsigned",
+            command,
             str(document),
             "--bundle",
             str(fifo),
@@ -379,6 +394,22 @@ def test_real_entry_points_suppress_argparse_values_and_usage() -> None:
         ],
         [
             "check-unsigned",
+            sensitive_document,
+            "--bundle",
+            sensitive_bundle,
+            "argumento-excedente-sigiloso",
+        ],
+        ["check-nfse"],
+        ["check-nfse", sensitive_document, "--bundle"],
+        [
+            "check-nfse",
+            sensitive_document,
+            "--bundle",
+            sensitive_bundle,
+            "--opcao-sigilosa",
+        ],
+        [
+            "check-nfse",
             sensitive_document,
             "--bundle",
             sensitive_bundle,
@@ -683,3 +714,322 @@ def test_result_emission_is_one_compact_json_line(
     assert capsys.readouterr().out == (
         '{"status":"ok","stage":"complete","code":null,"transmission_ready":false}\n'
     )
+
+
+def test_nfse_missing_extra_is_controlled_before_document_read(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bundle, document = _paths(tmp_path)
+    document.unlink()
+    monkeypatch.setattr(importlib.util, "find_spec", lambda _name: None)
+
+    assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == 2
+    assert _payload(capsys.readouterr().out) == {
+        "status": "error",
+        "stage": "dependency",
+        "code": "xsd_extra_missing",
+        "transmission_ready": False,
+    }
+
+
+def test_nfse_oversized_bundle_stops_before_dependency_and_document_read(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bundle = tmp_path / "oversized-private-bundle.zip"
+    document = tmp_path / "missing-private-document.xml"
+    bundle.write_bytes(b"x" * (cli._RESTRICTED_BUNDLE_BYTES + 1))
+
+    def unexpected_load() -> Never:
+        raise AssertionError("optional dependency must not load")
+
+    monkeypatch.setattr(cli, "_load_nfse_xsd_components", unexpected_load)
+
+    assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == 2
+    output = capsys.readouterr().out
+    assert _payload(output) == {
+        "status": "error",
+        "stage": "bundle_read",
+        "code": "file_too_large",
+        "transmission_ready": False,
+    }
+    assert str(bundle) not in output
+    assert str(document) not in output
+
+
+def test_nfse_broken_optional_import_is_controlled(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bundle, document = _paths(tmp_path)
+
+    def broken_import() -> Never:
+        raise ModuleNotFoundError("synthetic broken dependency", name="other")
+
+    monkeypatch.setattr(cli, "_import_nfse_xsd_components", broken_import)
+
+    assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == 2
+    assert _payload(capsys.readouterr().out) == {
+        "status": "error",
+        "stage": "dependency",
+        "code": "xsd_import_failed",
+        "transmission_ready": False,
+    }
+
+
+def test_nfse_public_validator_rejects_an_unpinned_bundle(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bundle, document = _paths(tmp_path)
+
+    assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == 2
+    assert _payload(capsys.readouterr().out) == {
+        "status": "error",
+        "stage": "bundle",
+        "code": "size_mismatch",
+        "transmission_ready": False,
+    }
+
+
+def test_nfse_pipeline_order_and_same_single_read_bytes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bundle, document = _paths(tmp_path)
+    document.write_bytes(b"<NFSe>synthetic-sensitive-value</NFSe>")
+    observed: list[tuple[str, bytes]] = []
+
+    class Validator:
+        def __init__(self, bundle_bytes: bytes) -> None:
+            assert bundle_bytes == b"bundle"
+
+        def validate(self, xml_bytes: bytes) -> None:
+            observed.append(("xsd", xml_bytes))
+            document.write_bytes(b"changed after the one bounded read")
+
+    def extract(xml_bytes: bytes) -> object:
+        observed.append(("structure", xml_bytes))
+        return object()
+
+    def consistency(xml_bytes: bytes) -> None:
+        observed.append(("consistency", xml_bytes))
+
+    monkeypatch.setattr(
+        cli,
+        "_load_nfse_xsd_components",
+        lambda: (Validator, _FakeXsdError),
+    )
+    monkeypatch.setattr(cli, "extract_nfse_document_info", extract)
+    monkeypatch.setattr(cli, "validate_nfse_document_consistency", consistency)
+
+    assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == 0
+    assert _payload(capsys.readouterr().out) == {
+        "status": "ok",
+        "stage": "complete",
+        "code": None,
+        "transmission_ready": False,
+    }
+    assert [stage for stage, _xml in observed] == [
+        "xsd",
+        "structure",
+        "consistency",
+    ]
+    assert observed[0][1] is observed[1][1] is observed[2][1]
+    assert observed[0][1] == b"<NFSe>synthetic-sensitive-value</NFSe>"
+    assert document.read_bytes() == b"changed after the one bounded read"
+
+
+@pytest.mark.parametrize(
+    ("phase", "status", "exit_code"),
+    [
+        ("parse", "rejected", 1),
+        ("schema", "rejected", 1),
+        ("engine", "error", 2),
+    ],
+)
+def test_nfse_xsd_failures_short_circuit_pipeline(
+    phase: str,
+    status: str,
+    exit_code: int,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bundle, document = _paths(tmp_path)
+
+    class Validator:
+        def __init__(self, _bundle_bytes: bytes) -> None:
+            pass
+
+        def validate(self, _xml_bytes: bytes) -> Never:
+            raise _FakeXsdError(phase, "controlled_xsd_failure")
+
+    def unexpected(_xml_bytes: bytes) -> Never:
+        raise AssertionError("later NFS-e stages must not execute")
+
+    monkeypatch.setattr(
+        cli,
+        "_load_nfse_xsd_components",
+        lambda: (Validator, _FakeXsdError),
+    )
+    monkeypatch.setattr(cli, "extract_nfse_document_info", unexpected)
+    monkeypatch.setattr(cli, "validate_nfse_document_consistency", unexpected)
+
+    assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == exit_code
+    assert _payload(capsys.readouterr().out) == {
+        "status": status,
+        "stage": f"xsd_{phase}",
+        "code": "controlled_xsd_failure",
+        "transmission_ready": False,
+    }
+
+
+def test_nfse_structure_rejection_short_circuits_consistency(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bundle, document = _paths(tmp_path)
+
+    class Validator:
+        def __init__(self, _bundle_bytes: bytes) -> None:
+            pass
+
+        def validate(self, _xml_bytes: bytes) -> None:
+            pass
+
+    def reject_structure(_xml_bytes: bytes) -> Never:
+        raise NfseDocumentError("invalid_nfse_id")
+
+    def unexpected_consistency(_xml_bytes: bytes) -> Never:
+        raise AssertionError("consistency must not execute")
+
+    monkeypatch.setattr(
+        cli,
+        "_load_nfse_xsd_components",
+        lambda: (Validator, _FakeXsdError),
+    )
+    monkeypatch.setattr(cli, "extract_nfse_document_info", reject_structure)
+    monkeypatch.setattr(
+        cli,
+        "validate_nfse_document_consistency",
+        unexpected_consistency,
+    )
+
+    assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == 1
+    assert _payload(capsys.readouterr().out) == {
+        "status": "rejected",
+        "stage": "structure",
+        "code": "invalid_nfse_id",
+        "transmission_ready": False,
+    }
+
+
+def test_nfse_consistency_rejection_is_privacy_safe(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    sensitive = "NFS-SYNTHETIC-PRIVATE-IDENTIFIER"
+    bundle = tmp_path / "private bundle TOKEN.zip"
+    document = tmp_path / "private document CPF.xml"
+    bundle.write_bytes(b"bundle")
+    document.write_bytes(sensitive.encode())
+
+    class Validator:
+        def __init__(self, _bundle_bytes: bytes) -> None:
+            pass
+
+        def validate(self, _xml_bytes: bytes) -> None:
+            pass
+
+    monkeypatch.setattr(
+        cli,
+        "_load_nfse_xsd_components",
+        lambda: (Validator, _FakeXsdError),
+    )
+    monkeypatch.setattr(cli, "extract_nfse_document_info", lambda _xml: object())
+    monkeypatch.setattr(
+        cli,
+        "validate_nfse_document_consistency",
+        lambda _xml: (_ for _ in ()).throw(
+            NfseConsistencyError("federal_registration_mismatch")
+        ),
+    )
+
+    assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == 1
+    captured = capsys.readouterr()
+    assert _payload(captured.out) == {
+        "status": "rejected",
+        "stage": "consistency",
+        "code": "federal_registration_mismatch",
+        "transmission_ready": False,
+    }
+    combined = captured.out + captured.err
+    assert sensitive not in combined
+    assert str(document) not in combined
+    assert str(bundle) not in combined
+
+
+def test_nfse_bundle_failure_stops_before_document_read(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bundle, document = _paths(tmp_path)
+    document.unlink()
+
+    def reject_bundle(_bundle: bytes) -> Never:
+        raise _FakeXsdError("bundle", "digest_mismatch")
+
+    monkeypatch.setattr(
+        cli,
+        "_load_nfse_xsd_components",
+        lambda: (reject_bundle, _FakeXsdError),
+    )
+
+    assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == 2
+    assert _payload(capsys.readouterr().out) == {
+        "status": "error",
+        "stage": "bundle",
+        "code": "digest_mismatch",
+        "transmission_ready": False,
+    }
+
+
+def test_nfse_missing_document_is_controlled_without_disclosing_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bundle, document = _paths(tmp_path)
+    document.unlink()
+
+    class Validator:
+        def __init__(self, _bundle_bytes: bytes) -> None:
+            pass
+
+        def validate(self, _xml_bytes: bytes) -> None:
+            pass
+
+    monkeypatch.setattr(
+        cli,
+        "_load_nfse_xsd_components",
+        lambda: (Validator, _FakeXsdError),
+    )
+
+    assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == 2
+    output = capsys.readouterr().out
+    assert _payload(output) == {
+        "status": "error",
+        "stage": "xml_read",
+        "code": "file_unreadable",
+        "transmission_ready": False,
+    }
+    assert str(document) not in output

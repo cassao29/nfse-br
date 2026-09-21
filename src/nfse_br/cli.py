@@ -1,4 +1,4 @@
-"""Command-line checks for local unsigned restricted DPS documents."""
+"""Privacy-safe command-line checks for local NFS-e and DPS documents."""
 
 from __future__ import annotations
 
@@ -19,6 +19,12 @@ from nfse_br._xmlsig.preflight import (
     MAX_XML_BYTES,
     SignaturePreflightError,
     inspect_unsigned_dps,
+)
+from nfse_br.nfse import (
+    NfseConsistencyError,
+    NfseDocumentError,
+    extract_nfse_document_info,
+    validate_nfse_document_consistency,
 )
 
 _RESTRICTED_BUNDLE_BYTES = 34_933
@@ -87,7 +93,7 @@ class _Result:
 def _parser() -> _ArgumentParser:
     parser = _ArgumentParser(
         prog="nfse-br",
-        description="Local checks for unsigned restricted DPS documents.",
+        description="Local checks for restricted NFS-e and DPS documents.",
     )
     parser.add_argument(
         "--version",
@@ -101,6 +107,13 @@ def _parser() -> _ArgumentParser:
     )
     check.add_argument("document", type=Path, metavar="DOCUMENT")
     check.add_argument("--bundle", required=True, type=Path, metavar="BUNDLE")
+    check_nfse = commands.add_parser(
+        "check-nfse",
+        help="validate one already-recovered NFS-e XML document locally",
+        description="Validate one already-recovered NFS-e XML document locally.",
+    )
+    check_nfse.add_argument("document", type=Path, metavar="DOCUMENT")
+    check_nfse.add_argument("--bundle", required=True, type=Path, metavar="BUNDLE")
     return parser
 
 
@@ -119,6 +132,23 @@ def _import_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
     from nfse_br.xsd import RestrictedDpsXsdValidator, XsdValidationError
 
     return RestrictedDpsXsdValidator, XsdValidationError
+
+
+def _load_nfse_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
+    if importlib.util.find_spec("lxml") is None:
+        raise _OperationalError("xsd_extra_missing")
+
+    try:
+        return _import_nfse_xsd_components()
+    except ImportError:
+        raise _OperationalError("xsd_import_failed") from None
+
+
+def _import_nfse_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
+    """Import the optional NFS-e validator only when lxml is present."""
+    from nfse_br.xsd import RecoveredNfseValidator, XsdValidationError
+
+    return RecoveredNfseValidator, XsdValidationError
 
 
 def _read_regular_file(path: Path, *, limit: int) -> bytes:
@@ -214,6 +244,53 @@ def _check_unsigned(document_path: Path, bundle_path: Path) -> _Result:
     return _Result(status="ok", stage="complete", code=None, exit_code=0)
 
 
+def _check_nfse(document_path: Path, bundle_path: Path) -> _Result:
+    try:
+        bundle_bytes = _read_regular_file(
+            bundle_path,
+            limit=_RESTRICTED_BUNDLE_BYTES,
+        )
+    except _OperationalError as exc:
+        return _failure("error", stage="bundle_read", code=exc.code)
+
+    try:
+        validator_factory, xsd_error_type = _load_nfse_xsd_components()
+    except _OperationalError as exc:
+        return _failure("error", stage="dependency", code=exc.code)
+
+    try:
+        validator = validator_factory(bundle_bytes)
+    except xsd_error_type as exc:
+        failure = cast(_XsdFailure, exc)
+        return _failure("error", stage="bundle", code=failure.code)
+
+    try:
+        xml_bytes = _read_regular_file(document_path, limit=MAX_XML_BYTES)
+    except _OperationalError as exc:
+        return _failure("error", stage="xml_read", code=exc.code)
+
+    try:
+        validator.validate(xml_bytes)
+    except xsd_error_type as exc:
+        failure = cast(_XsdFailure, exc)
+        status: Literal["rejected", "error"] = (
+            "rejected" if failure.phase in {"parse", "schema"} else "error"
+        )
+        return _failure(status, stage=f"xsd_{failure.phase}", code=failure.code)
+
+    try:
+        extract_nfse_document_info(xml_bytes)
+    except NfseDocumentError as exc:
+        return _failure("rejected", stage="structure", code=exc.code)
+
+    try:
+        validate_nfse_document_consistency(xml_bytes)
+    except NfseConsistencyError as exc:
+        return _failure("rejected", stage="consistency", code=exc.code)
+
+    return _Result(status="ok", stage="complete", code=None, exit_code=0)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI and return a stable process exit code."""
     try:
@@ -225,7 +302,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         result.emit()
         return result.exit_code
 
-    result = _check_unsigned(args.document, args.bundle)
+    if args.command == "check-unsigned":
+        result = _check_unsigned(args.document, args.bundle)
+    else:
+        result = _check_nfse(args.document, args.bundle)
     result.emit()
     return result.exit_code
 
