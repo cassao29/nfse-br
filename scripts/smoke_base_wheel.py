@@ -47,7 +47,12 @@ from nfse_br.domain.cnpj import validate_cnpj_check_digits
 from nfse_br.domain.cpf import validate_cpf_check_digits
 from nfse_br.dps import DpsNumber, DpsSeries
 from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
-from nfse_br.nfse import NfseAccessKey, NfseId
+from nfse_br.nfse import (
+    NfseAccessKey,
+    NfseDocumentInfo,
+    NfseId,
+    extract_nfse_document_info,
+)
 
 for module in (
     nfse_br,
@@ -94,6 +99,31 @@ except DomainValidationError:
     pass
 else:
     raise AssertionError("Invalid NFS-e identifier was unexpectedly accepted")
+
+synthetic_embedded_dps_id = (
+    "DPS" + "2927408" + "2" + "SYNTHETIC00000" + "0" * 20
+)
+synthetic_nfse_xml = (
+    '<NFSe xmlns="http://www.sped.fazenda.gov.br/nfse">'
+    f'<infNFSe Id="{synthetic_nfse_id}">'
+    '<nNFSe>42</nNFSe>'
+    f'<DPS><infDPS Id="{synthetic_embedded_dps_id}"/></DPS>'
+    '</infNFSe>'
+    '</NFSe>'
+).encode()
+document_info = extract_nfse_document_info(synthetic_nfse_xml)
+assert type(document_info) is NfseDocumentInfo
+assert type(document_info.nfse_id) is NfseId
+assert document_info.nfse_id.value == synthetic_nfse_id
+assert document_info.nfse_number == "42"
+assert document_info.embedded_dps_id == synthetic_embedded_dps_id
+assert not hasattr(document_info, "access_key")
+for sensitive_value in (
+    synthetic_nfse_id,
+    document_info.nfse_number,
+    synthetic_embedded_dps_id,
+):
+    assert sensitive_value not in repr(document_info)
 
 validate_cnpj_check_digits(FederalTaxId.cnpj("12ABC34501DE35"))
 try:

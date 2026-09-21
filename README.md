@@ -116,6 +116,31 @@ relationship but their frozen XSD lexical languages conflict. See
 [`contracts/restricted/NFSE_IDENTITY.md`](contracts/restricted/NFSE_IDENTITY.md)
 for the evidence and fail-closed decision.
 
+## NFS-e document information
+
+`extract_nfse_document_info` performs safe local structural extraction from
+NFS-e XML bytes using only the standard library:
+
+```python
+from nfse_br.nfse import extract_nfse_document_info
+
+info = extract_nfse_document_info(xml_bytes)
+print(info.nfse_id)
+print(info.nfse_number)
+print(info.embedded_dps_id)
+```
+
+It requires the exact NFS-e root and unique direct paths for `infNFSe/@Id`,
+`nNFSe`, and the embedded `DPS/infDPS/@Id`. It performs no network access and
+does not require `lxml`. Structural extraction does not imply XSD validity;
+when schema assurance is needed, validate the same bytes first with
+`RecoveredNfseValidator` from the optional `xsd` extra.
+
+The extractor does not derive an access key, verify XML signatures, establish
+transport origin or fiscal authorization, or transmit anything. See
+[`contracts/restricted/NFSE_DOCUMENT_INFO.md`](contracts/restricted/NFSE_DOCUMENT_INFO.md)
+for the exact frozen paths and limitations.
+
 ## NFS-e access key
 
 `NfseAccessKey` is the immutable lexical primitive for the 50-position
@@ -335,9 +360,9 @@ coverage for `src/nfse_br/xsd/`, and 90% branch coverage for
 `src/nfse_br/cli.py`, and 90% branch coverage for
 `src/nfse_br/domain/cnpj.py`, and 90% branch coverage for
 `src/nfse_br/domain/cpf.py`, and 90% branch coverage for each of
-`src/nfse_br/nfse/access_key.py` and `src/nfse_br/nfse/identifier.py`. Gate
-decisions use exact counters from Coverage.py JSON rather than rounded display
-percentages.
+`src/nfse_br/nfse/access_key.py`, `src/nfse_br/nfse/identifier.py`, and
+`src/nfse_br/nfse/document.py`. Gate decisions use exact counters from
+Coverage.py JSON rather than rounded display percentages.
 
 CI also installs the built base wheel into a fresh virtual environment without
 dependencies or the `xsd` extra. The official restricted ZIP is not distributed
