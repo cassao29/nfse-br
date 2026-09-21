@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.2.0
+
+### Added
+
+- `NfseAccessKey`, an exact lexical primitive for the frozen `TSChaveNFSe`
+  contract.
+- `NfseId`, an exact lexical primitive for the frozen `TSIdNFSe` contract.
+- `RecoveredNfseValidator` for already-recovered NFS-e XML using the pinned
+  restricted XSD bundle.
+- `NfseDocumentInfo`, `NfseDocumentError`, and
+  `extract_nfse_document_info` for local structural extraction.
+- `NfseConsistencyError` and `validate_nfse_document_consistency` for the
+  officially confirmed NFS-e/embedded-DPS consistency rules.
+- The `nfse-br check-nfse DOCUMENT --bundle BUNDLE` command.
+- Frozen evidence for NFS-e identity, access keys, document paths, and
+  NFS-e/DPS consistency.
+
+### Security / hardening
+
+- Structural extraction is limited to 1 MiB and uses the existing safe XML
+  parser policy.
+- Exact QNames and direct paths are required, with ambiguous structures
+  rejected fail-closed.
+- Public errors and representations redact fiscal identifiers and payloads.
+- Consistency enforcement is restricted to invariants classified
+  `CURRENT_CONFIRMED` by the frozen evidence.
+- `check-nfse` reads the document once with a fixed bound and passes the same
+  bytes through XSD validation, structural extraction, and consistency checks.
+- Automatic conversion between `NfseId` and `NfseAccessKey` remains blocked
+  because the current official XSD lexical contracts conflict.
+
+### Known limitations
+
+- The POST response contract is not confirmed; no POST parser or Base64/GZip
+  recovery is implemented.
+- Automatic access-key conversion is not implemented.
+- The current XMLDSig profile remains unconfirmed; signing and cryptographic
+  verification are not implemented.
+- HTTP/SEFIN integration and transmission are unavailable.
+- The production environment remains outside the supported scope.
+- End-to-end validation with the pinned official bundle remains a local
+  release gate and is not executed in CI by design.
+
 ## 0.1.0
 
 ### Added

@@ -1,24 +1,32 @@
 # Release procedure
 
-This checklist is for the first `0.1.0` release. A release operator must run it
-from a clean, protected `main`; completing documentation alone does not
+This checklist is for the `0.2.0` release. A release operator must run it from
+a clean, protected `main`; completing release preparation alone does not
 authorize a tag, GitHub Release, TestPyPI upload, or PyPI upload.
 
 ## Release contract
 
-| Classification | 0.1.0 surface |
+| Classification | 0.2.0 surface |
 | --- | --- |
-| Public and supported | `nfse_br.domain` primitives; opt-in CPF/CNPJ validators in their documented submodules; `DpsSeries`, `DpsNumber`, `DpsIdentity`; the restricted unsigned draft/builder; optional XSD validator; `nfse-br check-unsigned` |
+| Public and supported | `CompetenceDate`, `DomainValidationError`, `FederalTaxId`, `FederalTaxIdKind`, `MunicipalityCode`, `NfseEnvironment`; opt-in CPF/CNPJ validators in their documented submodules; `DpsSeries`, `DpsNumber`, `DpsIdentity`; `RestrictedDpsDraft`, `build_unsigned_dps`; `NfseAccessKey`, `NfseId`, `NfseDocumentError`, `NfseDocumentInfo`, `extract_nfse_document_info`, `NfseConsistencyError`, `validate_nfse_document_consistency`; optional `RestrictedDpsXsdValidator`, `RecoveredNfseValidator`, `XsdValidationError`; `nfse-br check-unsigned`; `nfse-br check-nfse` |
 | Private or experimental | `nfse_br._f0`, `nfse_br._xmlsig`, freeze tooling, schema-contract tooling |
 | Not supported | issuance/transmission, HTTP/SEFIN, XMLDSig signer/verifier, certificate/private-key handling, production, complete fiscal modeling, allocation/persistence |
 
 ## Checklist
 
-- [ ] Confirm local and remote `main` are identical and the working tree is
-  clean.
-- [ ] Confirm all required Linux and Windows checks pass on the release commit.
-- [ ] Confirm `pyproject.toml` and `nfse_br.__version__` both report `0.1.0`.
-- [ ] Review `CHANGELOG.md` and the public/private/unsupported contract.
+- [ ] Confirm protected local and remote `main` are identical and the working
+  tree is clean.
+- [ ] Confirm all required Python 3.12/3.13 Linux and Windows checks pass on
+  the exact release commit.
+- [ ] Confirm `pyproject.toml`, `nfse_br.__version__`, and `uv.lock` all report
+  `0.2.0`.
+- [ ] Review the `0.2.0` changelog and public/private/unsupported contract.
+- [ ] Confirm `v0.2.0` does not exist locally or remotely and that PyPI does
+  not already expose `nfse-br 0.2.0`.
+- [ ] Confirm the protected `pypi` environment and Trusted Publisher remain
+  configured without modification. The publisher identity must be owner
+  `cassao29`, repository `nfse-br`, workflow `release.yml`, environment
+  `pypi`.
 - [ ] Build wheel and sdist twice from clean checkouts and compare their logical
   contents, metadata, and unpacked file hashes.
 - [ ] Inspect wheel and sdist for generated XML, official ZIP/XSD/XLSX/PDF
@@ -28,35 +36,23 @@ authorize a tag, GitHub Release, TestPyPI upload, or PyPI upload.
   public imports, CPF/CNPJ checks, the builder, CLI help/version, and the
   controlled missing-extra path.
 - [ ] Install the wheel with the `xsd` extra outside the checkout and verify the
-  XSD imports and validator behavior.
-- [ ] Execute the README quickstart from a clean checkout and validate the
-  generated XML locally with the pinned official bundle.
-- [ ] Run the repository's secret scan over every commit to be released.
+  pinned `lxml` version, XSD imports, and validator behavior without any
+  automatic bundle download.
+- [ ] Execute the README quickstart from a clean checkout.
+- [ ] Run both official pinned-bundle local integrations for DPS and recovered
+  NFS-e XML; these checks remain intentionally outside CI.
+- [ ] Run the repository's secret scan over every new commit and the final
+  release tree.
 - [x] GitHub Private Vulnerability Reporting is configured and was verified
   through the repository API on 2026-09-19.
-- [ ] Confirm the `0.1.0` tag does not already exist locally or remotely.
-- [ ] Confirm the `nfse-br` project name is available on PyPI and that the
-  releasing account or organization can create/control it immediately before
-  the first publish.
-- [ ] Decide explicitly whether to use TestPyPI; it is optional and must not be
-  treated as production publication.
-- [ ] Create and protect the `pypi` GitHub Environment before configuring the
-  publisher. Require manual approval and restrict deployments to release tags.
-- [ ] Configure the Pending Trusted Publisher only after rechecking the project
-  name and obtaining explicit authorization.
-- [ ] Obtain explicit authorization before creating the tag, GitHub Release,
-  TestPyPI upload, PyPI project, trusted-publishing configuration, or PyPI
-  upload.
+- [ ] Obtain explicit authorization immediately before creating or pushing the
+  `v0.2.0` tag. Tag creation is the action that starts publication.
+- [ ] After successful OIDC publication and public PyPI verification, obtain
+  deliberate authorization before creating the GitHub Release.
 
-A 404 response for <https://pypi.org/project/nfse-br/> indicates that no public
-project is currently visible at that URL, but does not reserve the name or
-guarantee that it will remain available. Recheck it immediately before the
-first publish; this is a release-time check rather than a blocker for the local
-release candidate.
+## Trusted Publisher identity
 
-## Future Trusted Publisher identity
-
-The future Pending Trusted Publisher must use this exact identity:
+The existing Trusted Publisher must retain this exact identity:
 
 | Field | Value |
 | --- | --- |
@@ -66,15 +62,10 @@ The future Pending Trusted Publisher must use this exact identity:
 | Workflow | `release.yml` |
 | Environment | `pypi` |
 
-Do not configure it until a later, explicitly authorized release step. A
-Pending Trusted Publisher creates the project only on its first successful
-publish; it does not reserve the name. Revalidate `nfse-br` immediately before
-configuration and publication.
-
-Create the `pypi` GitHub Environment before the publisher. Require a reviewer
-and manual approval, restrict deployment to release tags, and configure no
-PyPI secret. If the repository plan cannot enforce one of these protections,
-stop and review that limitation instead of silently weakening the boundary.
+Do not recreate or modify the publisher or environment during release
+preparation. The `pypi` environment must continue to require manual approval,
+deny administrative bypass, restrict deployments to release tags, and contain
+no PyPI secret.
 
 The dedicated `Release` workflow runs only for `vMAJOR.MINOR.PATCH` tag pushes.
 Its `build` job has read-only repository access and no OIDC permission. The
@@ -83,9 +74,10 @@ artifact from `build`, and has only `actions: read` plus `id-token: write`.
 The official PyPA action uses Trusted Publishing, uploads attestations, and is
 configured to fail rather than hide an already-published version.
 
-The future release order is: validate `main`, configure the protected
-environment and publisher with explicit authorization, create the explicit
-tag, build, approve the `pypi` deployment, publish and verify PyPI provenance,
+The release order is: validate `main`; reconfirm the tag and PyPI version are
+absent; obtain explicit authorization; create and push the explicit tag; allow
+the build to finish; manually approve the protected `pypi` deployment; publish
+through OIDC; verify public files, hashes, provenance, and clean installation;
 then create a deliberate GitHub Release. The workflow does not create or move
 tags, create GitHub Releases, or write repository contents.
 
