@@ -47,7 +47,7 @@ from nfse_br.domain.cnpj import validate_cnpj_check_digits
 from nfse_br.domain.cpf import validate_cpf_check_digits
 from nfse_br.dps import DpsNumber, DpsSeries
 from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
-from nfse_br.nfse import NfseAccessKey
+from nfse_br.nfse import NfseAccessKey, NfseId
 
 for module in (
     nfse_br,
@@ -81,6 +81,19 @@ except DomainValidationError:
     pass
 else:
     raise AssertionError("Invalid NFS-e access key was unexpectedly accepted")
+
+synthetic_nfse_id = "NFS" + "0" * 9 + "SYNTHETIC00000" + "0" * 27
+nfse_id = NfseId(synthetic_nfse_id)
+assert str(nfse_id) == synthetic_nfse_id
+assert synthetic_nfse_id not in repr(nfse_id)
+assert not hasattr(nfse_id, "access_key")
+assert not hasattr(nfse_id, "to_access_key")
+try:
+    NfseId(synthetic_nfse_id[:-1] + "!")
+except DomainValidationError:
+    pass
+else:
+    raise AssertionError("Invalid NFS-e identifier was unexpectedly accepted")
 
 validate_cnpj_check_digits(FederalTaxId.cnpj("12ABC34501DE35"))
 try:

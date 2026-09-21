@@ -105,8 +105,8 @@ def test_repr_and_validation_errors_do_not_disclose_the_value() -> None:
         raise AssertionError("Invalid NFS-e access key was unexpectedly accepted")
 
 
-def test_public_subpackage_exports_only_the_access_key() -> None:
-    assert nfse_br.nfse.__all__ == ["NfseAccessKey"]
+def test_public_subpackage_exports_access_key_and_identifier() -> None:
+    assert nfse_br.nfse.__all__ == ["NfseAccessKey", "NfseId"]
 
 
 def test_frozen_contract_matches_runtime_and_source_pins() -> None:
