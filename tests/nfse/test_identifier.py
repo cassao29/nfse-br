@@ -111,10 +111,12 @@ def test_repr_and_validation_errors_do_not_disclose_the_value() -> None:
 def test_public_subpackage_exports_access_key_and_identifier() -> None:
     assert nfse_br.nfse.__all__ == [
         "NfseAccessKey",
+        "NfseConsistencyError",
         "NfseDocumentError",
         "NfseDocumentInfo",
         "NfseId",
         "extract_nfse_document_info",
+        "validate_nfse_document_consistency",
     ]
 
 

@@ -22,6 +22,7 @@ CPF_BRANCH_MINIMUM = 90
 NFSE_ACCESS_KEY_BRANCH_MINIMUM = 90
 NFSE_ID_BRANCH_MINIMUM = 90
 NFSE_DOCUMENT_BRANCH_MINIMUM = 90
+NFSE_CONSISTENCY_BRANCH_MINIMUM = 90
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _F0_ROOT = _PROJECT_ROOT / "src/nfse_br/_f0"
@@ -37,6 +38,7 @@ _CPF_MODULE = "src/nfse_br/domain/cpf.py"
 _NFSE_ACCESS_KEY_MODULE = "src/nfse_br/nfse/access_key.py"
 _NFSE_ID_MODULE = "src/nfse_br/nfse/identifier.py"
 _NFSE_DOCUMENT_MODULE = "src/nfse_br/nfse/document.py"
+_NFSE_CONSISTENCY_MODULE = "src/nfse_br/nfse/consistency.py"
 
 
 class CoverageGateError(ValueError):
@@ -76,6 +78,7 @@ def evaluate_report(
     expected_nfse_access_key_paths: frozenset[str],
     expected_nfse_id_paths: frozenset[str],
     expected_nfse_document_paths: frozenset[str],
+    expected_nfse_consistency_paths: frozenset[str],
 ) -> tuple[
     GateResult,
     GateResult,
@@ -89,8 +92,9 @@ def evaluate_report(
     GateResult,
     GateResult,
     GateResult,
+    GateResult,
 ]:
-    """Validate a Coverage.py report and calculate the twelve required gates."""
+    """Validate a Coverage.py report and calculate the thirteen required gates."""
     if _XSD_VALIDATOR_MODULE not in expected_xsd_paths:
         raise CoverageGateError(
             f"XSD scope is missing required module {_XSD_VALIDATOR_MODULE!r}"
@@ -128,6 +132,11 @@ def evaluate_report(
     if _NFSE_DOCUMENT_MODULE not in expected_nfse_document_paths:
         raise CoverageGateError(
             f"NFS-e document scope is missing required module {_NFSE_DOCUMENT_MODULE!r}"
+        )
+    if _NFSE_CONSISTENCY_MODULE not in expected_nfse_consistency_paths:
+        raise CoverageGateError(
+            "NFS-e consistency scope is missing required module "
+            f"{_NFSE_CONSISTENCY_MODULE!r}"
         )
     meta = _mapping(report.get("meta"), context="meta")
     if meta.get("branch_coverage") is not True:
@@ -200,6 +209,12 @@ def evaluate_report(
         raise CoverageGateError(
             "coverage report is missing NFS-e document files: "
             f"{sorted(missing_nfse_document)!r}"
+        )
+    missing_nfse_consistency = expected_nfse_consistency_paths - files.keys()
+    if missing_nfse_consistency:
+        raise CoverageGateError(
+            "coverage report is missing NFS-e consistency files: "
+            f"{sorted(missing_nfse_consistency)!r}"
         )
 
     f0_covered = 0
@@ -306,6 +321,15 @@ def evaluate_report(
         nfse_document_covered += covered
         nfse_document_total += total
 
+    nfse_consistency_covered = 0
+    nfse_consistency_total = 0
+    for path in expected_nfse_consistency_paths:
+        file_data = files[path]
+        summary = _mapping(file_data.get("summary"), context=f"summary for {path!r}")
+        covered, total = _counts(summary, context=path, unit="branches")
+        nfse_consistency_covered += covered
+        nfse_consistency_total += total
+
     return (
         _gate(
             "Library combined",
@@ -378,6 +402,12 @@ def evaluate_report(
             covered=nfse_document_covered,
             total=nfse_document_total,
             minimum=NFSE_DOCUMENT_BRANCH_MINIMUM,
+        ),
+        _gate(
+            "NFS-e consistency branches",
+            covered=nfse_consistency_covered,
+            total=nfse_consistency_total,
+            minimum=NFSE_CONSISTENCY_BRANCH_MINIMUM,
         ),
     )
 
@@ -506,6 +536,17 @@ def expected_nfse_document_paths() -> frozenset[str]:
     return frozenset({_NFSE_DOCUMENT_MODULE})
 
 
+def expected_nfse_consistency_paths() -> frozenset[str]:
+    """Return the explicitly gated NFS-e consistency validator."""
+    path = _PROJECT_ROOT / _NFSE_CONSISTENCY_MODULE
+    if not path.is_file():
+        raise CoverageGateError(
+            "NFS-e source tree is missing required consistency module "
+            f"{_NFSE_CONSISTENCY_MODULE!r}"
+        )
+    return frozenset({_NFSE_CONSISTENCY_MODULE})
+
+
 def _counts(
     summary: Mapping[str, object],
     *,
@@ -581,6 +622,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             expected_nfse_access_key_paths=expected_nfse_access_key_paths(),
             expected_nfse_id_paths=expected_nfse_id_paths(),
             expected_nfse_document_paths=expected_nfse_document_paths(),
+            expected_nfse_consistency_paths=expected_nfse_consistency_paths(),
         )
     except CoverageGateError as exc:
         print(f"Coverage gate error: {exc}", file=sys.stderr)

@@ -370,10 +370,12 @@ def test_error_constructor_accepts_only_the_stable_controlled_codes() -> None:
 def test_public_subpackage_exports_document_information_api() -> None:
     assert nfse_br.nfse.__all__ == [
         "NfseAccessKey",
+        "NfseConsistencyError",
         "NfseDocumentError",
         "NfseDocumentInfo",
         "NfseId",
         "extract_nfse_document_info",
+        "validate_nfse_document_consistency",
     ]
 
 

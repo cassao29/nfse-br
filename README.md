@@ -141,6 +141,28 @@ transport origin or fiscal authorization, or transmit anything. See
 [`contracts/restricted/NFSE_DOCUMENT_INFO.md`](contracts/restricted/NFSE_DOCUMENT_INFO.md)
 for the exact frozen paths and limitations.
 
+## NFS-e and embedded DPS consistency
+
+`validate_nfse_document_consistency` performs three fail-closed local checks
+confirmed by the frozen restricted evidence: it recomposes the embedded DPS
+identifier, compares its municipality with the NFS-e identity, and compares
+the federal registration selected by `tpEmit` with the NFS-e identity.
+
+```python
+from nfse_br.nfse import validate_nfse_document_consistency
+
+validate_nfse_document_consistency(xml_bytes)
+```
+
+The check uses only the standard library and performs no network access. It is
+not XSD validation, signature verification, fiscal authorization, or proof of
+transport origin. For stronger local assurance, first validate the same bytes
+with `RecoveredNfseValidator`, then extract their document information and run
+the consistency check. Unconfirmed environment and number relationships are
+not enforced, and no access key is derived. See
+[`contracts/restricted/NFSE_DPS_CONSISTENCY.md`](contracts/restricted/NFSE_DPS_CONSISTENCY.md)
+for the exact evidence matrix.
+
 ## NFS-e access key
 
 `NfseAccessKey` is the immutable lexical primitive for the 50-position
@@ -361,8 +383,9 @@ coverage for `src/nfse_br/xsd/`, and 90% branch coverage for
 `src/nfse_br/domain/cnpj.py`, and 90% branch coverage for
 `src/nfse_br/domain/cpf.py`, and 90% branch coverage for each of
 `src/nfse_br/nfse/access_key.py`, `src/nfse_br/nfse/identifier.py`, and
-`src/nfse_br/nfse/document.py`. Gate decisions use exact counters from
-Coverage.py JSON rather than rounded display percentages.
+`src/nfse_br/nfse/document.py`, and `src/nfse_br/nfse/consistency.py`. Gate
+decisions use exact counters from Coverage.py JSON rather than rounded display
+percentages.
 
 CI also installs the built base wheel into a fresh virtual environment without
 dependencies or the `xsd` extra. The official restricted ZIP is not distributed
