@@ -52,7 +52,7 @@ def test_help_version_and_import_do_not_load_lxml(
     assert "already-recovered NFS-e XML" in capsys.readouterr().out
 
     assert cli.main(["--version"]) == 0
-    assert capsys.readouterr().out == "nfse-br 0.1.0\n"
+    assert capsys.readouterr().out == "nfse-br 0.2.0\n"
 
     project_root = Path(__file__).resolve().parents[1]
     program = (
@@ -69,7 +69,7 @@ def test_help_version_and_import_do_not_load_lxml(
         text=True,
     )
     assert completed.returncode == 0
-    assert completed.stdout == "nfse-br 0.1.0\n"
+    assert completed.stdout == "nfse-br 0.2.0\n"
     assert completed.stderr == ""
 
 
