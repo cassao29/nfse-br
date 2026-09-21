@@ -353,6 +353,35 @@ example:
 without `lxml`. A successful result is not fiscal authorization, signature
 validation, or permission to transmit.
 
+## Recovered NFS-e check CLI
+
+Check one already-recovered local NFS-e XML document against the pinned
+restricted schema, extract its required structural information, and enforce
+the confirmed NFS-e/embedded-DPS consistency rules:
+
+```console
+uv run --frozen --extra xsd \
+  nfse-br check-nfse recovered-nfse.xml \
+  --bundle .f0/restricted/restricted-xsd.zip
+```
+
+The document must already contain the recovered NFS-e XML; this command does
+not parse a POST response or perform Base64/GZip recovery. Its pipeline is XSD
+validation (`xsd_*` stages), structural extraction (`structure`), then local
+consistency validation (`consistency`). Success emits exactly:
+
+```json
+{"status":"ok","stage":"complete","code":null,"transmission_ready":false}
+```
+
+Exit code `0` means all three local checks passed, `1` means the document was
+rejected, and `2` means a usage, dependency, file, bundle, or validation-engine
+error occurred. No fiscal identifiers are emitted. A successful check does
+not verify an XML signature or certificate, fiscal authorization, SEFIN
+acceptance, transport origin, or an access key. It does not access the network,
+derive an access key, sign, or transmit anything. Use remains possible only
+with the explicitly supplied local XML and bundle files.
+
 ## Development
 
 The project requires Python 3.12 or 3.13 and uses

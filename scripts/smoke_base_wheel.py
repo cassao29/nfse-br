@@ -193,8 +193,10 @@ assert inspect_unsigned_dps(xml) == root.find(f"{namespace}infDPS").get("Id")
 console = Path(sys.executable).with_name("nfse-br")
 for command in (
     [str(console), "--help"],
+    [str(console), "check-nfse", "--help"],
     [str(console), "--version"],
     [sys.executable, "-I", "-m", "nfse_br", "--help"],
+    [sys.executable, "-I", "-m", "nfse_br", "check-nfse", "--help"],
     [sys.executable, "-I", "-m", "nfse_br", "--version"],
 ):
     completed = subprocess.run(command, check=False, capture_output=True, text=True)
@@ -221,6 +223,22 @@ invalid_argument_cases = (
     ],
     [
         "check-unsigned",
+        sensitive_document,
+        "--bundle",
+        sensitive_bundle,
+        "argumento-excedente-sigiloso",
+    ],
+    ["check-nfse"],
+    ["check-nfse", sensitive_document, "--bundle"],
+    [
+        "check-nfse",
+        sensitive_document,
+        "--bundle",
+        sensitive_bundle,
+        "--opcao-sigilosa",
+    ],
+    [
+        "check-nfse",
         sensitive_document,
         "--bundle",
         sensitive_bundle,
@@ -265,6 +283,23 @@ for command in (
         "-m",
         "nfse_br",
         "check-unsigned",
+        str(document_path),
+        "--bundle",
+        str(bundle_path),
+    ],
+    [
+        str(console),
+        "check-nfse",
+        str(document_path),
+        "--bundle",
+        str(bundle_path),
+    ],
+    [
+        sys.executable,
+        "-I",
+        "-m",
+        "nfse_br",
+        "check-nfse",
         str(document_path),
         "--bundle",
         str(bundle_path),
