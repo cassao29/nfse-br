@@ -1,0 +1,140 @@
+{
+  "annex_i": {
+    "sha256": "2ae2ac9f91efa9b64f0c9ed97acaf18bb7513b090fae39ba5bda59187e64d9e9",
+    "size": 215056,
+    "sources": [
+      {
+        "code": "E1263",
+        "range": "A7:O7",
+        "rule": 4,
+        "sheet": "RN DPS_NFS-e"
+      },
+      {
+        "code": "E1282",
+        "range": "A33:O33",
+        "rule": 30,
+        "sheet": "RN DPS_NFS-e"
+      },
+      {
+        "code": "E1285",
+        "range": "A35:O35",
+        "rule": 32,
+        "sheet": "RN DPS_NFS-e"
+      },
+      {
+        "code": "E1286",
+        "range": "A44:O44",
+        "rule": 41,
+        "sheet": "RN DPS_NFS-e"
+      },
+      {
+        "code": "E0004",
+        "range": "A142:O142",
+        "rule": 139,
+        "sheet": "RN DPS_NFS-e"
+      }
+    ]
+  },
+  "authority": "official_frozen",
+  "bundle": {
+    "sha256": "6c7e0510d3ecff4454f291f4e10b742d27a4818f23aab181494f96d0ea79f3dc",
+    "size": 34933
+  },
+  "environment": "restricted",
+  "implementation_ready": true,
+  "invariants": {
+    "embedded_dps_self_consistency": {
+      "classification": "CURRENT_CONFIRMED",
+      "rule": "infDPS/@Id equals DPS + cLocEmi + inscription type and federal registration of the entity selected by tpEmit + zero-left-padded serie + zero-left-padded nDPS.",
+      "runtime_enforcement_allowed": true,
+      "sources": [
+        "tiposSimples_v1.01.xsd/TSIdDPS",
+        "LEIAUTE DPS_NFS-e !A102:I102",
+        "RN DPS_NFS-e!A142:O142"
+      ]
+    },
+    "environment_relation": {
+      "classification": "UNCONFIRMED",
+      "notes": "The NFS-e ambGer component identifies the generator while DPS tpAmb identifies Produção or Homologação; no source equates them.",
+      "rule": null,
+      "runtime_enforcement_allowed": false,
+      "sources": [
+        "LEIAUTE DPS_NFS-e !A15:I15",
+        "LEIAUTE DPS_NFS-e !A103:I103"
+      ]
+    },
+    "federal_registration_cross_consistency": {
+      "classification": "CURRENT_CONFIRMED",
+      "notes": "An unconditional comparison with prest is forbidden because tpEmit 2 and 3 select toma and interm respectively.",
+      "rule": "The NFS-e identity inscription type and registration match the CPF or CNPJ of prest for tpEmit=1, toma for tpEmit=2, or interm for tpEmit=3.",
+      "runtime_enforcement_allowed": true,
+      "sources": [
+        "RN DPS_NFS-e!A7:O7",
+        "RN DPS_NFS-e!A33:O33",
+        "RN DPS_NFS-e!A35:O35"
+      ]
+    },
+    "municipality_cross_consistency": {
+      "classification": "CURRENT_CONFIRMED",
+      "rule": "The seven-position municipality component of infNFSe/@Id equals embedded infDPS/cLocEmi.",
+      "runtime_enforcement_allowed": true,
+      "sources": [
+        "RN DPS_NFS-e!A7:O7",
+        "RN DPS_NFS-e!A44:O44"
+      ]
+    },
+    "nfse_number_self_consistency": {
+      "classification": "CONFLICTING",
+      "notes": "Annex I requires a 13-digit nNFSe component, while current TSNNFSe accepts one to thirteen digits beginning at 1; no authoritative left-padding rule is stated.",
+      "rule": null,
+      "runtime_enforcement_allowed": false,
+      "sources": [
+        "tiposSimples_v1.01.xsd/TSIdNFSe",
+        "tiposSimples_v1.01.xsd/TSNNFSe",
+        "LEIAUTE DPS_NFS-e !A5:I5",
+        "LEIAUTE DPS_NFS-e !A8:I8",
+        "RN DPS_NFS-e!A7:O7"
+      ]
+    },
+    "nfse_number_vs_dps_number": {
+      "classification": "UNCONFIRMED",
+      "notes": "nNFSe and nDPS are distinct sequential document identifiers; no current rule requires equality.",
+      "rule": null,
+      "runtime_enforcement_allowed": false,
+      "sources": [
+        "tiposComplexos_v1.01.xsd/TCInfNFSe/nNFSe",
+        "tiposComplexos_v1.01.xsd/TCInfDPS/nDPS"
+      ]
+    },
+    "unconditional_prestador_registration_relation": {
+      "classification": "CONFLICTING",
+      "notes": "The prestador is the DPS issuer only for tpEmit=1; tpEmit=2 and tpEmit=3 select the tomador and intermediário.",
+      "rule": null,
+      "runtime_enforcement_allowed": false,
+      "sources": [
+        "tiposComplexos_v1.01.xsd/TCInfDPS/tpEmit",
+        "RN DPS_NFS-e!A33:O33",
+        "RN DPS_NFS-e!A35:O35"
+      ]
+    }
+  },
+  "policy": {
+    "access_key_derivation": false,
+    "cryptographic_signature_verification": false,
+    "fiscal_authorization_asserted": false,
+    "speculative_enforcement": false,
+    "xsd_validation_implied": false
+  },
+  "project_synthetic_fixture_is_normative_evidence": false,
+  "source_members": {
+    "tiposComplexos_v1.01.xsd": {
+      "sha256": "6f792f408a33c11e799042a8d61cac7d1c9f5992c53e07e60ce75a15f157d1ac",
+      "size": 114148
+    },
+    "tiposSimples_v1.01.xsd": {
+      "sha256": "3d8171c9b7c9a82ecb48eed9a96485f2077006e7d21db6cd182839dd34dbb5e4",
+      "size": 69488
+    }
+  },
+  "transmission_ready": false
+}

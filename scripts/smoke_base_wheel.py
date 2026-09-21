@@ -49,9 +49,11 @@ from nfse_br.dps import DpsNumber, DpsSeries
 from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
 from nfse_br.nfse import (
     NfseAccessKey,
+    NfseConsistencyError,
     NfseDocumentInfo,
     NfseId,
     extract_nfse_document_info,
+    validate_nfse_document_consistency,
 )
 
 for module in (
@@ -124,6 +126,25 @@ for sensitive_value in (
     synthetic_embedded_dps_id,
 ):
     assert sensitive_value not in repr(document_info)
+
+synthetic_consistent_nfse_xml = (
+    '<NFSe xmlns="http://www.sped.fazenda.gov.br/nfse">'
+    '<infNFSe Id="NFS29274082212ABC6780001Z0000000000004226090000000010">'
+    '<nNFSe>42</nNFSe>'
+    '<DPS><infDPS Id="DPS2927408212ABC6780001Z000123000000000000042">'
+    '<tpEmit>1</tpEmit><cLocEmi>2927408</cLocEmi><serie>123</serie>'
+    '<nDPS>42</nDPS><prest><CNPJ>12ABC6780001Z0</CNPJ></prest>'
+    '</infDPS></DPS></infNFSe></NFSe>'
+).encode()
+assert validate_nfse_document_consistency(synthetic_consistent_nfse_xml) is None
+try:
+    validate_nfse_document_consistency(
+        synthetic_consistent_nfse_xml.replace(b"<cLocEmi>2927408", b"<cLocEmi>3550308")
+    )
+except NfseConsistencyError as error:
+    assert error.code == "embedded_dps_identity_mismatch"
+else:
+    raise AssertionError("Inconsistent embedded DPS was unexpectedly accepted")
 
 validate_cnpj_check_digits(FederalTaxId.cnpj("12ABC34501DE35"))
 try:

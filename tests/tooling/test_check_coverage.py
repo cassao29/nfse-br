@@ -33,6 +33,8 @@ _NFSE_ID = "src/nfse_br/nfse/identifier.py"
 _NFSE_ID_PATHS = frozenset({_NFSE_ID})
 _NFSE_DOCUMENT = "src/nfse_br/nfse/document.py"
 _NFSE_DOCUMENT_PATHS = frozenset({_NFSE_DOCUMENT})
+_NFSE_CONSISTENCY = "src/nfse_br/nfse/consistency.py"
+_NFSE_CONSISTENCY_PATHS = frozenset({_NFSE_CONSISTENCY})
 
 
 def _summary(*, covered: int, total: int) -> dict[str, object]:
@@ -60,6 +62,7 @@ def _report(
     nfse_access_key: tuple[int, int] = (90, 100),
     nfse_id: tuple[int, int] = (90, 100),
     nfse_document: tuple[int, int] = (90, 100),
+    nfse_consistency: tuple[int, int] = (90, 100),
     branch_coverage: bool = True,
 ) -> dict[str, object]:
     return {
@@ -107,6 +110,12 @@ def _report(
                     total=nfse_document[1],
                 )
             },
+            _NFSE_CONSISTENCY: {
+                "summary": _summary(
+                    covered=nfse_consistency[0],
+                    total=nfse_consistency[1],
+                )
+            },
         },
     }
 
@@ -124,6 +133,7 @@ def _results(report: dict[str, object]) -> tuple[check_coverage.GateResult, ...]
         expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
         expected_nfse_id_paths=_NFSE_ID_PATHS,
         expected_nfse_document_paths=_NFSE_DOCUMENT_PATHS,
+        expected_nfse_consistency_paths=_NFSE_CONSISTENCY_PATHS,
     )
 
 
@@ -134,6 +144,7 @@ def test_module_203_of_226_fails_even_with_rounded_display() -> None:
         True,
         True,
         False,
+        True,
         True,
         True,
         True,
@@ -241,6 +252,15 @@ def test_nfse_document_exactly_ninety_percent_passes_and_below_fails() -> None:
     assert all(result.passed for result in failing[:11])
 
 
+def test_nfse_consistency_exactly_ninety_percent_passes_and_below_fails() -> None:
+    passing = _results(_report(nfse_consistency=(9, 10)))
+    failing = _results(_report(nfse_consistency=(89, 100)))
+
+    assert passing[12].passed
+    assert not failing[12].passed
+    assert all(result.passed for result in failing[:12])
+
+
 def test_aggregate_f0_below_ninety_percent_fails() -> None:
     results = _results(_report(module=(90, 100), restricted=(8, 10)))
 
@@ -300,6 +320,7 @@ def test_xsd_scope_must_explicitly_include_validator() -> None:
             expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
             expected_nfse_id_paths=_NFSE_ID_PATHS,
             expected_nfse_document_paths=_NFSE_DOCUMENT_PATHS,
+            expected_nfse_consistency_paths=_NFSE_CONSISTENCY_PATHS,
         )
 
 
@@ -317,6 +338,7 @@ def test_xsd_scope_must_explicitly_include_nfse_validator() -> None:
             expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
             expected_nfse_id_paths=_NFSE_ID_PATHS,
             expected_nfse_document_paths=_NFSE_DOCUMENT_PATHS,
+            expected_nfse_consistency_paths=_NFSE_CONSISTENCY_PATHS,
         )
 
 
@@ -334,6 +356,7 @@ def test_builder_scope_and_report_must_include_required_module() -> None:
             expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
             expected_nfse_id_paths=_NFSE_ID_PATHS,
             expected_nfse_document_paths=_NFSE_DOCUMENT_PATHS,
+            expected_nfse_consistency_paths=_NFSE_CONSISTENCY_PATHS,
         )
 
     report = _report()
@@ -357,6 +380,7 @@ def test_xmlsig_scope_and_report_must_include_preflight() -> None:
             expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
             expected_nfse_id_paths=_NFSE_ID_PATHS,
             expected_nfse_document_paths=_NFSE_DOCUMENT_PATHS,
+            expected_nfse_consistency_paths=_NFSE_CONSISTENCY_PATHS,
         )
 
     report = _report()
@@ -383,6 +407,7 @@ def test_cli_scope_and_report_must_include_required_module() -> None:
             expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
             expected_nfse_id_paths=_NFSE_ID_PATHS,
             expected_nfse_document_paths=_NFSE_DOCUMENT_PATHS,
+            expected_nfse_consistency_paths=_NFSE_CONSISTENCY_PATHS,
         )
 
     report = _report()
@@ -406,6 +431,7 @@ def test_cnpj_scope_and_report_must_include_required_module() -> None:
             expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
             expected_nfse_id_paths=_NFSE_ID_PATHS,
             expected_nfse_document_paths=_NFSE_DOCUMENT_PATHS,
+            expected_nfse_consistency_paths=_NFSE_CONSISTENCY_PATHS,
         )
 
     report = _report()
@@ -429,6 +455,7 @@ def test_cpf_scope_and_report_must_include_required_module() -> None:
             expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
             expected_nfse_id_paths=_NFSE_ID_PATHS,
             expected_nfse_document_paths=_NFSE_DOCUMENT_PATHS,
+            expected_nfse_consistency_paths=_NFSE_CONSISTENCY_PATHS,
         )
 
     report = _report()
@@ -452,6 +479,7 @@ def test_nfse_access_key_scope_and_report_must_include_required_module() -> None
             expected_nfse_access_key_paths=frozenset(),
             expected_nfse_id_paths=_NFSE_ID_PATHS,
             expected_nfse_document_paths=_NFSE_DOCUMENT_PATHS,
+            expected_nfse_consistency_paths=_NFSE_CONSISTENCY_PATHS,
         )
 
     report = _report()
@@ -478,6 +506,7 @@ def test_nfse_id_scope_and_report_must_include_required_module() -> None:
             expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
             expected_nfse_id_paths=frozenset(),
             expected_nfse_document_paths=_NFSE_DOCUMENT_PATHS,
+            expected_nfse_consistency_paths=_NFSE_CONSISTENCY_PATHS,
         )
 
     report = _report()
@@ -504,6 +533,7 @@ def test_nfse_document_scope_and_report_must_include_required_module() -> None:
             expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
             expected_nfse_id_paths=_NFSE_ID_PATHS,
             expected_nfse_document_paths=frozenset(),
+            expected_nfse_consistency_paths=_NFSE_CONSISTENCY_PATHS,
         )
 
     report = _report()
@@ -512,6 +542,33 @@ def test_nfse_document_scope_and_report_must_include_required_module() -> None:
     with pytest.raises(
         check_coverage.CoverageGateError,
         match="missing NFS-e document files",
+    ):
+        _results(report)
+
+
+def test_nfse_consistency_scope_and_report_must_include_required_module() -> None:
+    with pytest.raises(check_coverage.CoverageGateError, match="required module"):
+        check_coverage.evaluate_report(
+            _report(),
+            expected_f0_paths=_F0_PATHS,
+            expected_xsd_paths=_XSD_PATHS,
+            expected_builder_paths=_BUILDER_PATHS,
+            expected_xmlsig_paths=_XMLSIG_PATHS,
+            expected_cli_paths=_CLI_PATHS,
+            expected_cnpj_paths=_CNPJ_PATHS,
+            expected_cpf_paths=_CPF_PATHS,
+            expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
+            expected_nfse_id_paths=_NFSE_ID_PATHS,
+            expected_nfse_document_paths=_NFSE_DOCUMENT_PATHS,
+            expected_nfse_consistency_paths=frozenset(),
+        )
+
+    report = _report()
+    files = cast(dict[str, object], report["files"])
+    del files[_NFSE_CONSISTENCY]
+    with pytest.raises(
+        check_coverage.CoverageGateError,
+        match="missing NFS-e consistency files",
     ):
         _results(report)
 
@@ -627,6 +684,18 @@ def test_nfse_document_source_tree_without_module_is_rejected(
         check_coverage.expected_nfse_document_paths()
 
 
+def test_nfse_consistency_source_tree_without_module_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    monkeypatch.setattr(check_coverage, "_PROJECT_ROOT", project_root)
+
+    with pytest.raises(check_coverage.CoverageGateError, match="required consistency"):
+        check_coverage.expected_nfse_consistency_paths()
+
+
 @pytest.mark.parametrize(
     ("covered", "total", "error"),
     [
@@ -679,7 +748,8 @@ def test_cli_returns_zero_and_prints_all_passing_gates(
     assert "NFS-e access-key branches" in output
     assert "NFS-e identifier branches" in output
     assert "NFS-e document branches" in output
-    assert output.count("PASS") == 12
+    assert "NFS-e consistency branches" in output
+    assert output.count("PASS") == 13
 
 
 @pytest.mark.parametrize(
@@ -749,4 +819,5 @@ def test_unsafe_or_incomplete_f0_paths_are_rejected() -> None:
             expected_nfse_access_key_paths=_NFSE_ACCESS_KEY_PATHS,
             expected_nfse_id_paths=_NFSE_ID_PATHS,
             expected_nfse_document_paths=_NFSE_DOCUMENT_PATHS,
+            expected_nfse_consistency_paths=_NFSE_CONSISTENCY_PATHS,
         )
