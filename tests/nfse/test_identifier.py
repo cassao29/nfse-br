@@ -109,7 +109,13 @@ def test_repr_and_validation_errors_do_not_disclose_the_value() -> None:
 
 
 def test_public_subpackage_exports_access_key_and_identifier() -> None:
-    assert nfse_br.nfse.__all__ == ["NfseAccessKey", "NfseId"]
+    assert nfse_br.nfse.__all__ == [
+        "NfseAccessKey",
+        "NfseDocumentError",
+        "NfseDocumentInfo",
+        "NfseId",
+        "extract_nfse_document_info",
+    ]
 
 
 def test_frozen_contract_matches_runtime_and_keeps_conversion_forbidden() -> None:

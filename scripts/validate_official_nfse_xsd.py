@@ -10,6 +10,7 @@ from pathlib import Path
 
 from lxml import etree
 
+from nfse_br.nfse import NfseDocumentError, extract_nfse_document_info
 from nfse_br.xsd import RecoveredNfseValidator, XsdValidationError
 
 _VALID_NFSE = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -179,6 +180,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         validator = RecoveredNfseValidator(bundle)
         validator.validate(_VALID_NFSE)
+        info = extract_nfse_document_info(_VALID_NFSE)
+        if (
+            info.nfse_id.value
+            != "NFS29274082212ABC6780001Z0000000000004226090000000010"
+            or info.nfse_number != "42"
+            or info.embedded_dps_id != "DPS2927408212ABC6780001Z000123000000000000042"
+        ):
+            print("Official NFS-e integration: structural extraction drifted.")
+            return 1
         negative_cases = _negative_cases()
         for case in negative_cases:
             try:
@@ -193,7 +203,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except FixtureMutationError:
         print("Official NFS-e integration: fixture preparation failed.")
         return 2
-    except XsdValidationError as exc:
+    except (NfseDocumentError, XsdValidationError) as exc:
         print(f"Official NFS-e integration: {exc}")
         return 1
 
@@ -201,6 +211,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"lxml: {'.'.join(map(str, etree.LXML_VERSION[:3]))}")
     print(f"libxml2: {'.'.join(map(str, etree.LIBXML_VERSION))}")
     print("Synthetic complete NFS-e: PASS")
+    print("Synthetic structural extraction: PASS")
     for case in negative_cases:
         print(f"Negative case {case.label}: REJECTED")
     print("Sequential valid-invalid-valid state: PASS")
