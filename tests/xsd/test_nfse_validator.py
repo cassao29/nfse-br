@@ -344,6 +344,7 @@ def test_public_subpackage_exports_recovered_validator() -> None:
     assert nfse_br.xsd.__all__ == [
         "RecoveredNfseChecker",
         "RecoveredNfseValidator",
+        "RestrictedDpsChecker",
         "RestrictedDpsXsdValidator",
         "XsdValidationError",
     ]

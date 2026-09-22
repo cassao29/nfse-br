@@ -11,7 +11,11 @@ from pathlib import Path
 from lxml import etree
 
 from nfse_br.dps import DpsDocumentError, inspect_unsigned_dps
-from nfse_br.xsd import RestrictedDpsXsdValidator, XsdValidationError
+from nfse_br.xsd import (
+    RestrictedDpsChecker,
+    RestrictedDpsXsdValidator,
+    XsdValidationError,
+)
 
 _VALID_DPS = b"""<?xml version="1.0" encoding="UTF-8"?>
 <DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01">
@@ -161,6 +165,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         if identity.value != "DPS2927408212ABC6780001Z000123000000000000042":
             print("Official integration: unsigned DPS inspection drifted.")
             return 1
+        checked_identity = RestrictedDpsChecker(bundle).check(_VALID_DPS)
+        if checked_identity != identity or checked_identity.value != identity.value:
+            print("Official integration: composed DPS check drifted.")
+            return 1
         negative_cases = _negative_cases()
         for case in negative_cases:
             try:
@@ -184,6 +192,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"libxml2: {'.'.join(map(str, etree.LIBXML_VERSION))}")
     print("Synthetic complete DPS: PASS")
     print("Synthetic unsigned DPS inspection: PASS")
+    print("Synthetic composed restricted DPS check: PASS")
     for case in negative_cases:
         print(f"Negative case {case.label}: REJECTED")
     print("Sequential valid-invalid-valid state: PASS")

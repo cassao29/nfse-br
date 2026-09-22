@@ -60,6 +60,8 @@ def test_help_version_and_import_do_not_load_lxml(
         f"sys.path.insert(0, {str(project_root / 'src')!r}); "
         "sys.modules['lxml'] = None; "
         "import nfse_br.cli; "
+        "assert 'nfse_br._xmlsig.preflight' not in sys.modules; "
+        "assert 'nfse_br.xsd' not in sys.modules; "
         "raise SystemExit(nfse_br.cli.main(['--version']))"
     )
     completed = subprocess.run(
@@ -521,7 +523,7 @@ def test_invalid_bundle_stops_before_document_read(
     }
 
 
-def test_public_validator_rejects_an_unpinned_bundle(
+def test_public_checker_rejects_an_unpinned_bundle(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -536,7 +538,7 @@ def test_public_validator_rejects_an_unpinned_bundle(
     }
 
 
-def test_success_passes_the_same_xml_bytes_to_both_checks(
+def test_success_passes_the_once_read_document_to_checker(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -544,24 +546,20 @@ def test_success_passes_the_same_xml_bytes_to_both_checks(
     bundle, document = _paths(tmp_path)
     observed: dict[str, bytes] = {}
 
-    class Validator:
+    class Checker:
         def __init__(self, bundle_bytes: bytes) -> None:
             observed["bundle"] = bundle_bytes
 
-        def validate(self, xml_bytes: bytes) -> None:
-            observed["xsd"] = xml_bytes
-
-    def preflight(xml_bytes: bytes) -> str:
-        document.write_bytes(b"changed after the one bounded read")
-        observed["preflight"] = xml_bytes
-        return "controlled-id"
+        def check(self, xml_bytes: bytes) -> object:
+            observed["check"] = xml_bytes
+            document.write_bytes(b"changed after the one bounded read")
+            return object()
 
     monkeypatch.setattr(
         cli,
         "_load_xsd_components",
-        lambda: (Validator, _FakeXsdError),
+        lambda: (Checker, _FakeXsdError),
     )
-    monkeypatch.setattr(cli, "inspect_unsigned_dps", preflight)
 
     assert cli.main(["check-unsigned", str(document), "--bundle", str(bundle)]) == 0
     assert _payload(capsys.readouterr().out) == {
@@ -571,13 +569,12 @@ def test_success_passes_the_same_xml_bytes_to_both_checks(
         "transmission_ready": False,
     }
     assert observed["bundle"] == b"bundle"
-    assert observed["xsd"] == b"<DPS/>"
-    assert observed["xsd"] is observed["preflight"]
+    assert observed["check"] == b"<DPS/>"
     assert document.read_bytes() == b"changed after the one bounded read"
 
 
 @pytest.mark.parametrize("phase", ["parse", "schema"])
-def test_xsd_rejection_stops_before_preflight(
+def test_xsd_rejection_keeps_the_existing_stage_mapping(
     phase: str,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -585,22 +582,18 @@ def test_xsd_rejection_stops_before_preflight(
 ) -> None:
     bundle, document = _paths(tmp_path)
 
-    class Validator:
+    class Checker:
         def __init__(self, _bundle_bytes: bytes) -> None:
             pass
 
-        def validate(self, _xml_bytes: bytes) -> Never:
+        def check(self, _xml_bytes: bytes) -> Never:
             raise _FakeXsdError(phase, "controlled_xsd_rejection")
-
-    def unexpected_preflight(_xml_bytes: bytes) -> Never:
-        raise AssertionError("preflight must not execute")
 
     monkeypatch.setattr(
         cli,
         "_load_xsd_components",
-        lambda: (Validator, _FakeXsdError),
+        lambda: (Checker, _FakeXsdError),
     )
-    monkeypatch.setattr(cli, "inspect_unsigned_dps", unexpected_preflight)
 
     assert cli.main(["check-unsigned", str(document), "--bundle", str(bundle)]) == 1
     assert _payload(capsys.readouterr().out) == {
@@ -618,17 +611,17 @@ def test_non_document_xsd_failure_is_operational(
 ) -> None:
     bundle, document = _paths(tmp_path)
 
-    class Validator:
+    class Checker:
         def __init__(self, _bundle_bytes: bytes) -> None:
             pass
 
-        def validate(self, _xml_bytes: bytes) -> Never:
+        def check(self, _xml_bytes: bytes) -> Never:
             raise _FakeXsdError("bundle", "engine_failure")
 
     monkeypatch.setattr(
         cli,
         "_load_xsd_components",
-        lambda: (Validator, _FakeXsdError),
+        lambda: (Checker, _FakeXsdError),
     )
 
     assert cli.main(["check-unsigned", str(document), "--bundle", str(bundle)]) == 2
@@ -637,35 +630,31 @@ def test_non_document_xsd_failure_is_operational(
     assert result["stage"] == "xsd_bundle"
 
 
-def test_preflight_rejection_and_following_success_are_independent(
+def test_inspection_rejection_and_following_success_are_independent(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     bundle, document = _paths(tmp_path)
 
-    class Validator:
+    calls = 0
+
+    class Checker:
         def __init__(self, _bundle_bytes: bytes) -> None:
             pass
 
-        def validate(self, _xml_bytes: bytes) -> None:
-            pass
-
-    preflight_calls = 0
-
-    def preflight(_xml_bytes: bytes) -> str:
-        nonlocal preflight_calls
-        preflight_calls += 1
-        if preflight_calls == 1:
-            raise DpsDocumentError("unsupported_local_profile")
-        return "controlled-id"
+        def check(self, _xml_bytes: bytes) -> object:
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise DpsDocumentError("unsupported_local_profile")
+            return object()
 
     monkeypatch.setattr(
         cli,
         "_load_xsd_components",
-        lambda: (Validator, _FakeXsdError),
+        lambda: (Checker, _FakeXsdError),
     )
-    monkeypatch.setattr(cli, "inspect_unsigned_dps", preflight)
 
     arguments = ["check-unsigned", str(document), "--bundle", str(bundle)]
     assert cli.main(arguments) == 1
@@ -686,17 +675,17 @@ def test_missing_document_is_controlled_without_disclosing_path(
     bundle, document = _paths(tmp_path)
     document.unlink()
 
-    class Validator:
+    class Checker:
         def __init__(self, _bundle_bytes: bytes) -> None:
             pass
 
-        def validate(self, _xml_bytes: bytes) -> None:
-            pass
+        def check(self, _xml_bytes: bytes) -> object:
+            return object()
 
     monkeypatch.setattr(
         cli,
         "_load_xsd_components",
-        lambda: (Validator, _FakeXsdError),
+        lambda: (Checker, _FakeXsdError),
     )
 
     assert cli.main(["check-unsigned", str(document), "--bundle", str(bundle)]) == 2

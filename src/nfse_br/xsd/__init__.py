@@ -4,6 +4,7 @@ Install ``nfse-br[xsd]`` to use this module.
 """
 
 try:
+    from nfse_br.xsd.dps_checker import RestrictedDpsChecker
     from nfse_br.xsd.nfse_checker import RecoveredNfseChecker
     from nfse_br.xsd.nfse_validator import RecoveredNfseValidator
     from nfse_br.xsd.validator import RestrictedDpsXsdValidator, XsdValidationError
@@ -18,6 +19,7 @@ except ModuleNotFoundError as exc:
 __all__ = [
     "RecoveredNfseChecker",
     "RecoveredNfseValidator",
+    "RestrictedDpsChecker",
     "RestrictedDpsXsdValidator",
     "XsdValidationError",
 ]

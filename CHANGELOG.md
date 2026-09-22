@@ -4,6 +4,9 @@
 
 ### Added
 
+- `RestrictedDpsChecker`, a composed optional-XSD API that validates an unsigned
+  restricted DPS against the pinned schema, then performs public structural
+  inspection and returns `DpsIdentity`.
 - `RecoveredNfseChecker`, a composed local API for already-recovered NFS-e XML
   that runs pinned XSD validation, structural extraction, and confirmed
   NFS-e/DPS consistency checks and returns `NfseDocumentInfo`.
