@@ -17,8 +17,15 @@ _XSD_INIT = "src/nfse_br/xsd/__init__.py"
 _XSD_VALIDATOR = "src/nfse_br/xsd/validator.py"
 _NFSE_XSD_VALIDATOR = "src/nfse_br/xsd/nfse_validator.py"
 _NFSE_XSD_CHECKER = "src/nfse_br/xsd/nfse_checker.py"
+_DPS_XSD_CHECKER = "src/nfse_br/xsd/dps_checker.py"
 _XSD_PATHS = frozenset(
-    {_XSD_INIT, _XSD_VALIDATOR, _NFSE_XSD_VALIDATOR, _NFSE_XSD_CHECKER}
+    {
+        _XSD_INIT,
+        _XSD_VALIDATOR,
+        _NFSE_XSD_VALIDATOR,
+        _NFSE_XSD_CHECKER,
+        _DPS_XSD_CHECKER,
+    }
 )
 _DPS_BUILDER = "src/nfse_br/dps/builder.py"
 _BUILDER_PATHS = frozenset({_DPS_BUILDER})
@@ -93,6 +100,7 @@ def _report(
             _XSD_VALIDATOR: {"summary": _summary(covered=xsd[0], total=xsd[1])},
             _NFSE_XSD_VALIDATOR: {"summary": _summary(covered=0, total=0)},
             _NFSE_XSD_CHECKER: {"summary": _summary(covered=0, total=0)},
+            _DPS_XSD_CHECKER: {"summary": _summary(covered=0, total=0)},
             _DPS_BUILDER: {"summary": _summary(covered=builder[0], total=builder[1])},
             _XMLSIG_PREFLIGHT: {
                 "summary": {
@@ -344,7 +352,7 @@ def test_missing_module_and_disabled_branch_measurement_are_rejected() -> None:
 
 @pytest.mark.parametrize(
     "missing_path",
-    [_XSD_VALIDATOR, _NFSE_XSD_VALIDATOR, _NFSE_XSD_CHECKER],
+    [_XSD_VALIDATOR, _NFSE_XSD_VALIDATOR, _NFSE_XSD_CHECKER, _DPS_XSD_CHECKER],
 )
 def test_missing_xsd_file_is_rejected(missing_path: str) -> None:
     report = _report()

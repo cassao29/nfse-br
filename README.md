@@ -359,6 +359,23 @@ This inspection is not XSD validation, signature verification, signing,
 fiscal authorization, or transmission. Use `RestrictedDpsXsdValidator`
 separately when schema assurance is required.
 
+## Composed restricted DPS check
+
+In the development line after 0.2.0, the optional `xsd` extra provides a
+composed check for an unsigned restricted DPS:
+
+```python
+from nfse_br.xsd import RestrictedDpsChecker
+
+checker = RestrictedDpsChecker(bundle_bytes)
+identity = checker.check(xml_bytes)
+```
+
+The checker compiles the pinned bundle once and can be reused sequentially.
+Each call validates the XSD, then inspects the unsigned DPS structure and
+returns a `DpsIdentity`. It does not read files, download schemas, sign or
+verify signatures, authorize a document, or transmit it.
+
 ## XML signature preflight
 
 The private `nfse_br._xmlsig` package retains a compatibility adapter for the

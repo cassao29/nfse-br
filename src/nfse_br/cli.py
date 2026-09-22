@@ -15,21 +15,17 @@ from typing import Literal, Never, Protocol, cast
 from urllib.parse import urlsplit
 
 from nfse_br import __version__
-from nfse_br._xmlsig.preflight import MAX_XML_BYTES
-from nfse_br.dps import DpsDocumentError, inspect_unsigned_dps
+from nfse_br.dps import DpsDocumentError
 from nfse_br.nfse import (
     NfseConsistencyError,
     NfseDocumentError,
 )
 
 _RESTRICTED_BUNDLE_BYTES = 34_933
+_MAX_XML_BYTES = 1024 * 1024
 
 
-class _Validator(Protocol):
-    def validate(self, xml_bytes: bytes) -> None: ...
-
-
-class _NfseChecker(Protocol):
+class _Checker(Protocol):
     def check(self, xml_bytes: bytes) -> object: ...
 
 
@@ -38,8 +34,7 @@ class _XsdFailure(Protocol):
     code: str
 
 
-type _ValidatorFactory = Callable[[bytes], _Validator]
-type _NfseCheckerFactory = Callable[[bytes], _NfseChecker]
+type _CheckerFactory = Callable[[bytes], _Checker]
 
 
 class _UsageError(ValueError):
@@ -117,7 +112,7 @@ def _parser() -> _ArgumentParser:
     return parser
 
 
-def _load_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
+def _load_xsd_components() -> tuple[_CheckerFactory, type[Exception]]:
     if importlib.util.find_spec("lxml") is None:
         raise _OperationalError("xsd_extra_missing")
 
@@ -127,14 +122,14 @@ def _load_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
         raise _OperationalError("xsd_import_failed") from None
 
 
-def _import_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
-    """Import the optional validator only after confirming lxml is present."""
-    from nfse_br.xsd import RestrictedDpsXsdValidator, XsdValidationError
+def _import_xsd_components() -> tuple[_CheckerFactory, type[Exception]]:
+    """Import the optional DPS checker only after confirming lxml is present."""
+    from nfse_br.xsd import RestrictedDpsChecker, XsdValidationError
 
-    return RestrictedDpsXsdValidator, XsdValidationError
+    return RestrictedDpsChecker, XsdValidationError
 
 
-def _load_nfse_xsd_components() -> tuple[_NfseCheckerFactory, type[Exception]]:
+def _load_nfse_xsd_components() -> tuple[_CheckerFactory, type[Exception]]:
     if importlib.util.find_spec("lxml") is None:
         raise _OperationalError("xsd_extra_missing")
 
@@ -144,7 +139,7 @@ def _load_nfse_xsd_components() -> tuple[_NfseCheckerFactory, type[Exception]]:
         raise _OperationalError("xsd_import_failed") from None
 
 
-def _import_nfse_xsd_components() -> tuple[_NfseCheckerFactory, type[Exception]]:
+def _import_nfse_xsd_components() -> tuple[_CheckerFactory, type[Exception]]:
     """Import the optional NFS-e checker only when lxml is present."""
     from nfse_br.xsd import RecoveredNfseChecker, XsdValidationError
 
@@ -212,23 +207,23 @@ def _check_unsigned(document_path: Path, bundle_path: Path) -> _Result:
         return _failure("error", stage="bundle_read", code=exc.code)
 
     try:
-        validator_factory, xsd_error_type = _load_xsd_components()
+        checker_factory, xsd_error_type = _load_xsd_components()
     except _OperationalError as exc:
         return _failure("error", stage="dependency", code=exc.code)
 
     try:
-        validator = validator_factory(bundle_bytes)
+        checker = checker_factory(bundle_bytes)
     except xsd_error_type as exc:
         failure = cast(_XsdFailure, exc)
         return _failure("error", stage="bundle", code=failure.code)
 
     try:
-        xml_bytes = _read_regular_file(document_path, limit=MAX_XML_BYTES)
+        xml_bytes = _read_regular_file(document_path, limit=_MAX_XML_BYTES)
     except _OperationalError as exc:
         return _failure("error", stage="xml_read", code=exc.code)
 
     try:
-        validator.validate(xml_bytes)
+        checker.check(xml_bytes)
     except xsd_error_type as exc:
         failure = cast(_XsdFailure, exc)
         status: Literal["rejected", "error"] = (
@@ -236,8 +231,6 @@ def _check_unsigned(document_path: Path, bundle_path: Path) -> _Result:
         )
         return _failure(status, stage=f"xsd_{failure.phase}", code=failure.code)
 
-    try:
-        inspect_unsigned_dps(xml_bytes)
     except DpsDocumentError as exc:
         return _failure("rejected", stage="preflight", code=exc.code)
 
@@ -265,7 +258,7 @@ def _check_nfse(document_path: Path, bundle_path: Path) -> _Result:
         return _failure("error", stage="bundle", code=failure.code)
 
     try:
-        xml_bytes = _read_regular_file(document_path, limit=MAX_XML_BYTES)
+        xml_bytes = _read_regular_file(document_path, limit=_MAX_XML_BYTES)
     except _OperationalError as exc:
         return _failure("error", stage="xml_read", code=exc.code)
 
