@@ -23,8 +23,6 @@ from nfse_br._xmlsig.preflight import (
 from nfse_br.nfse import (
     NfseConsistencyError,
     NfseDocumentError,
-    extract_nfse_document_info,
-    validate_nfse_document_consistency,
 )
 
 _RESTRICTED_BUNDLE_BYTES = 34_933
@@ -34,12 +32,17 @@ class _Validator(Protocol):
     def validate(self, xml_bytes: bytes) -> None: ...
 
 
+class _NfseChecker(Protocol):
+    def check(self, xml_bytes: bytes) -> object: ...
+
+
 class _XsdFailure(Protocol):
     phase: str
     code: str
 
 
 type _ValidatorFactory = Callable[[bytes], _Validator]
+type _NfseCheckerFactory = Callable[[bytes], _NfseChecker]
 
 
 class _UsageError(ValueError):
@@ -134,7 +137,7 @@ def _import_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
     return RestrictedDpsXsdValidator, XsdValidationError
 
 
-def _load_nfse_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
+def _load_nfse_xsd_components() -> tuple[_NfseCheckerFactory, type[Exception]]:
     if importlib.util.find_spec("lxml") is None:
         raise _OperationalError("xsd_extra_missing")
 
@@ -144,11 +147,11 @@ def _load_nfse_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
         raise _OperationalError("xsd_import_failed") from None
 
 
-def _import_nfse_xsd_components() -> tuple[_ValidatorFactory, type[Exception]]:
-    """Import the optional NFS-e validator only when lxml is present."""
-    from nfse_br.xsd import RecoveredNfseValidator, XsdValidationError
+def _import_nfse_xsd_components() -> tuple[_NfseCheckerFactory, type[Exception]]:
+    """Import the optional NFS-e checker only when lxml is present."""
+    from nfse_br.xsd import RecoveredNfseChecker, XsdValidationError
 
-    return RecoveredNfseValidator, XsdValidationError
+    return RecoveredNfseChecker, XsdValidationError
 
 
 def _read_regular_file(path: Path, *, limit: int) -> bytes:
@@ -254,12 +257,12 @@ def _check_nfse(document_path: Path, bundle_path: Path) -> _Result:
         return _failure("error", stage="bundle_read", code=exc.code)
 
     try:
-        validator_factory, xsd_error_type = _load_nfse_xsd_components()
+        checker_factory, xsd_error_type = _load_nfse_xsd_components()
     except _OperationalError as exc:
         return _failure("error", stage="dependency", code=exc.code)
 
     try:
-        validator = validator_factory(bundle_bytes)
+        checker = checker_factory(bundle_bytes)
     except xsd_error_type as exc:
         failure = cast(_XsdFailure, exc)
         return _failure("error", stage="bundle", code=failure.code)
@@ -270,7 +273,7 @@ def _check_nfse(document_path: Path, bundle_path: Path) -> _Result:
         return _failure("error", stage="xml_read", code=exc.code)
 
     try:
-        validator.validate(xml_bytes)
+        checker.check(xml_bytes)
     except xsd_error_type as exc:
         failure = cast(_XsdFailure, exc)
         status: Literal["rejected", "error"] = (
@@ -278,13 +281,8 @@ def _check_nfse(document_path: Path, bundle_path: Path) -> _Result:
         )
         return _failure(status, stage=f"xsd_{failure.phase}", code=failure.code)
 
-    try:
-        extract_nfse_document_info(xml_bytes)
     except NfseDocumentError as exc:
         return _failure("rejected", stage="structure", code=exc.code)
-
-    try:
-        validate_nfse_document_consistency(xml_bytes)
     except NfseConsistencyError as exc:
         return _failure("rejected", stage="consistency", code=exc.code)
 

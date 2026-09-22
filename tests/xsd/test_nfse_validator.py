@@ -342,6 +342,7 @@ def test_runtime_profile_pins_match_documentation() -> None:
 
 def test_public_subpackage_exports_recovered_validator() -> None:
     assert nfse_br.xsd.__all__ == [
+        "RecoveredNfseChecker",
         "RecoveredNfseValidator",
         "RestrictedDpsXsdValidator",
         "XsdValidationError",
