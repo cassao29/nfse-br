@@ -25,7 +25,7 @@ uv run --frozen --extra xsd python scripts/check_coverage.py \
   build/coverage/coverage.json
 uv build
 uv run --frozen --extra xsd python scripts/smoke_base_wheel.py \
-  dist/nfse_br-0.2.0-py3-none-any.whl
+  dist/nfse_br-0.3.0-py3-none-any.whl
 ```
 
 Run the suite under both supported Python versions. Pull requests are checked

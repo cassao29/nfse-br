@@ -9,23 +9,25 @@ NFS-e XML, structural extraction, and confirmed local consistency checks. It
 does not implement a complete fiscal model, XML signatures, issuance, or
 transmission. Local XSD validation is available through an optional dependency.
 
-## Release 0.2.0 contract
+## Release 0.3.0 contract
 
-The supported public surface for 0.2.0 is deliberately small:
+The supported public surface for 0.3.0 is deliberately small:
 
 - `CompetenceDate`, `DomainValidationError`, `FederalTaxId`,
   `FederalTaxIdKind`, `MunicipalityCode`, and `NfseEnvironment` from
   `nfse_br.domain`;
 - opt-in CPF and CNPJ check-digit validation from their documented domain
   submodules;
-- `DpsSeries`, `DpsNumber`, and `DpsIdentity` from `nfse_br.dps`;
+- `DpsSeries`, `DpsNumber`, `DpsIdentity`, `DpsDocumentError`, and
+  `inspect_unsigned_dps` from `nfse_br.dps`;
 - `RestrictedDpsDraft` and `build_unsigned_dps` from
   `nfse_br.dps.builder`;
 - `NfseAccessKey`, `NfseId`, `NfseDocumentError`, `NfseDocumentInfo`,
   `extract_nfse_document_info`, `NfseConsistencyError`, and
   `validate_nfse_document_consistency` from `nfse_br.nfse`;
-- `RestrictedDpsXsdValidator`, `RecoveredNfseValidator`, and
-  `XsdValidationError` from `nfse_br.xsd`, when the `xsd` extra is installed;
+- `RestrictedDpsChecker`, `RestrictedDpsXsdValidator`,
+  `RecoveredNfseChecker`, `RecoveredNfseValidator`, and `XsdValidationError`
+  from `nfse_br.xsd`, when the `xsd` extra is installed;
   and
 - the `nfse-br check-unsigned` and `nfse-br check-nfse` commands.
 
@@ -33,7 +35,7 @@ Modules below `nfse_br._f0` and `nfse_br._xmlsig`, together with freeze and
 schema-contract tooling, are private or experimental implementation details.
 They may change without being treated as public API.
 
-Version 0.2.0 does not support issuance or transmission, HTTP/SEFIN calls,
+Version 0.3.0 does not support issuance or transmission, HTTP/SEFIN calls,
 XMLDSig signing or cryptographic verification, certificate or private-key
 handling, production-environment operation, a complete fiscal model, or
 number allocation and persistence. See the [changelog](CHANGELOG.md) for the
@@ -170,8 +172,8 @@ for the exact evidence matrix.
 
 ## Composed recovered NFS-e check
 
-In the development line after 0.2.0, `RecoveredNfseChecker` provides one local
-API for the complete already-recovered NFS-e pipeline:
+`RecoveredNfseChecker` provides one local API for the complete
+already-recovered NFS-e pipeline:
 
 ```python
 from nfse_br.xsd import RecoveredNfseChecker
@@ -340,8 +342,8 @@ for the supported mapping and limits.
 
 ## Unsigned DPS inspection
 
-In the development line after 0.2.0, `inspect_unsigned_dps` provides public,
-standard-library-only structural inspection for an unsigned restricted DPS:
+`inspect_unsigned_dps` provides public, standard-library-only structural
+inspection for an unsigned restricted DPS:
 
 ```python
 from nfse_br.dps import inspect_unsigned_dps
@@ -361,7 +363,7 @@ separately when schema assurance is required.
 
 ## Composed restricted DPS check
 
-In the development line after 0.2.0, the optional `xsd` extra provides a
+The optional `xsd` extra provides a
 composed check for an unsigned restricted DPS:
 
 ```python
@@ -463,7 +465,7 @@ uv run --frozen --extra xsd pytest \
 uv run --frozen --extra xsd python scripts/check_coverage.py \
   build/coverage/coverage.json
 uv build
-python scripts/smoke_base_wheel.py dist/nfse_br-0.2.0-py3-none-any.whl
+python scripts/smoke_base_wheel.py dist/nfse_br-0.3.0-py3-none-any.whl
 ```
 
 The executable coverage gates require at least 80% combined coverage for the

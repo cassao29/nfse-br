@@ -1,14 +1,14 @@
 # Release procedure
 
-This checklist is for the `0.2.0` release. A release operator must run it from
+This checklist is for the `0.3.0` release. A release operator must run it from
 a clean, protected `main`; completing release preparation alone does not
 authorize a tag, GitHub Release, TestPyPI upload, or PyPI upload.
 
 ## Release contract
 
-| Classification | 0.2.0 surface |
+| Classification | 0.3.0 surface |
 | --- | --- |
-| Public and supported | `CompetenceDate`, `DomainValidationError`, `FederalTaxId`, `FederalTaxIdKind`, `MunicipalityCode`, `NfseEnvironment`; opt-in CPF/CNPJ validators in their documented submodules; `DpsSeries`, `DpsNumber`, `DpsIdentity`; `RestrictedDpsDraft`, `build_unsigned_dps`; `NfseAccessKey`, `NfseId`, `NfseDocumentError`, `NfseDocumentInfo`, `extract_nfse_document_info`, `NfseConsistencyError`, `validate_nfse_document_consistency`; optional `RestrictedDpsXsdValidator`, `RecoveredNfseValidator`, `XsdValidationError`; `nfse-br check-unsigned`; `nfse-br check-nfse` |
+| Public and supported | `CompetenceDate`, `DomainValidationError`, `FederalTaxId`, `FederalTaxIdKind`, `MunicipalityCode`, `NfseEnvironment`; opt-in CPF/CNPJ validators in their documented submodules; `DpsSeries`, `DpsNumber`, `DpsIdentity`, `DpsDocumentError`, `inspect_unsigned_dps`; `RestrictedDpsDraft`, `build_unsigned_dps`; `NfseAccessKey`, `NfseId`, `NfseDocumentError`, `NfseDocumentInfo`, `extract_nfse_document_info`, `NfseConsistencyError`, `validate_nfse_document_consistency`; optional `RestrictedDpsChecker`, `RestrictedDpsXsdValidator`, `RecoveredNfseChecker`, `RecoveredNfseValidator`, `XsdValidationError`; `nfse-br check-unsigned`; `nfse-br check-nfse` |
 | Private or experimental | `nfse_br._f0`, `nfse_br._xmlsig`, freeze tooling, schema-contract tooling |
 | Not supported | issuance/transmission, HTTP/SEFIN, XMLDSig signer/verifier, certificate/private-key handling, production, complete fiscal modeling, allocation/persistence |
 
@@ -19,10 +19,10 @@ authorize a tag, GitHub Release, TestPyPI upload, or PyPI upload.
 - [ ] Confirm all required Python 3.12/3.13 Linux and Windows checks pass on
   the exact release commit.
 - [ ] Confirm `pyproject.toml`, `nfse_br.__version__`, and `uv.lock` all report
-  `0.2.0`.
-- [ ] Review the `0.2.0` changelog and public/private/unsupported contract.
-- [ ] Confirm `v0.2.0` does not exist locally or remotely and that PyPI does
-  not already expose `nfse-br 0.2.0`.
+  `0.3.0`.
+- [ ] Review the `0.3.0` changelog and public/private/unsupported contract.
+- [ ] Confirm `v0.3.0` does not exist locally or remotely and that PyPI does
+  not already expose `nfse-br 0.3.0`.
 - [ ] Confirm the protected `pypi` environment and Trusted Publisher remain
   configured without modification. The publisher identity must be owner
   `cassao29`, repository `nfse-br`, workflow `release.yml`, environment
@@ -46,7 +46,7 @@ authorize a tag, GitHub Release, TestPyPI upload, or PyPI upload.
 - [x] GitHub Private Vulnerability Reporting is configured and was verified
   through the repository API on 2026-09-19.
 - [ ] Obtain explicit authorization immediately before creating or pushing the
-  `v0.2.0` tag. Tag creation is the action that starts publication.
+  `v0.3.0` tag. Tag creation is the action that starts publication.
 - [ ] After successful OIDC publication and public PyPI verification, obtain
   deliberate authorization before creating the GitHub Release.
 

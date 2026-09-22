@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 ### Added
 
@@ -13,6 +13,29 @@
 - `DpsDocumentError` and public `inspect_unsigned_dps`, moving unsigned DPS
   structural inspection out of the private XMLDSig surface while preserving
   the existing CLI and private compatibility adapter.
+
+### Security / hardening
+
+- `check-nfse` and `check-unsigned` delegate to their respective composed
+  checkers, which pass the same input bytes through each stage.
+- The CLI no longer depends on the private XMLSig compatibility adapter.
+  The former private structural preflight now delegates to the public DPS
+  inspector, and a fail-closed coverage invariant requires it to remain
+  branchless.
+- Public unsigned DPS inspection retains bounded safe XML parsing and
+  privacy-safe controlled errors.
+
+### Known limitations
+
+- The POST response contract remains unconfirmed; POST parsing and Base64/GZip
+  recovery are not implemented.
+- Automatic NFS-e Id/access-key conversion remains disabled.
+- The current XMLDSig algorithm profile remains unconfirmed; signing and
+  cryptographic verification are not implemented.
+- HTTP/SEFIN integration and transmission remain unavailable.
+- Production-environment operation remains unsupported.
+- End-to-end checks with the pinned official bundle remain explicit local
+  release gates and are intentionally not run in CI.
 
 ## 0.2.0
 
