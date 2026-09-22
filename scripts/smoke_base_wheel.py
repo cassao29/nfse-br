@@ -36,7 +36,9 @@ import nfse_br.dps
 import nfse_br.dps.builder
 import nfse_br.nfse
 import nfse_br._xmlsig.preflight
-from nfse_br._xmlsig.preflight import inspect_unsigned_dps
+from nfse_br._xmlsig.preflight import (
+    inspect_unsigned_dps as private_inspect_unsigned_dps,
+)
 from nfse_br.domain import (
     CompetenceDate,
     DomainValidationError,
@@ -45,7 +47,13 @@ from nfse_br.domain import (
 )
 from nfse_br.domain.cnpj import validate_cnpj_check_digits
 from nfse_br.domain.cpf import validate_cpf_check_digits
-from nfse_br.dps import DpsNumber, DpsSeries
+from nfse_br.dps import (
+    DpsDocumentError,
+    DpsIdentity,
+    DpsNumber,
+    DpsSeries,
+    inspect_unsigned_dps,
+)
 from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
 from nfse_br.nfse import (
     NfseAccessKey,
@@ -188,7 +196,16 @@ root = ElementTree.fromstring(xml)
 assert root.tag == "{http://www.sped.fazenda.gov.br/nfse}DPS"
 namespace = "{http://www.sped.fazenda.gov.br/nfse}"
 assert root.findtext(f"{namespace}infDPS/{namespace}nDPS") == "42"
-assert inspect_unsigned_dps(xml) == root.find(f"{namespace}infDPS").get("Id")
+public_identity = inspect_unsigned_dps(xml)
+assert type(public_identity) is DpsIdentity
+assert public_identity.value == root.find(f"{namespace}infDPS").get("Id")
+assert private_inspect_unsigned_dps(xml) == public_identity.value
+try:
+    inspect_unsigned_dps(b"<DPS>")
+except DpsDocumentError as error:
+    assert error.code == "unsafe_or_malformed_xml"
+else:
+    raise AssertionError("Malformed DPS was unexpectedly accepted")
 
 console = Path(sys.executable).with_name("nfse-br")
 for command in (

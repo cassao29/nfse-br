@@ -166,7 +166,13 @@ def test_identity_errors_do_not_echo_federal_identifier() -> None:
 
 
 def test_dps_public_api_is_scoped_to_its_subpackage() -> None:
-    assert dps.__all__ == ["DpsIdentity", "DpsNumber", "DpsSeries"]
+    assert dps.__all__ == [
+        "DpsDocumentError",
+        "DpsIdentity",
+        "DpsNumber",
+        "DpsSeries",
+        "inspect_unsigned_dps",
+    ]
     assert nfse_br.__all__ == ["__version__"]
     assert domain.__all__ == [
         "CompetenceDate",

@@ -15,11 +15,8 @@ from typing import Literal, Never, Protocol, cast
 from urllib.parse import urlsplit
 
 from nfse_br import __version__
-from nfse_br._xmlsig.preflight import (
-    MAX_XML_BYTES,
-    SignaturePreflightError,
-    inspect_unsigned_dps,
-)
+from nfse_br._xmlsig.preflight import MAX_XML_BYTES
+from nfse_br.dps import DpsDocumentError, inspect_unsigned_dps
 from nfse_br.nfse import (
     NfseConsistencyError,
     NfseDocumentError,
@@ -241,7 +238,7 @@ def _check_unsigned(document_path: Path, bundle_path: Path) -> _Result:
 
     try:
         inspect_unsigned_dps(xml_bytes)
-    except SignaturePreflightError as exc:
+    except DpsDocumentError as exc:
         return _failure("rejected", stage="preflight", code=exc.code)
 
     return _Result(status="ok", stage="complete", code=None, exit_code=0)
