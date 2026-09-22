@@ -796,37 +796,29 @@ def test_nfse_public_validator_rejects_an_unpinned_bundle(
     }
 
 
-def test_nfse_pipeline_order_and_same_single_read_bytes(
+def test_nfse_checker_receives_the_single_bounded_document_read(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     bundle, document = _paths(tmp_path)
     document.write_bytes(b"<NFSe>synthetic-sensitive-value</NFSe>")
-    observed: list[tuple[str, bytes]] = []
+    observed: list[bytes] = []
 
-    class Validator:
+    class Checker:
         def __init__(self, bundle_bytes: bytes) -> None:
             assert bundle_bytes == b"bundle"
 
-        def validate(self, xml_bytes: bytes) -> None:
-            observed.append(("xsd", xml_bytes))
+        def check(self, xml_bytes: bytes) -> object:
+            observed.append(xml_bytes)
             document.write_bytes(b"changed after the one bounded read")
-
-    def extract(xml_bytes: bytes) -> object:
-        observed.append(("structure", xml_bytes))
-        return object()
-
-    def consistency(xml_bytes: bytes) -> None:
-        observed.append(("consistency", xml_bytes))
+            return object()
 
     monkeypatch.setattr(
         cli,
         "_load_nfse_xsd_components",
-        lambda: (Validator, _FakeXsdError),
+        lambda: (Checker, _FakeXsdError),
     )
-    monkeypatch.setattr(cli, "extract_nfse_document_info", extract)
-    monkeypatch.setattr(cli, "validate_nfse_document_consistency", consistency)
 
     assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == 0
     assert _payload(capsys.readouterr().out) == {
@@ -835,13 +827,7 @@ def test_nfse_pipeline_order_and_same_single_read_bytes(
         "code": None,
         "transmission_ready": False,
     }
-    assert [stage for stage, _xml in observed] == [
-        "xsd",
-        "structure",
-        "consistency",
-    ]
-    assert observed[0][1] is observed[1][1] is observed[2][1]
-    assert observed[0][1] == b"<NFSe>synthetic-sensitive-value</NFSe>"
+    assert observed == [b"<NFSe>synthetic-sensitive-value</NFSe>"]
     assert document.read_bytes() == b"changed after the one bounded read"
 
 
@@ -863,23 +849,18 @@ def test_nfse_xsd_failures_short_circuit_pipeline(
 ) -> None:
     bundle, document = _paths(tmp_path)
 
-    class Validator:
+    class Checker:
         def __init__(self, _bundle_bytes: bytes) -> None:
             pass
 
-        def validate(self, _xml_bytes: bytes) -> Never:
+        def check(self, _xml_bytes: bytes) -> Never:
             raise _FakeXsdError(phase, "controlled_xsd_failure")
-
-    def unexpected(_xml_bytes: bytes) -> Never:
-        raise AssertionError("later NFS-e stages must not execute")
 
     monkeypatch.setattr(
         cli,
         "_load_nfse_xsd_components",
-        lambda: (Validator, _FakeXsdError),
+        lambda: (Checker, _FakeXsdError),
     )
-    monkeypatch.setattr(cli, "extract_nfse_document_info", unexpected)
-    monkeypatch.setattr(cli, "validate_nfse_document_consistency", unexpected)
 
     assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == exit_code
     assert _payload(capsys.readouterr().out) == {
@@ -897,29 +878,17 @@ def test_nfse_structure_rejection_short_circuits_consistency(
 ) -> None:
     bundle, document = _paths(tmp_path)
 
-    class Validator:
+    class Checker:
         def __init__(self, _bundle_bytes: bytes) -> None:
             pass
 
-        def validate(self, _xml_bytes: bytes) -> None:
-            pass
-
-    def reject_structure(_xml_bytes: bytes) -> Never:
-        raise NfseDocumentError("invalid_nfse_id")
-
-    def unexpected_consistency(_xml_bytes: bytes) -> Never:
-        raise AssertionError("consistency must not execute")
+        def check(self, _xml_bytes: bytes) -> Never:
+            raise NfseDocumentError("invalid_nfse_id")
 
     monkeypatch.setattr(
         cli,
         "_load_nfse_xsd_components",
-        lambda: (Validator, _FakeXsdError),
-    )
-    monkeypatch.setattr(cli, "extract_nfse_document_info", reject_structure)
-    monkeypatch.setattr(
-        cli,
-        "validate_nfse_document_consistency",
-        unexpected_consistency,
+        lambda: (Checker, _FakeXsdError),
     )
 
     assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == 1
@@ -942,25 +911,17 @@ def test_nfse_consistency_rejection_is_privacy_safe(
     bundle.write_bytes(b"bundle")
     document.write_bytes(sensitive.encode())
 
-    class Validator:
+    class Checker:
         def __init__(self, _bundle_bytes: bytes) -> None:
             pass
 
-        def validate(self, _xml_bytes: bytes) -> None:
-            pass
+        def check(self, _xml_bytes: bytes) -> Never:
+            raise NfseConsistencyError("federal_registration_mismatch")
 
     monkeypatch.setattr(
         cli,
         "_load_nfse_xsd_components",
-        lambda: (Validator, _FakeXsdError),
-    )
-    monkeypatch.setattr(cli, "extract_nfse_document_info", lambda _xml: object())
-    monkeypatch.setattr(
-        cli,
-        "validate_nfse_document_consistency",
-        lambda _xml: (_ for _ in ()).throw(
-            NfseConsistencyError("federal_registration_mismatch")
-        ),
+        lambda: (Checker, _FakeXsdError),
     )
 
     assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == 1
@@ -1011,17 +972,17 @@ def test_nfse_missing_document_is_controlled_without_disclosing_path(
     bundle, document = _paths(tmp_path)
     document.unlink()
 
-    class Validator:
+    class Checker:
         def __init__(self, _bundle_bytes: bytes) -> None:
             pass
 
-        def validate(self, _xml_bytes: bytes) -> None:
+        def check(self, _xml_bytes: bytes) -> None:
             pass
 
     monkeypatch.setattr(
         cli,
         "_load_nfse_xsd_components",
-        lambda: (Validator, _FakeXsdError),
+        lambda: (Checker, _FakeXsdError),
     )
 
     assert cli.main(["check-nfse", str(document), "--bundle", str(bundle)]) == 2

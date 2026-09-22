@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `RecoveredNfseChecker`, a composed local API for already-recovered NFS-e XML
+  that runs pinned XSD validation, structural extraction, and confirmed
+  NFS-e/DPS consistency checks and returns `NfseDocumentInfo`.
+
 ## 0.2.0
 
 ### Added

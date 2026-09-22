@@ -168,6 +168,27 @@ not enforced, and no access key is derived. See
 [`contracts/restricted/NFSE_DPS_CONSISTENCY.md`](contracts/restricted/NFSE_DPS_CONSISTENCY.md)
 for the exact evidence matrix.
 
+## Composed recovered NFS-e check
+
+In the development line after 0.2.0, `RecoveredNfseChecker` provides one local
+API for the complete already-recovered NFS-e pipeline:
+
+```python
+from nfse_br.xsd import RecoveredNfseChecker
+
+checker = RecoveredNfseChecker(bundle_bytes)
+info = checker.check(nfse_xml_bytes)
+```
+
+The optional `xsd` extra is required. The checker compiles the pinned bundle
+once, then runs XSD validation, structural extraction, and the confirmed
+NFS-e/embedded-DPS consistency rules in that order. It returns the existing
+`NfseDocumentInfo` and can be reused sequentially for multiple documents.
+
+The checker performs no file or network I/O, does not download schemas, derive
+an access key, verify XML signatures, establish fiscal authorization, or
+transmit anything.
+
 ## NFS-e access key
 
 `NfseAccessKey` is the immutable lexical primitive for the 50-position

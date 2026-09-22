@@ -16,7 +16,7 @@ from nfse_br.nfse import (
     extract_nfse_document_info,
     validate_nfse_document_consistency,
 )
-from nfse_br.xsd import RecoveredNfseValidator, XsdValidationError
+from nfse_br.xsd import RecoveredNfseChecker, RecoveredNfseValidator, XsdValidationError
 
 _VALID_NFSE = b"""<?xml version="1.0" encoding="UTF-8"?>
 <NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01">
@@ -195,6 +195,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             print("Official NFS-e integration: structural extraction drifted.")
             return 1
         validate_nfse_document_consistency(_VALID_NFSE)
+        checker = RecoveredNfseChecker(bundle)
+        checked_info = checker.check(_VALID_NFSE)
+        if checked_info != info:
+            print("Official NFS-e integration: composed check drifted.")
+            return 1
         negative_cases = _negative_cases()
         for case in negative_cases:
             try:
@@ -219,6 +224,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print("Synthetic complete NFS-e: PASS")
     print("Synthetic structural extraction: PASS")
     print("Synthetic embedded DPS consistency: PASS")
+    print("Synthetic composed recovered NFS-e check: PASS")
     for case in negative_cases:
         print(f"Negative case {case.label}: REJECTED")
     print("Sequential valid-invalid-valid state: PASS")
