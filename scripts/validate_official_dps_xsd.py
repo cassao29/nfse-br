@@ -10,6 +10,7 @@ from pathlib import Path
 
 from lxml import etree
 
+from nfse_br.dps import DpsDocumentError, inspect_unsigned_dps
 from nfse_br.xsd import RestrictedDpsXsdValidator, XsdValidationError
 
 _VALID_DPS = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -156,6 +157,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         validator = RestrictedDpsXsdValidator(bundle)
         validator.validate(_VALID_DPS)
+        identity = inspect_unsigned_dps(_VALID_DPS)
+        if identity.value != "DPS2927408212ABC6780001Z000123000000000000042":
+            print("Official integration: unsigned DPS inspection drifted.")
+            return 1
         negative_cases = _negative_cases()
         for case in negative_cases:
             try:
@@ -170,7 +175,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except FixtureMutationError:
         print("Official integration: fixture preparation failed.")
         return 2
-    except XsdValidationError as exc:
+    except (DpsDocumentError, XsdValidationError) as exc:
         print(f"Official integration: {exc}")
         return 1
 
@@ -178,6 +183,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"lxml: {'.'.join(map(str, etree.LXML_VERSION[:3]))}")
     print(f"libxml2: {'.'.join(map(str, etree.LIBXML_VERSION))}")
     print("Synthetic complete DPS: PASS")
+    print("Synthetic unsigned DPS inspection: PASS")
     for case in negative_cases:
         print(f"Negative case {case.label}: REJECTED")
     print("Sequential valid-invalid-valid state: PASS")

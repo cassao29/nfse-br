@@ -7,6 +7,9 @@
 - `RecoveredNfseChecker`, a composed local API for already-recovered NFS-e XML
   that runs pinned XSD validation, structural extraction, and confirmed
   NFS-e/DPS consistency checks and returns `NfseDocumentInfo`.
+- `DpsDocumentError` and public `inspect_unsigned_dps`, moving unsigned DPS
+  structural inspection out of the private XMLDSig surface while preserving
+  the existing CLI and private compatibility adapter.
 
 ## 0.2.0
 

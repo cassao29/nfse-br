@@ -15,7 +15,7 @@ F0_BRANCH_MINIMUM = 90
 SCHEMA_BRANCH_MINIMUM = 90
 XSD_BRANCH_MINIMUM = 90
 BUILDER_BRANCH_MINIMUM = 90
-XMLSIG_PREFLIGHT_BRANCH_MINIMUM = 90
+XMLSIG_PREFLIGHT_STATEMENT_MINIMUM = 90
 CLI_BRANCH_MINIMUM = 90
 CNPJ_BRANCH_MINIMUM = 90
 CPF_BRANCH_MINIMUM = 90
@@ -23,6 +23,7 @@ NFSE_ACCESS_KEY_BRANCH_MINIMUM = 90
 NFSE_ID_BRANCH_MINIMUM = 90
 NFSE_DOCUMENT_BRANCH_MINIMUM = 90
 NFSE_CONSISTENCY_BRANCH_MINIMUM = 90
+DPS_DOCUMENT_BRANCH_MINIMUM = 90
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _F0_ROOT = _PROJECT_ROOT / "src/nfse_br/_f0"
@@ -39,6 +40,7 @@ _NFSE_ACCESS_KEY_MODULE = "src/nfse_br/nfse/access_key.py"
 _NFSE_ID_MODULE = "src/nfse_br/nfse/identifier.py"
 _NFSE_DOCUMENT_MODULE = "src/nfse_br/nfse/document.py"
 _NFSE_CONSISTENCY_MODULE = "src/nfse_br/nfse/consistency.py"
+_DPS_DOCUMENT_MODULE = "src/nfse_br/dps/document.py"
 
 
 class CoverageGateError(ValueError):
@@ -79,6 +81,7 @@ def evaluate_report(
     expected_nfse_id_paths: frozenset[str],
     expected_nfse_document_paths: frozenset[str],
     expected_nfse_consistency_paths: frozenset[str],
+    expected_dps_document_paths: frozenset[str],
 ) -> tuple[
     GateResult,
     GateResult,
@@ -93,8 +96,9 @@ def evaluate_report(
     GateResult,
     GateResult,
     GateResult,
+    GateResult,
 ]:
-    """Validate a Coverage.py report and calculate the thirteen required gates."""
+    """Validate a Coverage.py report and calculate the fourteen required gates."""
     if _XSD_VALIDATOR_MODULE not in expected_xsd_paths:
         raise CoverageGateError(
             f"XSD scope is missing required module {_XSD_VALIDATOR_MODULE!r}"
@@ -137,6 +141,10 @@ def evaluate_report(
         raise CoverageGateError(
             "NFS-e consistency scope is missing required module "
             f"{_NFSE_CONSISTENCY_MODULE!r}"
+        )
+    if _DPS_DOCUMENT_MODULE not in expected_dps_document_paths:
+        raise CoverageGateError(
+            f"DPS document scope is missing required module {_DPS_DOCUMENT_MODULE!r}"
         )
     meta = _mapping(report.get("meta"), context="meta")
     if meta.get("branch_coverage") is not True:
@@ -216,6 +224,28 @@ def evaluate_report(
             "coverage report is missing NFS-e consistency files: "
             f"{sorted(missing_nfse_consistency)!r}"
         )
+    missing_dps_document = expected_dps_document_paths - files.keys()
+    if missing_dps_document:
+        raise CoverageGateError(
+            "coverage report is missing DPS document files: "
+            f"{sorted(missing_dps_document)!r}"
+        )
+
+    xmlsig_preflight = files[_XMLSIG_PREFLIGHT_MODULE]
+    xmlsig_preflight_summary = _mapping(
+        xmlsig_preflight.get("summary"),
+        context=f"summary for {_XMLSIG_PREFLIGHT_MODULE!r}",
+    )
+    xmlsig_branch_covered, xmlsig_branch_total = _counts(
+        xmlsig_preflight_summary,
+        context=_XMLSIG_PREFLIGHT_MODULE,
+        unit="branches",
+    )
+    if xmlsig_branch_covered != 0 or xmlsig_branch_total != 0:
+        raise CoverageGateError(
+            "XML signature preflight adapter must remain branchless; "
+            "review its dedicated coverage policy before adding decisions"
+        )
 
     f0_covered = 0
     f0_total = 0
@@ -263,7 +293,7 @@ def evaluate_report(
     for path in expected_xmlsig_paths:
         file_data = files[path]
         summary = _mapping(file_data.get("summary"), context=f"summary for {path!r}")
-        covered, total = _counts(summary, context=path, unit="branches")
+        covered, total = _counts(summary, context=path, unit="lines")
         xmlsig_covered += covered
         xmlsig_total += total
 
@@ -330,6 +360,15 @@ def evaluate_report(
         nfse_consistency_covered += covered
         nfse_consistency_total += total
 
+    dps_document_covered = 0
+    dps_document_total = 0
+    for path in expected_dps_document_paths:
+        file_data = files[path]
+        summary = _mapping(file_data.get("summary"), context=f"summary for {path!r}")
+        covered, total = _counts(summary, context=path, unit="branches")
+        dps_document_covered += covered
+        dps_document_total += total
+
     return (
         _gate(
             "Library combined",
@@ -362,10 +401,10 @@ def evaluate_report(
             minimum=BUILDER_BRANCH_MINIMUM,
         ),
         _gate(
-            "XML signature preflight branches",
+            "XML signature preflight statements",
             covered=xmlsig_covered,
             total=xmlsig_total,
-            minimum=XMLSIG_PREFLIGHT_BRANCH_MINIMUM,
+            minimum=XMLSIG_PREFLIGHT_STATEMENT_MINIMUM,
         ),
         _gate(
             "CLI branches",
@@ -408,6 +447,12 @@ def evaluate_report(
             covered=nfse_consistency_covered,
             total=nfse_consistency_total,
             minimum=NFSE_CONSISTENCY_BRANCH_MINIMUM,
+        ),
+        _gate(
+            "DPS document branches",
+            covered=dps_document_covered,
+            total=dps_document_total,
+            minimum=DPS_DOCUMENT_BRANCH_MINIMUM,
         ),
     )
 
@@ -547,6 +592,17 @@ def expected_nfse_consistency_paths() -> frozenset[str]:
     return frozenset({_NFSE_CONSISTENCY_MODULE})
 
 
+def expected_dps_document_paths() -> frozenset[str]:
+    """Return the explicitly gated public DPS document inspector."""
+    path = _PROJECT_ROOT / _DPS_DOCUMENT_MODULE
+    if not path.is_file():
+        raise CoverageGateError(
+            "DPS source tree is missing required document module "
+            f"{_DPS_DOCUMENT_MODULE!r}"
+        )
+    return frozenset({_DPS_DOCUMENT_MODULE})
+
+
 def _counts(
     summary: Mapping[str, object],
     *,
@@ -623,6 +679,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             expected_nfse_id_paths=expected_nfse_id_paths(),
             expected_nfse_document_paths=expected_nfse_document_paths(),
             expected_nfse_consistency_paths=expected_nfse_consistency_paths(),
+            expected_dps_document_paths=expected_dps_document_paths(),
         )
     except CoverageGateError as exc:
         print(f"Coverage gate error: {exc}", file=sys.stderr)

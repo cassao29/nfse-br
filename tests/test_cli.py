@@ -13,7 +13,7 @@ from typing import BinaryIO, Never, cast
 import pytest
 
 from nfse_br import cli
-from nfse_br._xmlsig.preflight import SignaturePreflightError
+from nfse_br.dps import DpsDocumentError
 from nfse_br.nfse import NfseConsistencyError, NfseDocumentError
 
 
@@ -657,7 +657,7 @@ def test_preflight_rejection_and_following_success_are_independent(
         nonlocal preflight_calls
         preflight_calls += 1
         if preflight_calls == 1:
-            raise SignaturePreflightError("unsupported_local_profile")
+            raise DpsDocumentError("unsupported_local_profile")
         return "controlled-id"
 
     monkeypatch.setattr(

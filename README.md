@@ -338,13 +338,34 @@ UTC offset. The executable example in the quickstart supplies every field. See
 [`contracts/restricted/DPS_UNSIGNED_BUILDER.md`](contracts/restricted/DPS_UNSIGNED_BUILDER.md)
 for the supported mapping and limits.
 
+## Unsigned DPS inspection
+
+In the development line after 0.2.0, `inspect_unsigned_dps` provides public,
+standard-library-only structural inspection for an unsigned restricted DPS:
+
+```python
+from nfse_br.dps import inspect_unsigned_dps
+
+identity = inspect_unsigned_dps(xml_bytes)
+print(identity)
+```
+
+The function requires the exact local restricted profile, rejects documents
+that already contain a `Signature`, recomposes the identity from the observed
+municipality, CNPJ, series, and DPS number, and returns that derived
+`DpsIdentity`. It performs no file or network I/O.
+
+This inspection is not XSD validation, signature verification, signing,
+fiscal authorization, or transmission. Use `RestrictedDpsXsdValidator`
+separately when schema assurance is required.
+
 ## XML signature preflight
 
-The private `nfse_br._xmlsig` package performs a fail-closed structural check
-of unsigned builder output before any future signature operation. It requires
-the unique direct `infDPS`, rejects pre-existing signatures and alternative
-identifiers, and recomputes the target Id from `cLocEmi`, provider CNPJ,
-series, and DPS number. It does not sign, verify cryptography, or replace XSD
+The private `nfse_br._xmlsig` package retains a compatibility adapter for the
+former signature-preflight API. It delegates structural inspection to the
+public `nfse_br.dps.inspect_unsigned_dps`, translates the public error to the
+existing private exception, and returns the identity string expected by
+existing callers. It does not sign, verify cryptography, or replace XSD
 validation.
 
 The frozen XMLDSig schema defines grammar but leaves algorithm attributes as
@@ -432,15 +453,15 @@ The executable coverage gates require at least 80% combined coverage for the
 library, 90% aggregate branch coverage for `src/nfse_br/_f0/`, 90% branch
 coverage for `src/nfse_br/_f0/dps_schema_contract.py`, 90% aggregate branch
 coverage for `src/nfse_br/xsd/`, and 90% branch coverage for
-`src/nfse_br/dps/builder.py`, and 90% branch coverage for
-`src/nfse_br/_xmlsig/preflight.py`, and 90% branch coverage for
-`src/nfse_br/cli.py`, and 90% branch coverage for
+`src/nfse_br/dps/builder.py`, 90% statement coverage for the branchless
+compatibility adapter `src/nfse_br/_xmlsig/preflight.py`, and 90% branch
+coverage for `src/nfse_br/cli.py`, and 90% branch coverage for
 `src/nfse_br/domain/cnpj.py`, and 90% branch coverage for
 `src/nfse_br/domain/cpf.py`, and 90% branch coverage for each of
 `src/nfse_br/nfse/access_key.py`, `src/nfse_br/nfse/identifier.py`, and
-`src/nfse_br/nfse/document.py`, and `src/nfse_br/nfse/consistency.py`. Gate
-decisions use exact counters from Coverage.py JSON rather than rounded display
-percentages.
+`src/nfse_br/nfse/document.py`, and `src/nfse_br/nfse/consistency.py`, and 90%
+branch coverage for `src/nfse_br/dps/document.py`. Gate decisions use exact
+counters from Coverage.py JSON rather than rounded display percentages.
 
 CI also installs the built base wheel into a fresh virtual environment without
 dependencies or the `xsd` extra. The official restricted ZIP is not distributed
