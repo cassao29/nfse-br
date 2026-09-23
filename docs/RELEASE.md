@@ -1,26 +1,23 @@
 # Release procedure
 
-This checklist is for the `0.3.0` release. A release operator must run it from
+This checklist is for the `0.4.0` release. A release operator must run it from
 a clean, protected `main`; completing release preparation alone does not
 authorize a tag, GitHub Release, TestPyPI upload, or PyPI upload.
 
 ## Release contract
 
-| Classification | 0.3.0 surface |
+| Classification | 0.4.0 surface |
 | --- | --- |
-| Public and supported | `CompetenceDate`, `DomainValidationError`, `FederalTaxId`, `FederalTaxIdKind`, `MunicipalityCode`, `NfseEnvironment`; opt-in CPF/CNPJ validators in their documented submodules; `DpsSeries`, `DpsNumber`, `DpsIdentity`, `DpsDocumentError`, `inspect_unsigned_dps`; `RestrictedDpsDraft`, `build_unsigned_dps`; `NfseAccessKey`, `NfseId`, `NfseDocumentError`, `NfseDocumentInfo`, `extract_nfse_document_info`, `NfseConsistencyError`, `validate_nfse_document_consistency`; optional `RestrictedDpsChecker`, `RestrictedDpsXsdValidator`, `RecoveredNfseChecker`, `RecoveredNfseValidator`, `XsdValidationError`; `nfse-br check-unsigned`; `nfse-br check-nfse` |
+| Public and supported | `CompetenceDate`, `DomainValidationError`, `FederalTaxId`, `FederalTaxIdKind`, `MunicipalityCode`, `NfseEnvironment`; opt-in CPF/CNPJ validators in their documented submodules; `DpsSeries`, `DpsNumber`, `DpsIdentity`, `DpsDocumentError`, `inspect_unsigned_dps`, `parse_unsigned_dps`; `RestrictedDpsDraft`, `build_unsigned_dps`; `NfseAccessKey`, `NfseId`, `NfseDocumentError`, `NfseDocumentInfo`, `extract_nfse_document_info`, `NfseConsistencyError`, `validate_nfse_document_consistency`; optional `RestrictedDpsChecker` with `check()` and `parse()`, `RestrictedDpsXsdValidator`, `RecoveredNfseChecker`, `RecoveredNfseValidator`, `XsdValidationError`; `nfse-br check-unsigned`; `nfse-br check-nfse` |
 | Private or experimental | `nfse_br._f0`, `nfse_br._xmlsig`, freeze tooling, schema-contract tooling |
 | Not supported | issuance/transmission, HTTP/SEFIN, XMLDSig signer/verifier, certificate/private-key handling, production, complete fiscal modeling, allocation/persistence |
 
-## Development addition after 0.3.0 (not released)
+### Restricted DPS parsing contract
 
-`nfse_br.dps.parse_unsigned_dps(bytes) -> RestrictedDpsDraft` is a development
-API for the builder's restricted subset only, not an addition to the historical
-0.3.0 release contract above. The package version remains 0.3.0 until separately
-authorized release preparation. No tag, publication, or dependency change is
-authorized by this feature.
+`nfse_br.dps.parse_unsigned_dps(bytes) -> RestrictedDpsDraft` is public in 0.4.0
+for the builder's restricted subset only, not a generic DPS Nacional parser.
 
-For a future release, verify `build(parse(build(draft))) == build(draft)`,
+Verify `build(parse(build(draft))) == build(draft)`,
 all draft fields, fail-closed unknown-field handling, and privacy-safe errors.
 Draft equality holds for ordinary fixed-offset timestamps, but must not be
 promised for ambiguous regional datetimes: XML preserves wall time and offset,
@@ -30,7 +27,7 @@ The optional `RestrictedDpsChecker.parse(bytes) -> RestrictedDpsDraft` composes
 pinned XSD validation with the same parser. It preserves same-object bytes,
 stage order, short-circuiting and exception identity. Its existing `check()`
 continues to use identity-only inspection, not the stricter semantic parser.
-For a future release, verify mixed sequential reuse and both independent paths.
+Verify mixed sequential reuse and both independent paths.
 The new composition inherits the datetime/round-trip limitation above unchanged.
 
 Standalone parsing is stdlib-only and provides no XSD assurance; the checker
@@ -46,10 +43,12 @@ remain unchanged. See [DPS_DOCUMENT_PARSER.md](../contracts/restricted/DPS_DOCUM
 - [ ] Confirm all required Python 3.12/3.13 Linux and Windows checks pass on
   the exact release commit.
 - [ ] Confirm `pyproject.toml`, `nfse_br.__version__`, and `uv.lock` all report
-  `0.3.0`.
-- [ ] Review the `0.3.0` changelog and public/private/unsupported contract.
-- [ ] Confirm `v0.3.0` does not exist locally or remotely and that PyPI does
-  not already expose `nfse-br 0.3.0`.
+  `0.4.0`.
+- [ ] Review the `0.4.0` changelog and public/private/unsupported contract.
+- [ ] Confirm `v0.4.0` does not exist locally or remotely and that PyPI does
+  not already expose `nfse-br 0.4.0`.
+- [ ] Verify the parsing contract above: byte-exact builder-output rebuilding,
+  timezone/fold caveat, fail-closed fields, privacy, and independent checker paths.
 - [ ] Confirm the protected `pypi` environment and Trusted Publisher remain
   configured without modification. The publisher identity must be owner
   `cassao29`, repository `nfse-br`, workflow `release.yml`, environment
@@ -60,8 +59,8 @@ remain unchanged. See [DPS_DOCUMENT_PARSER.md](../contracts/restricted/DPS_DOCUM
   files, `.f0/`, coverage data, agent state, credentials, certificates, and
   keys.
 - [ ] Install the base wheel without dependencies outside the checkout and run
-  public imports, CPF/CNPJ checks, the builder, CLI help/version, and the
-  controlled missing-extra path.
+  public imports, CPF/CNPJ checks, the builder and parser round-trip, CLI
+  help/version, and the controlled missing-extra path. Confirm `lxml` is absent.
 - [ ] Install the wheel with the `xsd` extra outside the checkout and verify the
   pinned `lxml` version, XSD imports, and validator behavior without any
   automatic bundle download.
@@ -73,7 +72,7 @@ remain unchanged. See [DPS_DOCUMENT_PARSER.md](../contracts/restricted/DPS_DOCUM
 - [x] GitHub Private Vulnerability Reporting is configured and was verified
   through the repository API on 2026-09-19.
 - [ ] Obtain explicit authorization immediately before creating or pushing the
-  `v0.3.0` tag. Tag creation is the action that starts publication.
+  `v0.4.0` tag. Tag creation is the action that starts publication.
 - [ ] After successful OIDC publication and public PyPI verification, obtain
   deliberate authorization before creating the GitHub Release.
 

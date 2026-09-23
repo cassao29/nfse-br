@@ -1,6 +1,6 @@
 # Restricted unsigned DPS semantic parser
 
-Development API after 0.3.0; not part of the immutable published 0.3.0 contract:
+Public API introduced in nfse-br 0.4.0:
 
 ```python
 from nfse_br.dps import parse_unsigned_dps
@@ -15,7 +15,7 @@ DPS parser. It adds no normative evidence or fiscal rules. The existing
 values. The builder and the identity-only `inspect_unsigned_dps` behavior
 remain unchanged.
 
-## Optional pinned-XSD composition (development after 0.3.0)
+## Optional pinned-XSD composition
 
 `parse_unsigned_dps()` is the stdlib-only parser and gives no XSD assurance.
 `RestrictedDpsChecker.parse()` in the optional `nfse_br.xsd` surface adds pinned
