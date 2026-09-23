@@ -13,7 +13,26 @@ This is exclusively the inverse of the supported local restricted
 DPS parser. It adds no normative evidence or fiscal rules. The existing
 `RestrictedDpsDraft` remains the only draft model and validates recovered
 values. The builder and the identity-only `inspect_unsigned_dps` behavior
-remain unchanged. `RestrictedDpsChecker.parse` is not implemented here.
+remain unchanged.
+
+## Optional pinned-XSD composition (development after 0.3.0)
+
+`parse_unsigned_dps()` is the stdlib-only parser and gives no XSD assurance.
+`RestrictedDpsChecker.parse()` in the optional `nfse_br.xsd` surface adds pinned
+XSD validation before invoking that same parser, returning the exact draft.
+The constructor verifies the bundle pin and compiles once; `parse()` passes
+the same bytes object to validation and parsing, in that order. An XSD failure
+short-circuits parsing. `XsdValidationError` and `DpsDocumentError` propagate
+unchanged, without wrapping or logging document data.
+
+The existing `check()` stays independent: XSD followed by identity inspection,
+returning `DpsIdentity`. An XSD-valid document outside the representable subset
+can pass `check()` but fail `parse()`; this is intentional. The checker adds no
+semantic rules and is sequentially reusable across both methods after failures.
+It inherits the round-trip/datetime caveat below exactly: builder output can be
+rebuilt byte-for-byte, wall time and offset are preserved, but regional timezone
+identity and `fold` cannot be recovered. It provides no signature verification,
+fiscal authorization or transmission, and performs no file/network I/O.
 
 ## Boundary and closed structure
 

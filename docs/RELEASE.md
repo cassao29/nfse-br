@@ -26,8 +26,17 @@ Draft equality holds for ordinary fixed-offset timestamps, but must not be
 promised for ambiguous regional datetimes: XML preserves wall time and offset,
 not timezone identity or `fold`. Test both repeated-hour variants offline.
 
-Parsing is stdlib-only, without I/O, XSD assurance, signature verification,
-fiscal authorization, or transmission. Existing POST-response/XMLDSig blockers
+The optional `RestrictedDpsChecker.parse(bytes) -> RestrictedDpsDraft` composes
+pinned XSD validation with the same parser. It preserves same-object bytes,
+stage order, short-circuiting and exception identity. Its existing `check()`
+continues to use identity-only inspection, not the stricter semantic parser.
+For a future release, verify mixed sequential reuse and both independent paths.
+The new composition inherits the datetime/round-trip limitation above unchanged.
+
+Standalone parsing is stdlib-only and provides no XSD assurance; the checker
+requires the optional XSD extra and adds schema validation. Neither performs
+I/O, signature verification, fiscal authorization or transmission.
+Existing POST-response/XMLDSig blockers
 remain unchanged. See [DPS_DOCUMENT_PARSER.md](../contracts/restricted/DPS_DOCUMENT_PARSER.md).
 
 ## Checklist

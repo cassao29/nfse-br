@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from nfse_br.dps import DpsIdentity, inspect_unsigned_dps
+from nfse_br.dps import DpsIdentity, inspect_unsigned_dps, parse_unsigned_dps
+from nfse_br.dps.builder import RestrictedDpsDraft
 from nfse_br.xsd.validator import RestrictedDpsXsdValidator
 
 
@@ -19,3 +20,8 @@ class RestrictedDpsChecker:
         """Check one document and return its observed, derived identity."""
         self._validator.validate(xml_bytes)
         return inspect_unsigned_dps(xml_bytes)
+
+    def parse(self, xml_bytes: bytes) -> RestrictedDpsDraft:
+        """Validate the pinned schema, then parse the supported restricted subset."""
+        self._validator.validate(xml_bytes)
+        return parse_unsigned_dps(xml_bytes)
