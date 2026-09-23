@@ -361,6 +361,38 @@ This inspection is not XSD validation, signature verification, signing,
 fiscal authorization, or transmission. Use `RestrictedDpsXsdValidator`
 separately when schema assurance is required.
 
+## Restricted DPS parsing (development after 0.3.0)
+
+The development API `parse_unsigned_dps` returns the existing
+`RestrictedDpsDraft` for exactly the unsigned restricted subset represented by
+the builder. It is not a generic DPS Nacional parser or part of the published
+0.3.0 contract.
+
+```python
+from nfse_br.dps import parse_unsigned_dps
+from nfse_br.dps.builder import build_unsigned_dps
+
+xml_bytes = build_unsigned_dps(draft)
+parsed = parse_unsigned_dps(xml_bytes)
+assert build_unsigned_dps(parsed) == xml_bytes
+```
+
+For ordinary fixed-offset timestamps, `parsed == draft` also holds. The XML
+records wall-clock components and a UTC offset, not a regional timezone or
+`fold`. Those components and offset are preserved without conversion to UTC,
+but Python equality with an ambiguous regional timestamp is not guaranteed.
+The byte-exact rebuild guarantee still holds for builder output. No
+byte-preserving guarantee is made for arbitrary XML formatting.
+
+Unknown fields, attributes, additional fiscal branches, duplicate/moved fields,
+or mixed content are rejected with privacy-safe `DpsDocumentError` codes,
+never silently dropped. Decimal amounts are exact and never rounded. Parsing
+is stdlib-only, bounded to 1 MiB, with no file or network I/O. It provides no
+XSD assurance, signature verification, fiscal authorization, or transmission.
+The existing identity-only inspector and checkers are unchanged.
+See [the parser contract](contracts/restricted/DPS_DOCUMENT_PARSER.md) for
+strict lexical rules, error codes, and boundaries.
+
 ## Composed restricted DPS check
 
 The optional `xsd` extra provides a

@@ -172,6 +172,7 @@ def test_dps_public_api_is_scoped_to_its_subpackage() -> None:
         "DpsNumber",
         "DpsSeries",
         "inspect_unsigned_dps",
+        "parse_unsigned_dps",
     ]
     assert nfse_br.__all__ == ["__version__"]
     assert domain.__all__ == [
