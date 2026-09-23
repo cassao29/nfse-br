@@ -208,6 +208,9 @@ def test_bytes_subclass_is_rejected() -> None:
         ),
         (b"\xff", "unsafe_or_malformed_xml"),
     ],
+    # Pytest stores node IDs in PYTEST_CURRENT_TEST; never put a 1 MiB payload
+    # into that environment variable (notably bounded on Windows).
+    ids=["empty", "oversize", "malformed", "doctype", "external-entity", "encoding"],
 )
 def test_safe_input_boundary(value: bytes, code: str) -> None:
     _reject(value, code)

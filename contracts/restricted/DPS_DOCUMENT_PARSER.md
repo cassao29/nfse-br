@@ -62,8 +62,9 @@ All sixteen public fields are recovered using the builder's existing mapping:
 | `ind_tot_trib` | `valores/trib/totTrib/indTotTrib` |
 
 Amounts use only canonical unsigned decimal notation with two fractional
-digits, no leading integer zeros except `0.00`, and at most fifteen integer
-digits. Conversion uses `Decimal`, never float, rounding, or the caller's
+digits and at most fifteen integer digits. The integer part is either a single
+`0` (for example `0.00` or `0.01`) or has no leading zeros.
+Conversion uses `Decimal`, never float, rounding, or the caller's
 decimal precision. Exponents, signs, NaN/infinity and additional fractional
 digits are rejected. Existing draft invariants remain authoritative.
 
