@@ -1,10 +1,11 @@
 # Official evidence watchlist (WATCH-1)
 
-This is a manual, read-only observer for evidence that might eventually unlock
+This is a read-only observer for evidence that might eventually unlock
 the restricted NFS-e `POST /nfse` response contract or the DPS v1.01 XMLDSig
-profile. It is **not** a runtime milestone, a contract approval, or a scheduled
-CI job. Run it weekly and after a relevant portal notice; daily polling is not
-needed. Do not feed its output directly into code generation or blocker states.
+profile. A dedicated GitHub Actions workflow runs it weekly; manual execution
+remains available after a relevant portal notice. It is **not** a runtime
+milestone or a contract approval. Do not feed its output directly into code
+generation or blocker states.
 
 Run from the repository root with Python 3.12 or 3.13:
 
@@ -18,6 +19,30 @@ nonzero exit is a request for human review, not permission to implement. The
 frozen observer configuration is
 [`contracts/restricted/evidence-watchlist.json`](../contracts/restricted/evidence-watchlist.json).
 No downloaded artifact is persisted by the script.
+
+## Weekly workflow
+
+[`WATCH-1 official evidence`](../.github/workflows/watch-official-evidence.yml)
+runs every Monday at 12:17 UTC (09:17 America/Bahia), using cron
+`17 12 * * 1`, and supports manual `workflow_dispatch` from GitHub Actions.
+It uses Python 3.12 and only `contents: read`; checkout does not persist
+credentials. No secrets, new dependencies, or artifact uploads are required.
+
+The run is green only when the watcher exits with code `0` **and** reports
+`status: unchanged`. Every other status or exit, invalid output, and timeout
+fails the job with an error annotation. The complete parsed JSON is written
+as escaped text to `GITHUB_STEP_SUMMARY`; errors that prevent a usable report
+produce a controlled `network_error` summary. Downloaded evidence is never
+saved or uploaded, and the workflow creates no issue, PR, commit, release,
+or email. A red run calls for human review and changes no contract state.
+
+The regular `CI` workflow continues to run only offline/mocked tests, including
+the weekly workflow's success and failure gates. It never runs the live watcher.
+The weekly workflow has only schedule/manual triggers, so PRs and pushes run
+the regular CI without contacting official sources. The schedule becomes
+active after the workflow is merged into the default branch; a first manual
+dispatch should then verify its behavior on the GitHub runner. Scheduling
+follows the [GitHub Actions schedule semantics](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onschedule).
 
 ## Sources and frozen reference points
 
@@ -107,4 +132,5 @@ No runtime V0.30 work starts from a watcher signal alone. The transport uses
 stdlib GET over official HTTPS hosts only, with no cookies, Authorization,
 client certificate, request body, proxy, or endpoint-operation calls. Redirects,
 response bytes, and time are bounded; off-allowlist redirects fail closed.
-CI runs only offline mocked tests, never the live watcher.
+Regular CI runs only offline mocked tests. Live official requests are confined
+to explicit local runs and the dedicated weekly/manual WATCH-1 workflow.

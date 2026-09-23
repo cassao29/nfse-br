@@ -1,0 +1,61 @@
+name: WATCH-1 official evidence
+
+on:
+  schedule:
+    - cron: "17 12 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  watch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Observe official sources and require review on any signal
+        shell: python
+        run: |
+          import html
+          import json
+          import os
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          exit_code = 30
+          try:
+              result = subprocess.run(
+                  [sys.executable, "scripts/check_official_evidence.py"],
+                  capture_output=True,
+                  text=True,
+                  encoding="utf-8",
+                  timeout=900,
+                  check=False,
+              )
+              exit_code = result.returncode
+              report = json.loads(result.stdout)
+              if not isinstance(report, dict):
+                  raise ValueError("Expected a JSON object")
+          except (OSError, ValueError, subprocess.TimeoutExpired):
+              report = {"status": "network_error", "reason": "watcher_execution_or_output_failed"}
+
+          # Remote text is data: never print it as an Actions command or raw HTML.
+          rendered = html.escape(json.dumps(report, ensure_ascii=False, indent=2))
+          with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as summary:
+              summary.write("## WATCH-1 official evidence\n\n")
+              summary.write(f"Watcher exit code: {exit_code}\n\n<pre>{rendered}</pre>\n")
+
+          if exit_code != 0 or report.get("status") != "unchanged":
+              print("::error::WATCH-1 requires manual review. See the job summary.")
+              sys.exit(1)
