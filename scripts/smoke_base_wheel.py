@@ -53,6 +53,7 @@ from nfse_br.dps import (
     DpsNumber,
     DpsSeries,
     inspect_unsigned_dps,
+    parse_unsigned_dps,
 )
 from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
 from nfse_br.nfse import (
@@ -192,6 +193,10 @@ draft = RestrictedDpsDraft(
     ind_tot_trib="0",
 )
 xml = build_unsigned_dps(draft)
+parsed = parse_unsigned_dps(xml)
+assert type(parsed) is RestrictedDpsDraft
+assert parsed == draft
+assert build_unsigned_dps(parsed) == xml
 root = ElementTree.fromstring(xml)
 assert root.tag == "{http://www.sped.fazenda.gov.br/nfse}DPS"
 namespace = "{http://www.sped.fazenda.gov.br/nfse}"

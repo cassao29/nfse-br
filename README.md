@@ -5,21 +5,22 @@ ecosystem.
 
 The current release line provides local typed primitives, a deliberately small
 unsigned restricted DPS builder, validation for DPS and already-recovered
-NFS-e XML, structural extraction, and confirmed local consistency checks. It
+NFS-e XML, closed-subset DPS semantic parsing, structural extraction, and
+confirmed local consistency checks. It
 does not implement a complete fiscal model, XML signatures, issuance, or
 transmission. Local XSD validation is available through an optional dependency.
 
-## Release 0.3.0 contract
+## Release 0.4.0 contract
 
-The supported public surface for 0.3.0 is deliberately small:
+The supported public surface for 0.4.0 is deliberately small:
 
 - `CompetenceDate`, `DomainValidationError`, `FederalTaxId`,
   `FederalTaxIdKind`, `MunicipalityCode`, and `NfseEnvironment` from
   `nfse_br.domain`;
 - opt-in CPF and CNPJ check-digit validation from their documented domain
   submodules;
-- `DpsSeries`, `DpsNumber`, `DpsIdentity`, `DpsDocumentError`, and
-  `inspect_unsigned_dps` from `nfse_br.dps`;
+- `DpsSeries`, `DpsNumber`, `DpsIdentity`, `DpsDocumentError`,
+  `inspect_unsigned_dps`, and `parse_unsigned_dps` from `nfse_br.dps`;
 - `RestrictedDpsDraft` and `build_unsigned_dps` from
   `nfse_br.dps.builder`;
 - `NfseAccessKey`, `NfseId`, `NfseDocumentError`, `NfseDocumentInfo`,
@@ -27,7 +28,8 @@ The supported public surface for 0.3.0 is deliberately small:
   `validate_nfse_document_consistency` from `nfse_br.nfse`;
 - `RestrictedDpsChecker`, `RestrictedDpsXsdValidator`,
   `RecoveredNfseChecker`, `RecoveredNfseValidator`, and `XsdValidationError`
-  from `nfse_br.xsd`, when the `xsd` extra is installed;
+  from `nfse_br.xsd`, when the `xsd` extra is installed, including
+  `RestrictedDpsChecker.check()` and `RestrictedDpsChecker.parse()`;
   and
 - the `nfse-br check-unsigned` and `nfse-br check-nfse` commands.
 
@@ -35,7 +37,7 @@ Modules below `nfse_br._f0` and `nfse_br._xmlsig`, together with freeze and
 schema-contract tooling, are private or experimental implementation details.
 They may change without being treated as public API.
 
-Version 0.3.0 does not support issuance or transmission, HTTP/SEFIN calls,
+Version 0.4.0 does not support issuance or transmission, HTTP/SEFIN calls,
 XMLDSig signing or cryptographic verification, certificate or private-key
 handling, production-environment operation, a complete fiscal model, or
 number allocation and persistence. See the [changelog](CHANGELOG.md) for the
@@ -361,12 +363,11 @@ This inspection is not XSD validation, signature verification, signing,
 fiscal authorization, or transmission. Use `RestrictedDpsXsdValidator`
 separately when schema assurance is required.
 
-## Restricted DPS parsing (development after 0.3.0)
+## Restricted DPS parsing
 
-The development API `parse_unsigned_dps` returns the existing
+The public API `parse_unsigned_dps` returns the existing
 `RestrictedDpsDraft` for exactly the unsigned restricted subset represented by
-the builder. It is not a generic DPS Nacional parser or part of the published
-0.3.0 contract.
+the builder. It is not a generic DPS Nacional parser.
 
 ```python
 from nfse_br.dps import parse_unsigned_dps
@@ -403,13 +404,13 @@ from nfse_br.xsd import RestrictedDpsChecker
 
 checker = RestrictedDpsChecker(bundle_bytes)
 identity = checker.check(xml_bytes)
-draft = checker.parse(xml_bytes)  # development after 0.3.0; not yet released
+draft = checker.parse(xml_bytes)
 ```
 
 The checker compiles the pinned bundle once and can be reused sequentially,
 including mixed calls after a controlled rejection. `check()` validates XSD,
 then performs identity structural inspection and returns a `DpsIdentity`.
-The development `parse()` method validates XSD, then calls the closed-subset
+The `parse()` method validates XSD, then calls the closed-subset
 `parse_unsigned_dps` and returns its `RestrictedDpsDraft`. Both stages receive
 the same XML bytes object, and existing exceptions propagate without wrappers.
 
@@ -421,8 +422,7 @@ but not regional timezone identity or `fold`; no stronger datetime-equality
 promise is introduced by the checker.
 
 Neither method reads files, downloads schemas, signs or verifies signatures,
-authorizes a document, or transmits it. The new method is not part of the
-historical 0.3.0 release contract.
+authorizes a document, or transmits it.
 
 ## XML signature preflight
 
@@ -511,7 +511,7 @@ uv run --frozen --extra xsd pytest \
 uv run --frozen --extra xsd python scripts/check_coverage.py \
   build/coverage/coverage.json
 uv build
-python scripts/smoke_base_wheel.py dist/nfse_br-0.3.0-py3-none-any.whl
+python scripts/smoke_base_wheel.py dist/nfse_br-0.4.0-py3-none-any.whl
 ```
 
 The executable coverage gates require at least 80% combined coverage for the

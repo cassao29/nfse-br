@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.4.0
+
+### Added
+
+- `parse_unsigned_dps`, a public stdlib-only semantic parser for the closed
+  restricted DPS subset represented by `RestrictedDpsDraft`.
+- `RestrictedDpsChecker.parse`, composing pinned XSD validation with
+  `parse_unsigned_dps` while preserving `check()` as the identity-only path.
+
+### Security / hardening
+
+- Semantic DPS parsing fails closed on unknown attributes, fields, namespaces,
+  additional fiscal branches, reordered/moved elements, mixed content, and
+  unrepresentable structures.
+- Parsing preserves exact Decimal values and builder-output byte-exact
+  rebuilding, with privacy-safe controlled errors. XML preserves wall-clock
+  components and UTC offset, not regional timezone identity or `fold`.
+- `RestrictedDpsChecker.parse` preserves stage order, exact input bytes,
+  short-circuiting and exception identity.
+- `RestrictedDpsChecker.check` remains independent from the stricter semantic
+  parser.
+
+### Repository evidence / maintenance
+
+- Added the read-only official evidence WATCH-1 and weekly GitHub Actions
+  automation, producing review signals without promoting contract states.
+- Hardened SEFIN baseline observation so unchanged responses require final
+  URL and redirect-chain equivalence.
+- Repaired the relocated official FAQ evidence source without changing frozen
+  evidence bytes or blocked runtime contracts.
+
+### Known limitations
+
+- The POST response contract remains unconfirmed; parsing and Base64/GZip
+  recovery of POST responses remain unavailable.
+- The current DPS XMLDSig algorithm profile remains unconfirmed; signing and
+  cryptographic verification remain unavailable.
+- Automatic NFS-e Id/access-key conversion remains disabled.
+- HTTP/SEFIN transmission remains unavailable.
+- Production operation and complete fiscal modeling remain unsupported.
+- End-to-end checks with the pinned official bundle remain explicit local
+  release gates and are intentionally not run in CI.
+
 ## 0.3.0
 
 ### Added
