@@ -3,9 +3,18 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime
+from decimal import Decimal
+from typing import Literal, cast
 from xml.etree import ElementTree
 
-from nfse_br.domain import DomainValidationError, FederalTaxId, MunicipalityCode
+from nfse_br.domain import (
+    CompetenceDate,
+    DomainValidationError,
+    FederalTaxId,
+    MunicipalityCode,
+)
+from nfse_br.dps.builder import RestrictedDpsDraft
 from nfse_br.dps.identity import DpsIdentity
 from nfse_br.dps.number import DpsNumber
 from nfse_br.dps.series import DpsSeries
@@ -19,6 +28,37 @@ _INF_DPS = f"{{{_NFSE_NAMESPACE}}}infDPS"
 _XML_ID = f"{{{_XML_NAMESPACE}}}id"
 _DPS_ID_PATTERN = re.compile(r"DPS[0-9]{7}(?:1[0-9]{14}|2[0-9A-Z]{14})[0-9]{20}")
 _DPS_NUMBER_PATTERN = re.compile(r"[1-9][0-9]{0,14}")
+_TIMESTAMP_PATTERN = re.compile(
+    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[+-][0-9]{2}:00"
+)
+_AMOUNT_PATTERN = re.compile(r"(?:0|[1-9][0-9]{0,14})\.[0-9]{2}")
+# Ordered, closed grammar of the builder's subset, not the complete DPS XSD.
+_SUBSET_CHILDREN = {
+    "DPS": ("infDPS",),
+    "infDPS": (
+        "tpAmb",
+        "dhEmi",
+        "verAplic",
+        "serie",
+        "nDPS",
+        "dCompet",
+        "tpEmit",
+        "cLocEmi",
+        "prest",
+        "serv",
+        "valores",
+    ),
+    "prest": ("CNPJ", "regTrib"),
+    "regTrib": ("opSimpNac", "regEspTrib"),
+    "serv": ("locPrest", "cServ"),
+    "locPrest": ("cLocPrestacao",),
+    "cServ": ("cTribNac", "xDescServ"),
+    "valores": ("vServPrest", "trib"),
+    "vServPrest": ("vServ",),
+    "trib": ("tribMun", "totTrib"),
+    "tribMun": ("tribISSQN", "tpRetISSQN"),
+    "totTrib": ("indTotTrib",),
+}
 _ERROR_CODES = frozenset(
     {
         "invalid_runtime_type",
@@ -37,6 +77,8 @@ _ERROR_CODES = frozenset(
         "ambiguous_identity_field",
         "invalid_identity_fields",
         "identity_mismatch",
+        "unsupported_document_structure",
+        "invalid_document_fields",
     }
 )
 
@@ -59,11 +101,89 @@ class DpsDocumentError(ValueError):
 
 def inspect_unsigned_dps(xml_bytes: bytes) -> DpsIdentity:
     """Return the identity derived from one structurally valid unsigned DPS."""
+    return _inspect_document(xml_bytes)[2]
+
+
+def _inspect_document(
+    xml_bytes: bytes,
+) -> tuple[ElementTree.Element, ElementTree.Element, DpsIdentity]:
     root = _parse_input(xml_bytes)
     information = _locate_information(root)
     _verify_local_profile(information)
     observed_identity = _target_identity(root, information)
-    return _identity_from_fields(information, observed_identity)
+    return root, information, _identity_from_fields(information, observed_identity)
+
+
+def parse_unsigned_dps(xml_bytes: bytes) -> RestrictedDpsDraft:
+    """Parse only the builder's unsigned restricted subset, without XSD assurance.
+
+    Unknown fields/attributes and unrepresentable content fail closed. Builder
+    output rebuilds byte-for-byte; arbitrary XML formatting is not preserved.
+    Timestamps retain wall time and offset, not a regional timezone or fold;
+    Python draft equality is not guaranteed for ambiguous regional timestamps.
+    """
+    root, _, identity = _inspect_document(xml_bytes)
+    # The shared safe parser discards comments/PIs and normalizes raw CR. Do not
+    # silently lose such input in this stricter API; leave inspection unchanged.
+    if (
+        b"<!--" in xml_bytes
+        or re.search(rb"<\?(?!xml[ \t\r\n])", xml_bytes) is not None
+        or b"\r" in xml_bytes
+    ):
+        raise DpsDocumentError("unsupported_document_structure")
+    fields: dict[str, str] = {}
+    _collect_subset(root, "DPS", fields)
+    timestamp = fields["dhEmi"]
+    if (
+        _TIMESTAMP_PATTERN.fullmatch(timestamp) is None
+        or timestamp.endswith("-00:00")
+        or _AMOUNT_PATTERN.fullmatch(fields["vServ"]) is None
+    ):
+        raise DpsDocumentError("invalid_document_fields")
+    try:
+        return RestrictedDpsDraft(
+            issuer_tax_id=identity.federal_tax_id,
+            issue_municipality=identity.municipality,
+            service_municipality=MunicipalityCode(fields["cLocPrestacao"]),
+            series=identity.series,
+            number=identity.number,
+            issued_at=datetime.fromisoformat(timestamp),
+            competence=CompetenceDate.from_iso(fields["dCompet"]),
+            application_version=fields["verAplic"],
+            national_service_code=fields["cTribNac"],
+            service_description=fields["xDescServ"],
+            service_amount=Decimal(fields["vServ"]),
+            op_simp_nac=cast(Literal["1", "2", "3"], fields["opSimpNac"]),
+            reg_esp_trib=cast(
+                Literal["0", "1", "2", "3", "4", "5", "6", "9"], fields["regEspTrib"]
+            ),
+            trib_issqn=cast(Literal["1", "2", "3", "4"], fields["tribISSQN"]),
+            tp_ret_issqn=cast(Literal["1", "2", "3"], fields["tpRetISSQN"]),
+            ind_tot_trib=cast(Literal["0"], fields["indTotTrib"]),
+        )
+    except ValueError:
+        # Includes DomainValidationError and calendar/timestamp failures.
+        raise DpsDocumentError("invalid_document_fields") from None
+
+
+def _collect_subset(
+    element: ElementTree.Element, name: str, fields: dict[str, str]
+) -> None:
+    attributes = {"DPS": {"versao"}, "infDPS": {"Id"}}.get(name, set())
+    children = _SUBSET_CHILDREN.get(name, ())
+    if (
+        set(element.attrib) != attributes
+        or [child.tag for child in element] != [_qualified(n) for n in children]
+        or (element.tail or "").strip(" \t\n\r")
+    ):
+        raise DpsDocumentError("unsupported_document_structure")
+    if children:
+        if (element.text or "").strip(" \t\n\r"):
+            raise DpsDocumentError("unsupported_document_structure")
+        for child, child_name in zip(element, children, strict=True):
+            _collect_subset(child, child_name, fields)
+    else:
+        fields[name] = element.text or ""
 
 
 def _parse_input(xml_bytes: bytes) -> ElementTree.Element:

@@ -12,6 +12,24 @@ authorize a tag, GitHub Release, TestPyPI upload, or PyPI upload.
 | Private or experimental | `nfse_br._f0`, `nfse_br._xmlsig`, freeze tooling, schema-contract tooling |
 | Not supported | issuance/transmission, HTTP/SEFIN, XMLDSig signer/verifier, certificate/private-key handling, production, complete fiscal modeling, allocation/persistence |
 
+## Development addition after 0.3.0 (not released)
+
+`nfse_br.dps.parse_unsigned_dps(bytes) -> RestrictedDpsDraft` is a development
+API for the builder's restricted subset only, not an addition to the historical
+0.3.0 release contract above. The package version remains 0.3.0 until separately
+authorized release preparation. No tag, publication, or dependency change is
+authorized by this feature.
+
+For a future release, verify `build(parse(build(draft))) == build(draft)`,
+all draft fields, fail-closed unknown-field handling, and privacy-safe errors.
+Draft equality holds for ordinary fixed-offset timestamps, but must not be
+promised for ambiguous regional datetimes: XML preserves wall time and offset,
+not timezone identity or `fold`. Test both repeated-hour variants offline.
+
+Parsing is stdlib-only, without I/O, XSD assurance, signature verification,
+fiscal authorization, or transmission. Existing POST-response/XMLDSig blockers
+remain unchanged. See [DPS_DOCUMENT_PARSER.md](../contracts/restricted/DPS_DOCUMENT_PARSER.md).
+
 ## Checklist
 
 - [ ] Confirm protected local and remote `main` are identical and the working
