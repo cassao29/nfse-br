@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "catalogues": [
+    {
+      "id": "technical_root",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica",
+      "updated": null
+    },
+    {
+      "id": "api_catalogue",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao",
+      "updated": "20/08/2026 12h05"
+    },
+    {
+      "id": "production_docs",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual",
+      "updated": "15/08/2026 09h58"
+    },
+    {
+      "id": "restricted_docs",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita",
+      "updated": "28/07/2026 15h57"
+    },
+    {
+      "id": "faq",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/perguntas-e-respostas/perguntas-e-respostas-da-nfs-e",
+      "updated": "16/09/2026 14h16"
+    },
+    {
+      "id": "updates",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/atualizacoes-e-implantacoes",
+      "updated": "11/08/2026 14h38"
+    },
+    {
+      "id": "attendance",
+      "url": "https://www.gov.br/nfse/pt-br/canais-de-atendimento",
+      "updated": "16/09/2026 14h11"
+    },
+    {
+      "id": "rtc_notes",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/rtc",
+      "updated": "15/07/2026 09h00"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "production_xsd",
+      "catalogue": "production_docs",
+      "label_pattern": "^NFSe-ESQUEMAS_XSD",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual/nfse-esquemas_xsd-v1-01-20260209.zip",
+      "size": 65640,
+      "sha256": "e7935cbd9470527c6cc32984c1b2263e614183bf0139ce2733eaaed2de9a8072"
+    },
+    {
+      "id": "production_annex_i",
+      "catalogue": "production_docs",
+      "label_pattern": "^ANEXO_I-SEFIN_ADN-DPS_NFSe",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual/anexo_i-sefin_adn-dps_nfse-snnfse-v1-01-20260209.xlsx",
+      "size": 215196,
+      "sha256": "de5bc492959eadc8bfa7540e16939995924f2188f743648eaf84d3b31e9eeb7c"
+    },
+    {
+      "id": "restricted_xsd",
+      "catalogue": "restricted_docs",
+      "label_pattern": "^NFSe-ESQUEMAS_XSD",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita/esquemas-nfse-rtc-v1-01-20260727.zip",
+      "size": 34933,
+      "sha256": "6c7e0510d3ecff4454f291f4e10b742d27a4818f23aab181494f96d0ea79f3dc"
+    },
+    {
+      "id": "restricted_annex_i",
+      "catalogue": "restricted_docs",
+      "label_pattern": "^ANEXO_I-SEFIN_ADN-DPS_NFSe",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita/anexo_i-sefin_adn-dps_nfse-snnfse-prodrest-v1-01-20260209.xlsx",
+      "size": 215056,
+      "sha256": "2ae2ac9f91efa9b64f0c9ed97acaf18bb7513b090fae39ba5bda59187e64d9e9"
+    },
+    {
+      "id": "faq_pdf",
+      "catalogue": "faq",
+      "label_pattern": "^Perguntas e Respostas da NFS-e - Versão",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/perguntas-e-respostas/perguntas-e-respostas-da-nfs-e/perguntas-e-respostas-nfse-v1-00-20260908.pdf",
+      "version": "1.00",
+      "date": "08/09/2026",
+      "size": 1140924,
+      "sha256": "aa45e008842f1c94e7e175f96df3f6354a23b45b6136db8ed87706d318b462f7"
+    },
+    {
+      "id": "contributor_api_manual",
+      "catalogue": "production_docs",
+      "label_pattern": "^API - Manual de Contribuintes - Emissor Público$",
+      "url": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual/manual-contribuintes-emissor-publico-api-sistema-nacional-nfs-e-v1-2-out2025.pdf",
+      "size": 188158,
+      "sha256": "ac2f36e34ff565cc36d67c5d67415c33cc09f27b2dea006e8da9bcd2ddce5581"
+    }
+  ],
+  "sefin": {
+    "bases": [
+      "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional",
+      "https://sefin.nfse.gov.br/SefinNacional"
+    ],
+    "paths": [
+      "docs/index",
+      "swagger/docs/v1",
+      "swagger/v1/swagger.json",
+      "swagger.json",
+      "openapi.json",
+      "docs/swagger.json"
+    ],
+    "baseline": {
+      "status": 403,
+      "content_type": "text/html",
+      "size": 1233,
+      "sha256": "c55f527e536de44c7980fecece7428ae5a765647495e47008a8a54fa1e434736"
+    }
+  }
+}
