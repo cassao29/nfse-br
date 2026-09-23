@@ -389,7 +389,7 @@ or mixed content are rejected with privacy-safe `DpsDocumentError` codes,
 never silently dropped. Decimal amounts are exact and never rounded. Parsing
 is stdlib-only, bounded to 1 MiB, with no file or network I/O. It provides no
 XSD assurance, signature verification, fiscal authorization, or transmission.
-The existing identity-only inspector and checkers are unchanged.
+The existing identity-only inspection and `check()` behavior are unchanged.
 See [the parser contract](contracts/restricted/DPS_DOCUMENT_PARSER.md) for
 strict lexical rules, error codes, and boundaries.
 
@@ -403,12 +403,26 @@ from nfse_br.xsd import RestrictedDpsChecker
 
 checker = RestrictedDpsChecker(bundle_bytes)
 identity = checker.check(xml_bytes)
+draft = checker.parse(xml_bytes)  # development after 0.3.0; not yet released
 ```
 
-The checker compiles the pinned bundle once and can be reused sequentially.
-Each call validates the XSD, then inspects the unsigned DPS structure and
-returns a `DpsIdentity`. It does not read files, download schemas, sign or
-verify signatures, authorize a document, or transmit it.
+The checker compiles the pinned bundle once and can be reused sequentially,
+including mixed calls after a controlled rejection. `check()` validates XSD,
+then performs identity structural inspection and returns a `DpsIdentity`.
+The development `parse()` method validates XSD, then calls the closed-subset
+`parse_unsigned_dps` and returns its `RestrictedDpsDraft`. Both stages receive
+the same XML bytes object, and existing exceptions propagate without wrappers.
+
+`parse()` may reject an XSD-valid document that passes `check()` when it contains
+structure outside the draft's supported subset. That stricter policy is
+intentional; `check()` does not delegate to `parse()`. Parsing builder output
+retains the byte-exact rebuild guarantee, wall-clock components and UTC offset,
+but not regional timezone identity or `fold`; no stronger datetime-equality
+promise is introduced by the checker.
+
+Neither method reads files, downloads schemas, signs or verifies signatures,
+authorizes a document, or transmits it. The new method is not part of the
+historical 0.3.0 release contract.
 
 ## XML signature preflight
 
