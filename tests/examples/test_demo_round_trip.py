@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import subprocess
 import sys
 from pathlib import Path
@@ -66,9 +67,23 @@ def test_output_is_deterministic(capsys: pytest.CaptureFixture[str]) -> None:
     assert capsys.readouterr() == first
 
 
-@pytest.mark.parametrize("execute", [False, True], ids=["import", "entrypoint"])
+def test_main_does_not_depend_on_assert_statements() -> None:
+    module = ast.parse(_SCRIPT.read_text(encoding="utf-8"))
+    main = next(
+        node
+        for node in module.body
+        if isinstance(node, ast.FunctionDef) and node.name == "main"
+    )
+    assert not any(isinstance(node, ast.Assert) for node in ast.walk(main))
+
+
+@pytest.mark.parametrize(
+    ("execute", "optimized"),
+    [(False, False), (True, False), (True, True)],
+    ids=["import", "entrypoint", "optimized-entrypoint"],
+)
 def test_script_without_lxml_network_or_file_output(
-    tmp_path: Path, execute: bool
+    tmp_path: Path, execute: bool, optimized: bool
 ) -> None:
     program = (
         "import runpy, sys\n"
@@ -80,8 +95,11 @@ def test_script_without_lxml_network_or_file_output(
         f"runpy.run_path({_SCRIPT.as_posix()!r}, "
         f"run_name={'__main__' if execute else 'demo_import'!r})"
     )
+    command = [sys.executable, "-I"]
+    if optimized:
+        command.append("-O")
     completed = subprocess.run(
-        [sys.executable, "-I", "-c", program],
+        [*command, "-c", program],
         cwd=tmp_path,
         check=False,
         capture_output=True,

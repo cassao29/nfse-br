@@ -34,8 +34,11 @@ def main() -> int:
     xml = build_unsigned_dps(draft)
     parsed = parse_unsigned_dps(xml)
     rebuilt = build_unsigned_dps(parsed)
-    assert rebuilt == xml
-    assert parsed == draft  # This synthetic timestamp uses a fixed UTC offset.
+    if rebuilt != xml:
+        raise RuntimeError("byte-exact DPS round-trip failed")
+    # This synthetic timestamp uses a fixed UTC offset.
+    if parsed != draft:
+        raise RuntimeError("fixed-offset draft round-trip failed")
 
     print(f"nfse-br {__version__} - restricted DPS round-trip demo")
     print("Local demonstration; synthetic data only. No signing or transmission.")
