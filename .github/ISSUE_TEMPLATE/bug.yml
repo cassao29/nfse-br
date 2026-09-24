@@ -1,0 +1,82 @@
+name: Bug report
+description: Report a reproducible nfse-br defect using synthetic or redacted data only.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include real fiscal documents, taxpayer data, credentials,
+        certificates, private keys, tokens, or other sensitive material.
+        Use synthetic or safely redacted inputs only; remove all sensitive data.
+
+        Security vulnerabilities must go through
+        [GitHub Private Vulnerability Reporting](https://github.com/cassao29/nfse-br/security/advisories),
+        not a public issue. See [SECURITY.md](https://github.com/cassao29/nfse-br/blob/main/SECURITY.md)
+        and [CONTRIBUTING.md](https://github.com/cassao29/nfse-br/blob/main/CONTRIBUTING.md).
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy and reporting route
+      options:
+        - label: I confirm that this report contains no credentials, certificates, private keys, taxpayer data, or real fiscal documents.
+          required: true
+        - label: This is not a confidential security vulnerability.
+          required: true
+  - type: input
+    id: package-version
+    attributes:
+      label: nfse-br version
+      description: Include the installed version, or commit SHA if reproducing from a checkout.
+    validations:
+      required: true
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+    validations:
+      required: true
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating system
+      description: Include the OS name and version, without machine or user identifiers.
+    validations:
+      required: true
+  - type: input
+    id: installed-extras
+    attributes:
+      label: Installed extras
+      description: For example, base package only or the xsd extra.
+    validations:
+      required: true
+  - type: input
+    id: affected-interface
+    attributes:
+      label: Affected API or CLI command
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include minimal code and steps with synthetic inputs only. If XML is needed, use minimal synthetic XML inline, not real fiscal XML or downloaded official artifacts.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Share only sanitized output or error codes. Check logs for sensitive content before posting.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Optional non-sensitive context or related issue links.

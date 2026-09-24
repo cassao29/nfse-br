@@ -1,0 +1,70 @@
+name: Feature request
+description: Describe a concrete use case and desired public behavior.
+title: "[Feature] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem and the smallest useful change. Follow
+        [CONTRIBUTING.md](https://github.com/cassao29/nfse-br/blob/main/CONTRIBUTING.md).
+        Use synthetic examples only. Do not include real fiscal documents,
+        taxpayer data, credentials, certificates, private keys, or tokens.
+        Link to official public sources instead of attaching downloaded official artifacts.
+
+        Confidential vulnerabilities belong in
+        [Private Vulnerability Reporting](https://github.com/cassao29/nfse-br/security/advisories),
+        as described in [SECURITY.md](https://github.com/cassao29/nfse-br/blob/main/SECURITY.md).
+  - type: checkboxes
+    id: acknowledgments
+    attributes:
+      label: Evidence and privacy
+      options:
+        - label: I understand that fiscal/runtime behavior requiring normative official evidence will not be implemented from assumptions, examples, historical documentation, or implementation behavior alone.
+          required: true
+        - label: I have not included taxpayer data, real fiscal documents, credentials, certificates, private keys, or other sensitive material.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: Describe the concrete task, using synthetic examples rather than customer data.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Desired public behavior
+      description: What observable result should a consumer receive?
+    validations:
+      required: true
+  - type: textarea
+    id: existing-api
+    attributes:
+      label: Why is the existing API insufficient?
+      description: Mention relevant existing APIs or limitations you encountered.
+    validations:
+      required: true
+  - type: textarea
+    id: interface
+    attributes:
+      label: Proposed interface, if any
+      description: Optional API or CLI example using synthetic values only.
+  - type: textarea
+    id: official-evidence
+    attributes:
+      label: Official evidence needed?
+      description: Explain what official evidence is needed, provide official public URLs if available, or explain why none is needed. Unknown is an acceptable answer.
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility impact
+      description: Could existing callers be affected? State unchanged, potential impact, or unknown.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Optional non-sensitive context or related issue links.
