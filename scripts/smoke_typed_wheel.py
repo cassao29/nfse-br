@@ -80,7 +80,7 @@ def _require_success(result: subprocess.CompletedProcess[str]) -> None:
         raise RuntimeError("consumer subprocess failed")
 
 
-def smoke_typed_wheel(wheel: Path, *, ignore_requires_python: bool = False) -> None:
+def smoke_typed_wheel(wheel: Path) -> None:
     wheel = wheel.resolve(strict=True)
     with ZipFile(wheel) as archive:
         markers = [
@@ -133,7 +133,6 @@ def smoke_typed_wheel(wheel: Path, *, ignore_requires_python: bool = False) -> N
                     "--no-cache-dir",
                     "--no-deps",
                     "--no-index",
-                    *(["--ignore-requires-python"] if ignore_requires_python else []),
                     str(wheel),
                 ],
                 root,
@@ -204,12 +203,9 @@ def smoke_typed_wheel(wheel: Path, *, ignore_requires_python: bool = False) -> N
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("wheel", type=Path)
-    parser.add_argument("--ignore-requires-python", action="store_true")
     args = parser.parse_args(argv)
     try:
-        smoke_typed_wheel(
-            args.wheel, ignore_requires_python=args.ignore_requires_python
-        )
+        smoke_typed_wheel(args.wheel)
     except (
         OSError,
         ValueError,

@@ -99,7 +99,7 @@ drift.
 ## Quickstart from a checkout
 
 This path uses the repository checkout directly; it does not assume a PyPI
-release. It requires Python 3.12 or 3.13 and `uv` (CI currently uses
+release. It requires Python 3.12, 3.13, or 3.14 and `uv` (CI currently uses
 `uv 0.12.13`).
 
 ```console
@@ -549,8 +549,11 @@ with the explicitly supplied local XML and bundle files.
 
 ## Development
 
-The project requires Python 3.12 or 3.13 and uses
+The development checkout supports Python 3.12, 3.13, or 3.14 and uses
 [`uv`](https://docs.astral.sh/uv/) for project management.
+
+Python 3.14 support is unreleased; the published 0.4.0 package remains
+limited to Python 3.12 and 3.13.
 
 ```console
 uv sync --frozen --extra xsd
