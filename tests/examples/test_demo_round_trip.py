@@ -67,6 +67,30 @@ def test_output_is_deterministic(capsys: pytest.CaptureFixture[str]) -> None:
     assert capsys.readouterr() == first
 
 
+def test_readme_xml_matches_real_demo_bytes(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Text mode handles checkout line endings on Windows; no XML whitespace
+    # is stripped or pretty-printed before the UTF-8 byte comparison.
+    readme = (_SCRIPT.parents[1] / "README.md").read_text(encoding="utf-8")
+    start = "<!-- demo-unsigned-dps-xml:start -->\n```xml\n"
+    end = "\n```\n<!-- demo-unsigned-dps-xml:end -->"
+    assert readme.count(start) == 1
+    assert readme.count(end) == 1
+    documented_xml = readme.split(start, 1)[1].split(end, 1)[0].encode("utf-8")
+
+    assert demo.main() == 0
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    demo_xml = (
+        captured.out.split("UNSIGNED DPS XML\n", 1)[1]
+        .split("\n\nRECOVERED FIELDS\n", 1)[0]
+        .encode("utf-8")
+    )
+    assert documented_xml == demo_xml
+    assert documented_xml == build_unsigned_dps(parse_unsigned_dps(demo_xml))
+
+
 def test_main_does_not_depend_on_assert_statements() -> None:
     module = ast.parse(_SCRIPT.read_text(encoding="utf-8"))
     main = next(
