@@ -65,6 +65,12 @@ jobs:
       - name: Build distributions
         run: uv build
 
+      - name: Smoke-test installed wheel typing
+        run: >-
+          uv run --frozen --extra xsd python
+          scripts/smoke_typed_wheel.py
+          dist/nfse_br-0.4.0-py3-none-any.whl
+
       - name: Smoke-test base wheel without XSD dependencies
         run: python scripts/smoke_base_wheel.py dist/nfse_br-0.4.0-py3-none-any.whl
 
@@ -128,6 +134,12 @@ jobs:
 
       - name: Build distributions
         run: uv build
+
+      - name: Smoke-test installed wheel typing
+        run: >-
+          uv run --frozen --extra xsd python
+          scripts/smoke_typed_wheel.py
+          dist/nfse_br-0.4.0-py3-none-any.whl
 
       - name: Smoke-test base wheel without XSD dependencies
         run: python scripts/smoke_base_wheel.py dist/nfse_br-0.4.0-py3-none-any.whl
