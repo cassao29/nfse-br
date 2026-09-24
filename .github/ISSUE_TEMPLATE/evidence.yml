@@ -1,0 +1,118 @@
+name: Official evidence update
+description: Report new, changed, relocated, or conflicting official NFS-e evidence for review.
+title: "[Evidence] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Provide official public URLs, metadata, section references, and hashes instead
+        of redistributing downloaded official ZIP/XSD/XLSX/PDF artifacts.
+        Do not include taxpayer data, real fiscal documents, credentials, certificates,
+        private keys, tokens, or confidential correspondence.
+
+        Submission is not evidence promotion. Evidence promotion is not runtime
+        authorization. Affected runtime behavior remains blocked until contract review;
+        this issue does not promise any change to a blocker.
+
+        See [CONTRIBUTING.md](https://github.com/cassao29/nfse-br/blob/main/CONTRIBUTING.md).
+        For confidential vulnerabilities, follow
+        [SECURITY.md](https://github.com/cassao29/nfse-br/blob/main/SECURITY.md) and use
+        [Private Vulnerability Reporting](https://github.com/cassao29/nfse-br/security/advisories).
+  - type: checkboxes
+    id: acknowledgments
+    attributes:
+      label: Evidence handling
+      options:
+        - label: I understand that submitting evidence does not automatically promote a contract, change a blocker, or enable runtime behavior.
+          required: true
+        - label: I have not attached downloaded official ZIP/XSD/XLSX/PDF artifacts or sensitive fiscal data to this issue.
+          required: true
+        - label: I have not included credentials, certificates, private keys, tokens, or other sensitive material.
+          required: true
+  - type: dropdown
+    id: event
+    attributes:
+      label: Evidence event
+      options:
+        - New official source
+        - Official source changed
+        - Official source relocated
+        - Official source disappeared
+        - New version published
+        - Conflict between official sources
+        - Clarification of existing evidence
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Official source URL
+      description: Public official URL only, with no credentials or access tokens. For disappeared sources, provide the previously known URL.
+    validations:
+      required: true
+  - type: input
+    id: authority
+    attributes:
+      label: Publishing authority
+    validations:
+      required: true
+  - type: input
+    id: observed-date
+    attributes:
+      label: Observed date
+      description: Use YYYY-MM-DD; include time and timezone if relevant.
+    validations:
+      required: true
+  - type: input
+    id: artifact-title
+    attributes:
+      label: Document or artifact title
+    validations:
+      required: true
+  - type: input
+    id: version-date
+    attributes:
+      label: Document version or date, if stated
+      description: Copy stated metadata without inferring a version. Leave empty if unavailable.
+  - type: input
+    id: section
+    attributes:
+      label: Relevant section, page, schema, or member
+      description: Identify the relevant location without uploading the artifact.
+  - type: textarea
+    id: change
+    attributes:
+      label: What changed or was discovered?
+      description: Distinguish direct observations from interpretation, including applicability and environment where stated.
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Existing nfse-br contract potentially affected
+      description: Link to the contract or name its repository path. Unknown is acceptable.
+    validations:
+      required: true
+  - type: textarea
+    id: blocker
+    attributes:
+      label: Existing blocker potentially affected
+      description: Name the state and explain why review may be needed, or state none or unknown. Do not declare it resolved.
+    validations:
+      required: true
+  - type: input
+    id: sha256
+    attributes:
+      label: Observed SHA-256, if independently available
+      description: Optional hash of the identified artifact, not a replacement for authority or applicability review.
+  - type: textarea
+    id: conflicts
+    attributes:
+      label: Conflicting evidence, if any
+      description: Provide official URLs and section references for both sides of a conflict.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Optional non-sensitive context; do not attach downloaded artifacts.

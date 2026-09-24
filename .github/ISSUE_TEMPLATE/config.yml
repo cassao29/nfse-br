@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/cassao29/nfse-br/security/advisories
+    about: Report vulnerabilities privately. Do not disclose credentials, certificates, keys, taxpayer data, or exploitable details in public issues.
+  - name: Contribution guide
+    url: https://github.com/cassao29/nfse-br/blob/main/CONTRIBUTING.md
+    about: Read the contribution workflow, validation requirements, and artifact restrictions.
