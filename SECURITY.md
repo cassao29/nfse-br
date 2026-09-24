@@ -2,9 +2,10 @@
 
 ## Supported versions
 
-After the first release, the latest 0.1.x release will receive security fixes.
-Unreleased snapshots and older 0.1.x releases may be used to reproduce a
-report, but are not separate supported release lines.
+The latest published minor release line receives security fixes.
+Older minor release lines are unsupported unless explicitly stated otherwise.
+Unreleased snapshots may be used to reproduce a report, but are not supported
+release lines.
 
 ## Reporting a vulnerability
 
