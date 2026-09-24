@@ -10,9 +10,9 @@ confirmed local consistency checks. It
 does not implement a complete fiscal model, XML signatures, issuance, or
 transmission. Local XSD validation is available through an optional dependency.
 
-## Release 0.4.0 contract
+## Release 0.4.1 contract
 
-The supported public surface for 0.4.0 is deliberately small:
+The supported public surface for 0.4.1 is deliberately small:
 
 - `CompetenceDate`, `DomainValidationError`, `FederalTaxId`,
   `FederalTaxIdKind`, `MunicipalityCode`, and `NfseEnvironment` from
@@ -37,7 +37,7 @@ Modules below `nfse_br._f0` and `nfse_br._xmlsig`, together with freeze and
 schema-contract tooling, are private or experimental implementation details.
 They may change without being treated as public API.
 
-Version 0.4.0 does not support issuance or transmission, HTTP/SEFIN calls,
+Version 0.4.1 does not support issuance or transmission, HTTP/SEFIN calls,
 XMLDSig signing or cryptographic verification, certificate or private-key
 handling, production-environment operation, a complete fiscal model, or
 number allocation and persistence. See the [changelog](CHANGELOG.md) for the
@@ -45,7 +45,7 @@ release summary and known limitations.
 
 ## Demo em 60 segundos
 
-Use Python 3.12 or 3.13 and a fresh virtual environment to try the published
+Use Python 3.12, 3.13, or 3.14 and a fresh virtual environment to try the published
 package from PyPI (no editable install):
 
 ```bash
@@ -54,12 +54,12 @@ cd nfse-br
 
 python -m venv .venv
 source .venv/bin/activate  # Windows cmd: .venv\Scripts\activate.bat
-python -m pip install nfse-br==0.4.0
+python -m pip install nfse-br==0.4.1
 
 python examples/demo_round_trip.py
 ```
 
-The demo imports the published `nfse-br 0.4.0` package, builds one synthetic
+The demo imports the published `nfse-br 0.4.1` package, builds one synthetic
 unsigned restricted DPS, parses it back into `RestrictedDpsDraft`, prints the
 recovered fields, and proves byte-exact rebuilding. No signing, issuance,
 SEFIN call, or transmission occurs.
@@ -552,9 +552,6 @@ with the explicitly supplied local XML and bundle files.
 The development checkout supports Python 3.12, 3.13, or 3.14 and uses
 [`uv`](https://docs.astral.sh/uv/) for project management.
 
-Python 3.14 support is unreleased; the published 0.4.0 package remains
-limited to Python 3.12 and 3.13.
-
 ```console
 uv sync --frozen --extra xsd
 uv run --frozen --extra xsd ruff check .
@@ -567,7 +564,7 @@ uv run --frozen --extra xsd pytest \
 uv run --frozen --extra xsd python scripts/check_coverage.py \
   build/coverage/coverage.json
 uv build
-python scripts/smoke_base_wheel.py dist/nfse_br-0.4.0-py3-none-any.whl
+python scripts/smoke_base_wheel.py dist/nfse_br-0.4.1-py3-none-any.whl
 ```
 
 The executable coverage gates require at least 80% combined coverage for the

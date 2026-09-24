@@ -1,12 +1,15 @@
 # Release procedure
 
-This checklist is for the `0.4.0` release. A release operator must run it from
+This checklist is for the `0.4.1` release. A release operator must run it from
 a clean, protected `main`; completing release preparation alone does not
 authorize a tag, GitHub Release, TestPyPI upload, or PyPI upload.
 
 ## Release contract
 
-| Classification | 0.4.0 surface |
+0.4.1 is a maintenance/compatibility patch over 0.4.0. It adds declared Python
+3.14 support without changing the public Python API or fiscal/runtime contract.
+
+| Classification | 0.4.1 surface |
 | --- | --- |
 | Public and supported | `CompetenceDate`, `DomainValidationError`, `FederalTaxId`, `FederalTaxIdKind`, `MunicipalityCode`, `NfseEnvironment`; opt-in CPF/CNPJ validators in their documented submodules; `DpsSeries`, `DpsNumber`, `DpsIdentity`, `DpsDocumentError`, `inspect_unsigned_dps`, `parse_unsigned_dps`; `RestrictedDpsDraft`, `build_unsigned_dps`; `NfseAccessKey`, `NfseId`, `NfseDocumentError`, `NfseDocumentInfo`, `extract_nfse_document_info`, `NfseConsistencyError`, `validate_nfse_document_consistency`; optional `RestrictedDpsChecker` with `check()` and `parse()`, `RestrictedDpsXsdValidator`, `RecoveredNfseChecker`, `RecoveredNfseValidator`, `XsdValidationError`; `nfse-br check-unsigned`; `nfse-br check-nfse` |
 | Private or experimental | `nfse_br._f0`, `nfse_br._xmlsig`, freeze tooling, schema-contract tooling |
@@ -14,7 +17,7 @@ authorize a tag, GitHub Release, TestPyPI upload, or PyPI upload.
 
 ### Restricted DPS parsing contract
 
-`nfse_br.dps.parse_unsigned_dps(bytes) -> RestrictedDpsDraft` is public in 0.4.0
+`nfse_br.dps.parse_unsigned_dps(bytes) -> RestrictedDpsDraft` was introduced in 0.4.0
 for the builder's restricted subset only, not a generic DPS Nacional parser.
 
 Verify `build(parse(build(draft))) == build(draft)`,
@@ -40,13 +43,13 @@ remain unchanged. See [DPS_DOCUMENT_PARSER.md](../contracts/restricted/DPS_DOCUM
 
 - [ ] Confirm protected local and remote `main` are identical and the working
   tree is clean.
-- [ ] Confirm all required Python 3.12/3.13 Linux and Windows checks pass on
+- [ ] Confirm all required Python 3.12/3.13/3.14 Linux and Windows checks pass on
   the exact release commit.
 - [ ] Confirm `pyproject.toml`, `nfse_br.__version__`, and `uv.lock` all report
-  `0.4.0`.
-- [ ] Review the `0.4.0` changelog and public/private/unsupported contract.
-- [ ] Confirm `v0.4.0` does not exist locally or remotely and that PyPI does
-  not already expose `nfse-br 0.4.0`.
+  `0.4.1` (the root package version in `uv.lock`).
+- [ ] Review the `0.4.1` changelog and public/private/unsupported contract.
+- [ ] Immediately before tag creation, confirm `v0.4.1` does not exist locally
+  or remotely and that PyPI does not already expose `nfse-br 0.4.1`.
 - [ ] Verify the parsing contract above: byte-exact builder-output rebuilding,
   timezone/fold caveat, fail-closed fields, privacy, and independent checker paths.
 - [ ] Confirm the protected `pypi` environment and Trusted Publisher remain
@@ -65,14 +68,18 @@ remain unchanged. See [DPS_DOCUMENT_PARSER.md](../contracts/restricted/DPS_DOCUM
   pinned `lxml` version, XSD imports, and validator behavior without any
   automatic bundle download.
 - [ ] Execute the README quickstart from a clean checkout.
-- [ ] Run both official pinned-bundle local integrations for DPS and recovered
-  NFS-e XML; these checks remain intentionally outside CI.
+- [ ] On the exact release commit, run `scripts/validate_official_dps_xsd.py`
+  and `scripts/validate_official_nfse_xsd.py` using only the existing local
+  `.f0/restricted/restricted-xsd.zip`. Require size `34933` bytes and SHA-256
+  `6c7e0510d3ecff4454f291f4e10b742d27a4818f23aab181494f96d0ea79f3dc`
+  before execution. Stop if absent or mismatched; do not download or refresh
+  evidence automatically. These integrations remain intentionally outside CI.
 - [ ] Run the repository's secret scan over every new commit and the final
   release tree.
 - [x] GitHub Private Vulnerability Reporting is configured and was verified
   through the repository API on 2026-09-19.
 - [ ] Obtain explicit authorization immediately before creating or pushing the
-  `v0.4.0` tag. Tag creation is the action that starts publication.
+  `v0.4.1` tag. Tag creation is the action that starts publication.
 - [ ] After successful OIDC publication and public PyPI verification, obtain
   deliberate authorization before creating the GitHub Release.
 

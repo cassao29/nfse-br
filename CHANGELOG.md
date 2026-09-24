@@ -2,10 +2,20 @@
 
 ## Unreleased
 
+## 0.4.1
+
 ### Compatibility
 
 - Added declared Python 3.14 support after Linux and Windows full-suite,
   wheel, typing, lxml/XSD, and local pinned official-bundle integration validation.
+
+### Repository / quality
+
+- Added an independent public Python API contract gate.
+- Added external-consumer PEP 561 validation against the installed wheel,
+  including positive and expected-negative mypy checks.
+- Added structured bug, feature, official-evidence and pull-request templates
+  with privacy-safe contribution guidance.
 
 ### Documentation
 
