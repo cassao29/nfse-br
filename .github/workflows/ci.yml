@@ -10,6 +10,34 @@ permissions:
   contents: read
 
 jobs:
+  python-314-probe:
+    name: Experimental Python 3.14 (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2022]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up experimental Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.12.13"
+
+      - name: Build distributions without changing supported metadata
+        run: uv build
+
+      - name: Probe experimental compatibility (not declared support)
+        run: python scripts/probe_python314.py dist/nfse_br-0.4.0-py3-none-any.whl
+
   quality:
     runs-on: ubuntu-latest
     strategy:
