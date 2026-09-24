@@ -1,6 +1,6 @@
 # Contributing
 
-This project supports Python 3.12 and 3.13 and uses
+This project supports Python 3.12, 3.13, and 3.14 and uses
 [`uv`](https://docs.astral.sh/uv/) for dependency and environment management.
 
 Use GitHub Flow: branch from an up-to-date `main`, keep pull requests small,

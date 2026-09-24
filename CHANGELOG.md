@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Compatibility
+
+- Added declared Python 3.14 support after Linux and Windows full-suite,
+  wheel, typing, lxml/XSD, and local pinned official-bundle integration validation.
+
 ### Documentation
 
 - Added the 60-second synthetic unsigned DPS round-trip demo, with explicit

@@ -376,7 +376,7 @@ def _environment_python(environment: Path) -> Path:
     return environment / "bin/python"
 
 
-def smoke_base_wheel(wheel: Path, *, ignore_requires_python: bool = False) -> None:
+def smoke_base_wheel(wheel: Path) -> None:
     wheel = wheel.resolve(strict=True)
     _inspect_metadata(wheel)
     with tempfile.TemporaryDirectory(prefix="nfse-br-base-wheel-") as directory:
@@ -398,7 +398,6 @@ def smoke_base_wheel(wheel: Path, *, ignore_requires_python: bool = False) -> No
                 "--no-cache-dir",
                 "--no-deps",
                 "--no-index",
-                *(["--ignore-requires-python"] if ignore_requires_python else []),
                 str(wheel),
             ],
             check=True,
@@ -416,14 +415,13 @@ def smoke_base_wheel(wheel: Path, *, ignore_requires_python: bool = False) -> No
 def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("wheel", type=Path)
-    parser.add_argument("--ignore-requires-python", action="store_true")
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
     try:
-        smoke_base_wheel(args.wheel, ignore_requires_python=args.ignore_requires_python)
+        smoke_base_wheel(args.wheel)
     except (OSError, subprocess.CalledProcessError, UnicodeError, ValueError) as exc:
         print(f"Base wheel smoke test failed: {type(exc).__name__}", file=sys.stderr)
         return 1

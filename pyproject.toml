@@ -7,7 +7,7 @@ name = "nfse-br"
 version = "0.4.0"
 description = "Open-source Python toolkit for Brazil's National NFS-e ecosystem"
 readme = "README.md"
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.12,<3.15"
 license = "MIT"
 authors = [
   { name = "Cássio Santos" },
@@ -21,6 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Typing :: Typed",
 ]
 dependencies = []
