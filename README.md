@@ -78,6 +78,24 @@ synthetic timestamp uses a fixed UTC offset; the general timezone/`fold`
 caveat in [Restricted DPS parsing](#restricted-dps-parsing) still applies.
 The checkout-based `uv` quickstart below is a separate development path.
 
+<details>
+<summary>Ver XML DPS gerado</summary>
+
+> Exemplo sintético, unsigned. Não representa emissão, autorização ou transmissão.
+
+This is the exact XML produced by the demo, without pretty-printing. An
+offline test checks it against the real demo output to prevent documentation
+drift.
+
+<!-- demo-unsigned-dps-xml:start -->
+```xml
+<?xml version='1.0' encoding='utf-8'?>
+<DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infDPS Id="DPS2927408212ABC6780001Z000123000000000000042"><tpAmb>2</tpAmb><dhEmi>2026-09-17T12:00:00-03:00</dhEmi><verAplic>nfse-br-demo</verAplic><serie>123</serie><nDPS>42</nDPS><dCompet>2026-09-17</dCompet><tpEmit>1</tpEmit><cLocEmi>2927408</cLocEmi><prest><CNPJ>12ABC6780001Z0</CNPJ><regTrib><opSimpNac>1</opSimpNac><regEspTrib>0</regEspTrib></regTrib></prest><serv><locPrest><cLocPrestacao>3550308</cLocPrestacao></locPrest><cServ><cTribNac>010101</cTribNac><xDescServ>Servico sintetico de demonstracao</xDescServ></cServ></serv><valores><vServPrest><vServ>100.00</vServ></vServPrest><trib><tribMun><tribISSQN>1</tribISSQN><tpRetISSQN>1</tpRetISSQN></tribMun><totTrib><indTotTrib>0</indTotTrib></totTrib></trib></valores></infDPS></DPS>
+```
+<!-- demo-unsigned-dps-xml:end -->
+
+</details>
+
 ## Quickstart from a checkout
 
 This path uses the repository checkout directly; it does not assume a PyPI
