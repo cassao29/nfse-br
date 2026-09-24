@@ -54,10 +54,11 @@ def test_help_version_and_import_do_not_load_lxml(
     assert cli.main(["--version"]) == 0
     assert capsys.readouterr().out == "nfse-br 0.4.0\n"
 
-    project_root = Path(__file__).resolve().parents[1]
+    assert cli.__file__ is not None
+    package_parent = Path(cli.__file__).resolve().parents[1]
     program = (
         "import sys; "
-        f"sys.path.insert(0, {str(project_root / 'src')!r}); "
+        f"sys.path.insert(0, {str(package_parent)!r}); "
         "sys.modules['lxml'] = None; "
         "import nfse_br.cli; "
         "assert 'nfse_br._xmlsig.preflight' not in sys.modules; "
