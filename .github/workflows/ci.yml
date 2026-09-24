@@ -70,10 +70,10 @@ jobs:
         run: >-
           uv run --frozen --extra xsd python
           scripts/smoke_typed_wheel.py
-          dist/nfse_br-0.4.0-py3-none-any.whl
+          dist/nfse_br-0.4.1-py3-none-any.whl
 
       - name: Smoke-test base wheel without XSD dependencies
-        run: python scripts/smoke_base_wheel.py dist/nfse_br-0.4.0-py3-none-any.whl
+        run: python scripts/smoke_base_wheel.py dist/nfse_br-0.4.1-py3-none-any.whl
 
   windows-compatibility:
     name: windows-compatibility (${{ matrix.python-version }})
@@ -141,7 +141,7 @@ jobs:
         run: >-
           uv run --frozen --extra xsd python
           scripts/smoke_typed_wheel.py
-          dist/nfse_br-0.4.0-py3-none-any.whl
+          dist/nfse_br-0.4.1-py3-none-any.whl
 
       - name: Smoke-test base wheel without XSD dependencies
-        run: python scripts/smoke_base_wheel.py dist/nfse_br-0.4.0-py3-none-any.whl
+        run: python scripts/smoke_base_wheel.py dist/nfse_br-0.4.1-py3-none-any.whl
