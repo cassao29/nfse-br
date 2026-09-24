@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Documentation
+
+- Added the 60-second synthetic unsigned DPS round-trip demo, with explicit
+  checks that remain active under Python optimization.
+- Added an exact synthetic DPS XML preview in the README with a byte-level
+  anti-drift test, without a standalone generated XML artifact.
+- Clarified security-fix support for the latest published minor release line.
+
 ## 0.4.0
 
 ### Added
