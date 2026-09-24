@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  python-3.14-probe:
+  python-314-probe:
     name: Experimental Python 3.14 (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     continue-on-error: true
