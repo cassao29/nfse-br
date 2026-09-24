@@ -45,8 +45,8 @@ release summary and known limitations.
 
 ## Demo em 60 segundos
 
-Use Python 3.12, 3.13, or 3.14 and a fresh virtual environment to try the published
-package from PyPI (no editable install):
+Use Python 3.12, 3.13, or 3.14 and a fresh virtual environment to try the
+0.4.1 package from PyPI after publication (no editable install):
 
 ```bash
 git clone https://github.com/cassao29/nfse-br.git
@@ -59,9 +59,10 @@ python -m pip install nfse-br==0.4.1
 python examples/demo_round_trip.py
 ```
 
-The demo imports the published `nfse-br 0.4.1` package, builds one synthetic
-unsigned restricted DPS, parses it back into `RestrictedDpsDraft`, prints the
-recovered fields, and proves byte-exact rebuilding. No signing, issuance,
+After publication, the demo imports the `nfse-br 0.4.1` package from PyPI,
+builds one synthetic unsigned restricted DPS, parses it back into
+`RestrictedDpsDraft`, prints the recovered fields, and proves byte-exact
+rebuilding. No signing, issuance,
 SEFIN call, or transmission occurs.
 
 The output includes `UNSIGNED DPS XML`, `RECOVERED FIELDS` (including the
