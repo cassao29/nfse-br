@@ -43,6 +43,41 @@ handling, production-environment operation, a complete fiscal model, or
 number allocation and persistence. See the [changelog](CHANGELOG.md) for the
 release summary and known limitations.
 
+## Demo em 60 segundos
+
+Use Python 3.12 or 3.13 and a fresh virtual environment to try the published
+package from PyPI (no editable install):
+
+```bash
+git clone https://github.com/cassao29/nfse-br.git
+cd nfse-br
+
+python -m venv .venv
+source .venv/bin/activate  # Windows cmd: .venv\Scripts\activate.bat
+python -m pip install nfse-br==0.4.0
+
+python examples/demo_round_trip.py
+```
+
+The demo imports the published `nfse-br 0.4.0` package, builds one synthetic
+unsigned restricted DPS, parses it back into `RestrictedDpsDraft`, prints the
+recovered fields, and proves byte-exact rebuilding. No signing, issuance,
+SEFIN call, or transmission occurs.
+
+The output includes `UNSIGNED DPS XML`, `RECOVERED FIELDS` (including the
+synthetic service amount `100.00`), and ends with:
+
+```text
+ROUND_TRIP = PASS
+transmission_ready = false
+```
+
+After installation, the demo runs entirely offline, writes no files, and
+needs neither `lxml` nor an XSD bundle. It performs no XSD validation. The
+synthetic timestamp uses a fixed UTC offset; the general timezone/`fold`
+caveat in [Restricted DPS parsing](#restricted-dps-parsing) still applies.
+The checkout-based `uv` quickstart below is a separate development path.
+
 ## Quickstart from a checkout
 
 This path uses the repository checkout directly; it does not assume a PyPI
