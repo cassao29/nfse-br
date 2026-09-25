@@ -2,16 +2,35 @@
 
 ## Unreleased
 
+## 0.5.0
+
 ### Added
 
-- National taker subset for restricted unsigned DPS: immutable address/taker
-  models and optional `RestrictedDpsDraft.taker`, coordinated construction,
-  parsing and role-aware identity inspection, with independent XML oracles,
-  external-wheel typing/base smokes and local pinned-XSD integration.
-- Explicit local name/address policies and preserved official-source conflicts;
-  unchanged XML without taker and independent checker check/parse pipelines.
-  This candidate API is not in published 0.4.1 and adds no issuance, signing,
-  registry lookup, fiscal calculation or transmission capability.
+- Public immutable `RestrictedDpsNationalAddress` and `RestrictedDpsTaker`
+  aggregates and optional `RestrictedDpsDraft.taker` for the national-taker
+  subset of restricted unsigned DPS, integrated in #49.
+- Coordinated builder, parser and role-aware identity inspection, with
+  independent XML oracles, external-wheel typing/base smokes and local
+  pinned-XSD integration evidence from the implementation candidate.
+
+### Compatibility
+
+- Existing constructor calls and XML bytes without taker are preserved;
+  the public dataclass shape and parser's accepted language expand explicitly.
+  The DPS identity remains independent of the taker.
+- Empty or unidentified `toma` groups are now rejected during inspection.
+  `check()` and `parse()` remain independent: XSD-valid documents can fail the
+  stricter local subset parser, including names of 151–300 characters or a
+  missing national address.
+
+### Limitations
+
+- Name/address constraints are explicit local policies; documented official
+  CNPJ, name-length and IM conflicts remain unresolved. Published 0.4.1 does
+  not contain the taker API. This section describes the 0.5.0 release contract,
+  not confirmation of publication.
+- No new issuance, signing, transmission, registry lookup, response recovery
+  or fiscal calculation capability.
 
 ## 0.4.1
 
