@@ -14,13 +14,22 @@ from pathlib import Path
 from zipfile import BadZipFile, ZipFile
 
 _CONSUMER_OK = """\
+from dataclasses import replace
 from nfse_br.domain import FederalTaxId, MunicipalityCode
 from nfse_br.dps import DpsIdentity, DpsNumber, DpsSeries, parse_unsigned_dps
-from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
+from nfse_br.dps.builder import (
+    RestrictedDpsDraft, RestrictedDpsNationalAddress, RestrictedDpsTaker,
+    build_unsigned_dps,
+)
 
 
 def rebuild(xml: bytes) -> bytes:
     draft: RestrictedDpsDraft = parse_unsigned_dps(xml)
+    optional_taker: RestrictedDpsTaker | None = draft.taker
+    if optional_taker is not None:
+        recovered_address: RestrictedDpsNationalAddress = optional_taker.address
+        postal: str = recovered_address.postal_code
+        draft = replace(draft, taker=replace(optional_taker, name=postal))
     return build_unsigned_dps(draft)
 
 
@@ -34,13 +43,29 @@ identity: DpsIdentity = DpsIdentity.build(
     series=series,
     number=number,
 )
+address: RestrictedDpsNationalAddress = RestrictedDpsNationalAddress(
+    municipality=municipality, postal_code="01234567", street="Rua A",
+    number="1", neighborhood="Centro", complement=None,
+)
+taker: RestrictedDpsTaker = RestrictedDpsTaker(
+    tax_id=tax_id, name="Synthetic", address=address,
+)
 """
 
 _CONSUMER_BAD = """\
 from nfse_br.dps import DpsNumber, parse_unsigned_dps
+from nfse_br.dps.builder import RestrictedDpsNationalAddress, RestrictedDpsTaker
 
 wrong_value: str = DpsNumber(42).value
 parse_unsigned_dps("not-bytes")
+
+def wrong_types(
+    address: RestrictedDpsNationalAddress, taker: RestrictedDpsTaker,
+) -> None:
+    wrong_postal: int = address.postal_code
+    wrong_address: str = taker.address
+    wrong_taker: str = parse_unsigned_dps(b"synthetic").taker
+    RestrictedDpsTaker(tax_id=taker.tax_id, name="Synthetic", address="not-address")
 """
 
 _LOCATION_PROBE = """\
@@ -192,11 +217,19 @@ def smoke_typed_wheel(wheel: Path) -> None:
         if (
             negative.returncode != 1
             or negative.stderr
-            or sorted(codes) != ["arg-type", "assignment"]
+            or sorted(codes)
+            != [
+                "arg-type",
+                "arg-type",
+                "assignment",
+                "assignment",
+                "assignment",
+                "assignment",
+            ]
         ):
             raise RuntimeError("negative consumer did not produce expected type errors")
         print("CONSUMER_TYPING_NEGATIVE = FAILS_AS_EXPECTED")
-        print("NEGATIVE_ERROR_CODES = assignment, arg-type")
+        print("NEGATIVE_ERROR_CODES = assignment x4, arg-type x2")
     print("Typed wheel consumer smoke test: PASS")
 
 

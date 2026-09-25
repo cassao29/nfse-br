@@ -274,6 +274,12 @@ def test_additional_fiscal_branch_is_not_silently_lost(name: str) -> None:
     root = ET.fromstring(_xml())
     ET.SubElement(_element(root, "infDPS"), _Q + name)
     xml = _serialize(root)
+    if name == "toma":
+        # The authorized role-aware inspector now rejects an unidentified taker.
+        with pytest.raises(DpsDocumentError, match="ambiguous_identity_field"):
+            inspect_unsigned_dps(xml)
+        _reject(xml, "ambiguous_identity_field")
+        return
     assert isinstance(inspect_unsigned_dps(xml), DpsIdentity)
     _reject(xml, "unsupported_document_structure")
 

@@ -1,5 +1,25 @@
 # Unsigned restricted DPS builder
 
+## Unreleased delta — national taker candidate
+
+The checkout adds `RestrictedDpsNationalAddress`, `RestrictedDpsTaker` and the
+optional final `RestrictedDpsDraft.taker=None` parameter under the accepted
+[local contract](DPS_NATIONAL_TAKER.md), subject to implementation-PR review.
+This is not part of the published 0.4.1 API and requires a separate version bump
+before publication. The public shape changes deliberately; old constructor
+calls and XML bytes without taker remain unchanged.
+
+When present, toma is inserted after prest and before serv: one CPF/CNPJ,
+xNome, then end containing endNac(cMun, CEP), xLgr, nro, optional xCpl, xBairro.
+The taker does not contribute to the DPS identity. The local policy requires
+name (1–150 characters) and complete national address, allows numeric and
+alphanumeric CNPJ, and preserves the documented source conflicts. No implicit
+DV, registry, CEP–municipality, provider=taker or tax-rule check is introduced.
+The aggregates are frozen/slots/keyword-only with controlled repr/str; fields
+and recursive asdict are not redacted. The base remains stdlib-only.
+
+## Published 0.4.1 baseline
+
 `nfse_br.dps.builder` serializes one deliberately small subset of the frozen
 restricted `TCDPS` structure. It is not a complete NFS-e model and it performs
 no fiscal inference.

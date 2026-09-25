@@ -19,7 +19,12 @@ from nfse_br.dps.identity import DpsIdentity
 from nfse_br.dps.number import DpsNumber
 from nfse_br.dps.series import DpsSeries
 
-__all__ = ["RestrictedDpsDraft", "build_unsigned_dps"]
+__all__ = [
+    "RestrictedDpsDraft",
+    "RestrictedDpsNationalAddress",
+    "RestrictedDpsTaker",
+    "build_unsigned_dps",
+]
 
 _NFSE_NAMESPACE = "http://www.sped.fazenda.gov.br/nfse"
 _SCHEMA_VERSION = "1.01"
@@ -42,6 +47,80 @@ _TotalTaxIndicator = Literal["0"]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, repr=False)
+class RestrictedDpsNationalAddress:
+    """Lexical national address subset, without postal or registry assurance."""
+
+    municipality: MunicipalityCode
+    postal_code: str
+    street: str
+    number: str
+    neighborhood: str
+    complement: str | None = None
+
+    def __post_init__(self) -> None:
+        _require_exact_type(
+            self.municipality,
+            MunicipalityCode,
+            "Address municipality must be a MunicipalityCode.",
+        )
+        if (
+            type(self.postal_code) is not str
+            or len(self.postal_code) != 8
+            or not self.postal_code.isascii()
+            or not self.postal_code.isdecimal()
+        ):
+            raise DomainValidationError("Postal code must contain 8 ASCII digits.")
+        _validate_address_text(self.street, 255)
+        _validate_address_text(self.number, 60)
+        _validate_address_text(self.neighborhood, 60)
+        if self.complement is not None:
+            _validate_address_text(self.complement, 156)
+
+    def __repr__(self) -> str:
+        return "RestrictedDpsNationalAddress(<redacted>)"
+
+    def __str__(self) -> str:
+        return "RestrictedDpsNationalAddress(<redacted>)"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True, repr=False)
+class RestrictedDpsTaker:
+    """Identified taker with a complete national address; not fiscal validation."""
+
+    tax_id: FederalTaxId
+    name: str
+    address: RestrictedDpsNationalAddress
+
+    def __post_init__(self) -> None:
+        _require_exact_type(
+            self.tax_id, FederalTaxId, "Taker ID must be a FederalTaxId."
+        )
+        _require_exact_type(
+            self.address,
+            RestrictedDpsNationalAddress,
+            "Taker address must be a RestrictedDpsNationalAddress.",
+        )
+        if type(self.name) is not str:
+            raise DomainValidationError("Taker name must be a string.")
+        if not 1 <= len(self.name) <= 150 or all(
+            c in _XSD_WHITESPACE for c in self.name
+        ):
+            raise DomainValidationError(
+                "Taker name must contain 1 to 150 characters and text."
+            )
+        if "\r" in self.name or any(not _is_xml_10_character(c) for c in self.name):
+            raise DomainValidationError(
+                "Taker name contains unsupported XML characters."
+            )
+
+    def __repr__(self) -> str:
+        return "RestrictedDpsTaker(<redacted>)"
+
+    def __str__(self) -> str:
+        return "RestrictedDpsTaker(<redacted>)"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True, repr=False)
 class RestrictedDpsDraft:
     """Immutable inputs for the deliberately small restricted DPS profile."""
 
@@ -61,6 +140,7 @@ class RestrictedDpsDraft:
     trib_issqn: _IssqnTaxation
     tp_ret_issqn: _IssqnWithholding
     ind_tot_trib: _TotalTaxIndicator
+    taker: RestrictedDpsTaker | None = None
     _issued_at_text: str = field(init=False, repr=False, compare=False)
     _service_amount_text: str = field(init=False, repr=False, compare=False)
 
@@ -135,6 +215,10 @@ class RestrictedDpsDraft:
             _TOTAL_TAX_INDICATORS,
             "Total tax indicator",
         )
+        if self.taker is not None:
+            _require_exact_type(
+                self.taker, RestrictedDpsTaker, "Taker must be a RestrictedDpsTaker."
+            )
         object.__setattr__(self, "_issued_at_text", issued_at_text)
         object.__setattr__(self, "_service_amount_text", service_amount_text)
 
@@ -178,6 +262,21 @@ def build_unsigned_dps(draft: RestrictedDpsDraft) -> bytes:
     _add_text(tax_regime, "opSimpNac", draft.op_simp_nac)
     _add_text(tax_regime, "regEspTrib", draft.reg_esp_trib)
 
+    if draft.taker is not None:
+        taker = ElementTree.SubElement(information, "toma")
+        _add_text(taker, draft.taker.tax_id.kind.value, draft.taker.tax_id.value)
+        _add_text(taker, "xNome", draft.taker.name)
+        address = draft.taker.address
+        address_element = ElementTree.SubElement(taker, "end")
+        national = ElementTree.SubElement(address_element, "endNac")
+        _add_text(national, "cMun", address.municipality.value)
+        _add_text(national, "CEP", address.postal_code)
+        _add_text(address_element, "xLgr", address.street)
+        _add_text(address_element, "nro", address.number)
+        if address.complement is not None:
+            _add_text(address_element, "xCpl", address.complement)
+        _add_text(address_element, "xBairro", address.neighborhood)
+
     service = ElementTree.SubElement(information, "serv")
     service_location = ElementTree.SubElement(service, "locPrest")
     _add_text(
@@ -213,6 +312,18 @@ def build_unsigned_dps(draft: RestrictedDpsDraft) -> bytes:
 def _require_exact_type(value: object, expected: type[object], message: str) -> None:
     if type(value) is not expected:
         raise DomainValidationError(message)
+
+
+def _validate_address_text(value: object, maximum: int) -> None:
+    # Exact TSString ranges, including their non-ASCII code points. No cleanup.
+    if type(value) is not str or not 1 <= len(value) <= maximum:
+        raise DomainValidationError("Address text has an unsupported type or length.")
+    if (
+        any(not 0x20 <= ord(c) <= 0xFF for c in value)
+        or ord(value[0]) < 0x21
+        or ord(value[-1]) < 0x21
+    ):
+        raise DomainValidationError("Address text is outside the TSString subset.")
 
 
 def _validate_code(value: object, allowed: frozenset[str], label: str) -> None:

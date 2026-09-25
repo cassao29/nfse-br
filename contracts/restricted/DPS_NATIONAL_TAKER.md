@@ -1,21 +1,26 @@
-# Proposed restricted DPS national taker contract
+# Restricted DPS national taker contract — Unreleased candidate
 
 ```text
-CONTRACT_STATUS = PROPOSED_FOR_REVIEW
+CONTRACT_STATUS = ACCEPTED_FOR_IMPLEMENTATION
 TARGET_RELEASE = 0.5.0 — candidate
-IMPLEMENTATION_AUTHORIZED = NO
-CURRENT_RELEASE_SUPPORTS_TAKER = NO
+IMPLEMENTATION_AUTHORIZED = YES — local subset only
+CURRENT_RELEASE_SUPPORTS_TAKER = NO — published 0.4.1
 OFFICIAL_CONFLICTS_RESOLVED = NO
 ```
 
 ## 1. Status and applicability
 
-This document proposes a closed national-taker subset, not an implemented API
-or a confirmation of operational acceptance by SEFIN. The audited base is
+This document records the accepted local national-taker subset, now implemented
+as an Unreleased candidate subject to implementation-PR review, not final
+approval or published support. It does not confirm operational acceptance by
+SEFIN. The evidence-audit base is
 `0b4f098da4e51e105ac9055c2da906d1e2217c2e` (nfse-br 0.4.1).
-The current [builder](DPS_UNSIGNED_BUILDER.md) and
-[parser](DPS_DOCUMENT_PARSER.md) contracts remain unchanged. Implementation,
-public-oracle changes and the candidate 0.5.0 release require separate review.
+The published 0.4.1 [builder](DPS_UNSIGNED_BUILDER.md) and
+[parser](DPS_DOCUMENT_PARSER.md) behavior remains historical truth. The separate
+implementation authorization covers the coordinated model, builder, parser,
+role-aware inspector and explicit public-oracle delta described below. It does
+not authorize merge, version bump or the candidate 0.5.0 publication. Never
+publish a rebuild of this checkout as the historical nfse-br 0.4.1.
 
 The audit applies only to the local official artifacts pinned in
 [manifest.json](manifest.json):
@@ -142,7 +147,7 @@ subset choice does not promote conflicting official evidence to
 `CURRENT_CONFIRMED`. Operational acceptance, registry status and comprehensive
 fiscal validity remain `UNCONFIRMED` by this audit.
 
-## 4. Proposed local policies
+## 4. Accepted local policies
 
 The unchanged profile is provider CNPJ, `tpAmb=2`, `tpEmit=1`, unsigned DPS,
 and the existing national-service subset. Taker is optional only as a library
@@ -179,10 +184,10 @@ DV check, registry query, tax calculation or provider=taker rejection is added.
 Lexical validity, mathematical DV validity, registry state, fiscal rules and
 local policy are different guarantees.
 
-## 5. Proposed public shape — not available in 0.4.1
+## 5. Unreleased public shape — not available in published 0.4.1
 
-Proposed module: `nfse_br.dps.builder`. These are declarations for review,
-not importable additions made by this document:
+Module: `nfse_br.dps.builder`. These additions are available only in the
+Unreleased checkout candidate, subject to implementation review:
 
 ```text
 RestrictedDpsNationalAddress
@@ -203,7 +208,7 @@ RestrictedDpsDraft
   taker: RestrictedDpsTaker | None = None
 ```
 
-The two new aggregates would be frozen, slots-based and keyword-only, with
+The two new aggregates are frozen, slots-based and keyword-only, with
 controlled repr/str, equality over their fields, and hashes consistent with
 equality. No separate public CEP/street/number/neighborhood value objects,
 ExtendedDpsDraft, wrapper or new hierarchy are proposed.
@@ -225,7 +230,7 @@ At the audited base, [`document.py`](../../src/nfse_br/dps/document.py)
 CNPJ therefore collides with the issuer. `_collect_subset()` indexes by local
 name, without role/path. Merely adding toma serialization would be incorrect.
 
-The proposed inspector must permit the additional identifier only at the exact
+The inspector permits the additional identifier only at the exact
 namespace-qualified path T/CNPJ (or T/CPF), under one direct toma child of the
 single infDPS. Require a single non-conflicting identification alternative in
 that group. Reject duplicated groups/identifiers, conflicting choices, wrappers,
@@ -275,9 +280,12 @@ the new field; equality distinguishes different takers. Equal objects must
 have equal hashes, without promising the same numeric hash across versions.
 
 The parser's accepted language expands deliberately. The
-[public oracle](../../tests/test_public_api_contract.py) must remain untouched
-in this PR and change only after explicit API/versioning review during a future
-implementation. Existing 0.4.1 releases and contracts remain historical truth.
+[public oracle](../../tests/test_public_api_contract.py) is deliberately updated
+under separate implementation authorization: two builder-module exports, their
+constructor/field shapes, and the optional keyword-only taker field. All other
+expected public symbols, parameters and returns remain unchanged; expected
+values remain literal, not implementation-derived. Existing 0.4.1 releases
+and contracts remain historical truth.
 Builder-output build/parse/rebuild remains byte-exact; arbitrary accepted
 external XML does not acquire that guarantee. Existing datetime/offset/fold
 caveats remain applicable.
@@ -291,12 +299,13 @@ this contract. In particular, existing FederalTaxId.__str__ returns the
 identifier and must not change incidentally. Test exception chaining and
 diagnostics as well as direct repr; use synthetic data only.
 
-## 8. Future tests and acceptance criteria
+## 8. Implementation tests and acceptance criteria
 
-The following are intended **future** results, assuming all unrelated profile
-fields are valid. They are not results implemented by this documentation PR.
-XSD observations from the pinned-source audit must be reproduced in the local
-integration tests at implementation time, without downloading the bundle.
+The following are acceptance criteria for the Unreleased implementation PR,
+assuming all unrelated profile fields are valid. Unit tests and wheel smokes
+exercise the local subset; the extended local official integration reproduces
+XSD observations against the existing pinned bundle, without downloading it.
+Passing tests is evidence for review, not automatic approval or publication.
 
 | Synthetic case | XSD / checker.check | Model / parser / checker.parse and other assertions |
 | --- | --- | --- |
@@ -334,13 +343,20 @@ boundaries explicitly. Confirm base imports, construction and parsing remain
 independent of lxml and network/file I/O; optional XSD validation stays optional.
 Keep the six canonical Linux/Windows jobs and all 14 coverage gates unchanged.
 Extend the existing local [official integration](../../scripts/validate_official_dps_xsd.py)
-with independent positive/negative vectors and valid–invalid–valid reuse only
-after implementation is authorized. Never redistribute official artifacts.
+with independent positive/negative vectors and valid–invalid–valid reuse under
+the local implementation authorization. Never redistribute official artifacts.
 
-Future stages: review this contract and API/versioning decision; authorize
-coordinated model/builder/parser/inspection work; deliberately update the public
-oracle and independent tests; validate local pinned-XSD integration plus CI;
-then update implemented-capability docs/demo. This PR performs only stage one.
+The documentary proposal was integrated separately before implementation.
+The implementation PR coordinates model/builder/parser/inspection, the explicit
+oracle delta, independent tests, smokes and pinned integration. Review/merge and
+versioning/publication remain separate gates. The published demo and its exact
+README XML preview remain unchanged and must continue to pass anti-drift tests.
+
+The inspector now rejects unidentified empty toma groups rather than tolerating
+them as an unrelated extra branch. Tests retain that rejection and exercise the
+check/parse distinction with identified takers outside the local name/address
+policy. Foreign NIF/cNaoNIF choices remain inspectable structurally, without
+making them representable by the national-taker subset parser.
 
 ## 9. Exclusions and preserved blockers
 
@@ -364,6 +380,6 @@ RUNTIME_DEVELOPMENT_BLOCKED_BY_OFFICIAL_EVIDENCE = YES
 ```
 
 The last flag continues to describe the blocked emission/response/signature
-fronts; this proposed structural subset neither clears those blockers nor
-authorizes implementation by itself. Evidence submission is not evidence
+fronts; this locally authorized structural subset does not clear those blockers.
+Evidence submission is not evidence
 promotion, and a locally implementable subset is not runtime authorization.

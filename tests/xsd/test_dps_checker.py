@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import traceback
+from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Never
@@ -11,7 +12,12 @@ import pytest
 
 from nfse_br.domain import CompetenceDate, FederalTaxId, MunicipalityCode
 from nfse_br.dps import DpsDocumentError, DpsIdentity, DpsNumber, DpsSeries
-from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
+from nfse_br.dps.builder import (
+    RestrictedDpsDraft,
+    RestrictedDpsNationalAddress,
+    RestrictedDpsTaker,
+    build_unsigned_dps,
+)
 from nfse_br.xsd import RestrictedDpsChecker, XsdValidationError
 from nfse_br.xsd import dps_checker as checker_module
 
@@ -383,7 +389,11 @@ def test_real_inspector_accepts_extra_branch_but_real_parser_rejects(
     monkeypatch.setattr(checker_module, "RestrictedDpsXsdValidator", Validator)
     draft = _draft()
     original = build_unsigned_dps(draft)
-    xml = original.replace(b"</infDPS>", b"<toma/></infDPS>")
+    # Identified taker without address: inspection does not certify the subset.
+    xml = original.replace(
+        b"</prest>",
+        b"</prest><toma><CPF>12345678901</CPF><xNome>Synthetic</xNome></toma>",
+    )
     checker = RestrictedDpsChecker(b"bundle")
     assert checker.check(xml) == _IDENTITY
     with pytest.raises(DpsDocumentError) as caught:
@@ -400,3 +410,49 @@ def test_real_inspector_accepts_extra_branch_but_real_parser_rejects(
         assert value not in rendered
     assert checker.check(xml) == _IDENTITY
     assert build_unsigned_dps(checker.parse(original)) == original
+
+
+@pytest.mark.parametrize("outside_subset", ["long-name", "missing-address"])
+def test_taker_check_parse_remain_independent_and_reusable(
+    outside_subset: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Real runtime stages; official XSD conformance is tested locally separately."""
+    observed: list[bytes] = []
+
+    class Validator:
+        def __init__(self, _bundle: bytes) -> None:
+            pass
+
+        def validate(self, xml: bytes) -> None:
+            observed.append(xml)
+
+    monkeypatch.setattr(checker_module, "RestrictedDpsXsdValidator", Validator)
+    taker = RestrictedDpsTaker(
+        tax_id=FederalTaxId.cnpj("98ABC6780001Z0"),
+        name="Synthetic",
+        address=RestrictedDpsNationalAddress(
+            municipality=MunicipalityCode("3550308"),
+            postal_code="01234567",
+            street="Rua A",
+            number="1",
+            neighborhood="Centro",
+        ),
+    )
+    draft = replace(_draft(), taker=taker)
+    xml = build_unsigned_dps(draft)
+    if outside_subset == "long-name":
+        invalid = xml.replace(b"Synthetic", b"X" * 151)
+    else:
+        start, end = xml.index(b"<end>"), xml.index(b"</end>") + len(b"</end>")
+        invalid = xml[:start] + xml[end:]
+    checker = RestrictedDpsChecker(b"mock")
+    assert checker.parse(xml) == draft
+    assert checker.check(invalid) == _IDENTITY
+    with pytest.raises(DpsDocumentError):
+        checker.parse(invalid)
+    assert checker.check(xml) == _IDENTITY
+    assert checker.parse(xml) == draft
+    assert all(
+        a is b for a, b in zip(observed, [xml, invalid, invalid, xml, xml], strict=True)
+    )

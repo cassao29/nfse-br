@@ -43,6 +43,16 @@ handling, production-environment operation, a complete fiscal model, or
 number allocation and persistence. See the [changelog](CHANGELOG.md) for the
 release summary and known limitations.
 
+## Checkout / Unreleased capability
+
+The checkout candidate adds an optional national taker to restricted unsigned
+DPS, with `RestrictedDpsNationalAddress`, `RestrictedDpsTaker` and coordinated
+build/parse/identity inspection. See the [local subset contract](contracts/restricted/DPS_NATIONAL_TAKER.md)
+for its policies and unresolved official-source conflicts. This API is **not in
+published 0.4.1**, is subject to implementation review, and requires a separate
+version bump before publication. It enables no issuance, signing or transmission.
+The published-release demo and XML preview below remain unchanged.
+
 ## Demo em 60 segundos
 
 Use Python 3.12, 3.13, or 3.14 and a fresh virtual environment to try the

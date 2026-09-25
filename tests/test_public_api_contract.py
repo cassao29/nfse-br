@@ -1,4 +1,4 @@
-"""Intentional, independent public Python API oracle for the 0.4.0 contract.
+"""Independent 0.4.0 API oracle plus the authorized Unreleased taker delta.
 
 Change these literals only after an explicit public-contract/versioning decision.
 Introspection supplies observations, never the expected API. No schema bundle or
@@ -33,7 +33,12 @@ from nfse_br.dps import (
     inspect_unsigned_dps,
     parse_unsigned_dps,
 )
-from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
+from nfse_br.dps.builder import (
+    RestrictedDpsDraft,
+    RestrictedDpsNationalAddress,
+    RestrictedDpsTaker,
+    build_unsigned_dps,
+)
 from nfse_br.nfse import (
     NfseDocumentInfo,
     NfseId,
@@ -73,7 +78,12 @@ _EXPORTS = {
         "inspect_unsigned_dps",
         "parse_unsigned_dps",
     ),
-    "nfse_br.dps.builder": ("RestrictedDpsDraft", "build_unsigned_dps"),
+    "nfse_br.dps.builder": (
+        "RestrictedDpsDraft",
+        "RestrictedDpsNationalAddress",
+        "RestrictedDpsTaker",
+        "build_unsigned_dps",
+    ),
     "nfse_br.nfse": (
         "NfseAccessKey",
         "NfseConsistencyError",
@@ -229,6 +239,28 @@ def test_xsd_public_methods(target: Callable[..., object], returns: object) -> N
                 ("trib_issqn", Literal["1", "2", "3", "4"]),
                 ("tp_ret_issqn", Literal["1", "2", "3"]),
                 ("ind_tot_trib", Literal["0"]),
+                ("taker", RestrictedDpsTaker | None),
+            ),
+            _KEYWORD_ONLY,
+        ),
+        (
+            RestrictedDpsNationalAddress,
+            (
+                ("municipality", MunicipalityCode),
+                ("postal_code", str),
+                ("street", str),
+                ("number", str),
+                ("neighborhood", str),
+                ("complement", str | None),
+            ),
+            _KEYWORD_ONLY,
+        ),
+        (
+            RestrictedDpsTaker,
+            (
+                ("tax_id", FederalTaxId),
+                ("name", str),
+                ("address", RestrictedDpsNationalAddress),
             ),
             _KEYWORD_ONLY,
         ),
@@ -249,6 +281,8 @@ def test_xsd_public_methods(target: Callable[..., object], returns: object) -> N
     ],
     ids=[
         "draft",
+        "national-address",
+        "taker",
         "nfse-info",
         "competence",
         "tax-id",
@@ -269,7 +303,8 @@ def test_public_dataclass_construction(
         f"expected={expected!r}, actual={observed!r}"
     )
     for item in public_fields:
-        assert item.default is MISSING, (
+        expected_default = _DEFAULTS.get((model, item.name), MISSING)
+        assert item.default is expected_default, (
             f"{model.__name__}.{item.name}: unexpected default"
         )
         assert item.default_factory is MISSING, (
@@ -281,6 +316,16 @@ def test_public_dataclass_construction(
     _assert_callable_contract(
         model.__init__,
         (("self", _POSITIONAL, _REQUIRED, _UNANNOTATED),)
-        + tuple((name, kind, _REQUIRED, annotation) for name, annotation in expected),
+        + tuple(
+            (name, kind, _DEFAULTS.get((model, name), _REQUIRED), annotation)
+            for name, annotation in expected
+        ),
         type(None),
     )
+
+
+# Independent literal defaults; never inferred from the observed dataclass.
+_DEFAULTS: dict[tuple[type[object], str], object] = {
+    (RestrictedDpsDraft, "taker"): None,
+    (RestrictedDpsNationalAddress, "complement"): None,
+}
