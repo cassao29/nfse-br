@@ -1,13 +1,13 @@
 # Unsigned restricted DPS builder
 
-## Unreleased delta — national taker candidate
+## 0.5.0 delta — national taker
 
 The checkout adds `RestrictedDpsNationalAddress`, `RestrictedDpsTaker` and the
 optional final `RestrictedDpsDraft.taker=None` parameter under the accepted
-[local contract](DPS_NATIONAL_TAKER.md), subject to implementation-PR review.
-This is not part of the published 0.4.1 API and requires a separate version bump
-before publication. The public shape changes deliberately; old constructor
-calls and XML bytes without taker remain unchanged.
+[local contract](DPS_NATIONAL_TAKER.md), implemented and integrated in #49.
+This belongs to the 0.5.0 release contract, not the published 0.4.1 API;
+availability from PyPI follows publication. The public shape changes deliberately;
+old constructor calls and XML bytes without taker remain unchanged.
 
 When present, toma is inserted after prest and before serv: one CPF/CNPJ,
 xNome, then end containing endNac(cMun, CEP), xLgr, nro, optional xCpl, xBairro.

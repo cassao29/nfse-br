@@ -1,9 +1,10 @@
 # Restricted unsigned DPS semantic parser
 
-## Unreleased delta — national taker candidate
+## 0.5.0 delta — national taker
 
 The checkout implements the accepted [local taker subset](DPS_NATIONAL_TAKER.md),
-subject to implementation-PR review, not published 0.4.1 support. Values are
+integrated in #49 as part of the 0.5.0 contract, not published 0.4.1 support.
+Availability from PyPI follows publication. Values are
 collected by full path so prest/CNPJ cannot be overwritten by toma/CNPJ.
 The closed grammar adds optional toma and xCpl and the CPF/CNPJ choice; all
 represented taker fields survive parsing. No taker returns taker=None.

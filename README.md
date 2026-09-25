@@ -3,16 +3,19 @@
 `nfse-br` is an open-source Python toolkit for Brazil's National NFS-e
 ecosystem.
 
-The current release line provides local typed primitives, a deliberately small
+This checkout provides local typed primitives, a deliberately small
 unsigned restricted DPS builder, validation for DPS and already-recovered
 NFS-e XML, closed-subset DPS semantic parsing, structural extraction, and
 confirmed local consistency checks. It
 does not implement a complete fiscal model, XML signatures, issuance, or
 transmission. Local XSD validation is available through an optional dependency.
 
-## Release 0.4.1 contract
+## Release 0.5.0 contract
 
-The supported public surface for 0.4.1 is deliberately small:
+This checkout targets the 0.5.0 release contract. The PyPI installation
+instructions below apply after publication.
+
+The supported public surface for 0.5.0 is deliberately small:
 
 - `CompetenceDate`, `DomainValidationError`, `FederalTaxId`,
   `FederalTaxIdKind`, `MunicipalityCode`, and `NfseEnvironment` from
@@ -21,7 +24,8 @@ The supported public surface for 0.4.1 is deliberately small:
   submodules;
 - `DpsSeries`, `DpsNumber`, `DpsIdentity`, `DpsDocumentError`,
   `inspect_unsigned_dps`, and `parse_unsigned_dps` from `nfse_br.dps`;
-- `RestrictedDpsDraft` and `build_unsigned_dps` from
+- `RestrictedDpsDraft`, `RestrictedDpsNationalAddress`, `RestrictedDpsTaker`,
+  and `build_unsigned_dps` from
   `nfse_br.dps.builder`;
 - `NfseAccessKey`, `NfseId`, `NfseDocumentError`, `NfseDocumentInfo`,
   `extract_nfse_document_info`, `NfseConsistencyError`, and
@@ -37,26 +41,29 @@ Modules below `nfse_br._f0` and `nfse_br._xmlsig`, together with freeze and
 schema-contract tooling, are private or experimental implementation details.
 They may change without being treated as public API.
 
-Version 0.4.1 does not support issuance or transmission, HTTP/SEFIN calls,
+Version 0.5.0 does not support issuance or transmission, HTTP/SEFIN calls,
 XMLDSig signing or cryptographic verification, certificate or private-key
 handling, production-environment operation, a complete fiscal model, or
 number allocation and persistence. See the [changelog](CHANGELOG.md) for the
 release summary and known limitations.
 
-## Checkout / Unreleased capability
+## National taker in the 0.5.0 contract
 
-The checkout candidate adds an optional national taker to restricted unsigned
-DPS, with `RestrictedDpsNationalAddress`, `RestrictedDpsTaker` and coordinated
+The implementation integrated in #49 adds an optional national taker to
+restricted unsigned DPS, with `RestrictedDpsNationalAddress`, `RestrictedDpsTaker` and coordinated
 build/parse/identity inspection. See the [local subset contract](contracts/restricted/DPS_NATIONAL_TAKER.md)
 for its policies and unresolved official-source conflicts. This API is **not in
-published 0.4.1**, is subject to implementation review, and requires a separate
-version bump before publication. It enables no issuance, signing or transmission.
-The published-release demo and XML preview below remain unchanged.
+published 0.4.1**; it belongs to this checkout's 0.5.0 contract. Package-index
+availability requires publication through the separate release gates.
+It enables no issuance, signing or transmission. `check()` validates XSD then
+inspects identity; `parse()` additionally enforces the closed local subset.
+Thus a name of 151–300 characters or a missing address can pass `check()` and
+fail `parse()`. The demo and XML preview below retain the case without taker.
 
 ## Demo em 60 segundos
 
 Use Python 3.12, 3.13, or 3.14 and a fresh virtual environment to try the
-0.4.1 package from PyPI after publication (no editable install):
+0.5.0 package from PyPI after publication (no editable install):
 
 ```bash
 git clone https://github.com/cassao29/nfse-br.git
@@ -64,12 +71,12 @@ cd nfse-br
 
 python -m venv .venv
 source .venv/bin/activate  # Windows cmd: .venv\Scripts\activate.bat
-python -m pip install nfse-br==0.4.1
+python -m pip install nfse-br==0.5.0
 
 python examples/demo_round_trip.py
 ```
 
-After publication, the demo imports the `nfse-br 0.4.1` package from PyPI,
+After publication, the demo imports the `nfse-br 0.5.0` package from PyPI,
 builds one synthetic unsigned restricted DPS, parses it back into
 `RestrictedDpsDraft`, prints the recovered fields, and proves byte-exact
 rebuilding. No signing, issuance,
@@ -394,7 +401,8 @@ for the exact NFS-e closure and local integration command.
 
 `nfse_br.dps.builder` constructs deterministic unsigned XML for one explicit
 restricted-profile subset: CNPJ provider, national service location, service
-code and description, service amount, and caller-supplied minimal tax codes.
+code and description, service amount, caller-supplied minimal tax codes, and
+an optional national taker under the explicit local name/address policies.
 It derives `infDPS@Id` from the same municipality, CNPJ, series, and number
 written to the XML.
 
@@ -402,7 +410,7 @@ Building uses only the standard library and does not implicitly validate,
 sign, transmit, read files, or access the network. The optional validator is a
 separate explicit call. Monetary values use exact `Decimal` input with no
 silent rounding, and the timestamp must already contain an allowed whole-hour
-UTC offset. The executable example in the quickstart supplies every field. See
+UTC offset. The executable example in the quickstart uses the case without taker. See
 [`contracts/restricted/DPS_UNSIGNED_BUILDER.md`](contracts/restricted/DPS_UNSIGNED_BUILDER.md)
 for the supported mapping and limits.
 
@@ -575,7 +583,7 @@ uv run --frozen --extra xsd pytest \
 uv run --frozen --extra xsd python scripts/check_coverage.py \
   build/coverage/coverage.json
 uv build
-python scripts/smoke_base_wheel.py dist/nfse_br-0.4.1-py3-none-any.whl
+python scripts/smoke_base_wheel.py dist/nfse_br-0.5.0-py3-none-any.whl
 ```
 
 The executable coverage gates require at least 80% combined coverage for the

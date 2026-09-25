@@ -1,26 +1,27 @@
-# Restricted DPS national taker contract — Unreleased candidate
+# Restricted DPS national taker contract — 0.5.0
 
 ```text
 CONTRACT_STATUS = ACCEPTED_FOR_IMPLEMENTATION
-TARGET_RELEASE = 0.5.0 — candidate
+TARGET_RELEASE = 0.5.0
 IMPLEMENTATION_AUTHORIZED = YES — local subset only
-CURRENT_RELEASE_SUPPORTS_TAKER = NO — published 0.4.1
+IMPLEMENTATION_IN_SOURCE = YES
+PUBLISHED_0_4_1_SUPPORTS_TAKER = NO
+V0_5_0_CONTRACT_INCLUDES_TAKER = YES
 OFFICIAL_CONFLICTS_RESOLVED = NO
 ```
 
 ## 1. Status and applicability
 
-This document records the accepted local national-taker subset, now implemented
-as an Unreleased candidate subject to implementation-PR review, not final
-approval or published support. It does not confirm operational acceptance by
-SEFIN. The evidence-audit base is
+This document records the accepted local national-taker subset implemented and
+integrated in #49, as part of this checkout's 0.5.0 release contract. It does not
+claim publication or operational acceptance by SEFIN. The evidence-audit base is
 `0b4f098da4e51e105ac9055c2da906d1e2217c2e` (nfse-br 0.4.1).
 The published 0.4.1 [builder](DPS_UNSIGNED_BUILDER.md) and
 [parser](DPS_DOCUMENT_PARSER.md) behavior remains historical truth. The separate
 implementation authorization covers the coordinated model, builder, parser,
-role-aware inspector and explicit public-oracle delta described below. It does
-not authorize merge, version bump or the candidate 0.5.0 publication. Never
-publish a rebuild of this checkout as the historical nfse-br 0.4.1.
+role-aware inspector and explicit public-oracle delta described below. Release
+preparation, final audit, tag push and publication have separate authorization
+gates. Never publish a rebuild of this checkout as historical nfse-br 0.4.1.
 
 The audit applies only to the local official artifacts pinned in
 [manifest.json](manifest.json):
@@ -184,10 +185,10 @@ DV check, registry query, tax calculation or provider=taker rejection is added.
 Lexical validity, mathematical DV validity, registry state, fiscal rules and
 local policy are different guarantees.
 
-## 5. Unreleased public shape — not available in published 0.4.1
+## 5. 0.5.0 public shape — not available in published 0.4.1
 
-Module: `nfse_br.dps.builder`. These additions are available only in the
-Unreleased checkout candidate, subject to implementation review:
+Module: `nfse_br.dps.builder`. These additions were integrated in #49 and belong
+to the 0.5.0 contract; availability from PyPI follows publication:
 
 ```text
 RestrictedDpsNationalAddress
@@ -301,7 +302,7 @@ diagnostics as well as direct repr; use synthetic data only.
 
 ## 8. Implementation tests and acceptance criteria
 
-The following are acceptance criteria for the Unreleased implementation PR,
+The following are regression criteria for the implementation integrated in #49,
 assuming all unrelated profile fields are valid. Unit tests and wheel smokes
 exercise the local subset; the extended local official integration reproduces
 XSD observations against the existing pinned bundle, without downloading it.
@@ -342,14 +343,17 @@ Test dataclasses.fields/signatures, replace, asdict, equality/hash and privacy
 boundaries explicitly. Confirm base imports, construction and parsing remain
 independent of lxml and network/file I/O; optional XSD validation stays optional.
 Keep the six canonical Linux/Windows jobs and all 14 coverage gates unchanged.
-Extend the existing local [official integration](../../scripts/validate_official_dps_xsd.py)
-with independent positive/negative vectors and valid–invalid–valid reuse under
-the local implementation authorization. Never redistribute official artifacts.
+The existing local [official integration](../../scripts/validate_official_dps_xsd.py)
+includes independent positive/negative vectors and valid–invalid–valid reuse.
+Its recorded execution is from the implementation candidate, whose tree was
+preserved by the #49 squash; it is not a release-prep or final-release audit.
+The final release audit must test the exact candidate and installed artifacts.
+Never redistribute official artifacts.
 
 The documentary proposal was integrated separately before implementation.
-The implementation PR coordinates model/builder/parser/inspection, the explicit
-oracle delta, independent tests, smokes and pinned integration. Review/merge and
-versioning/publication remain separate gates. The published demo and its exact
+PR #49 integrated model/builder/parser/inspection, the explicit oracle delta,
+independent tests, smokes and pinned integration. Release preparation and
+publication remain separate gates. The unchanged no-taker demo and its exact
 README XML preview remain unchanged and must continue to pass anti-drift tests.
 
 The inspector now rejects unidentified empty toma groups rather than tolerating
