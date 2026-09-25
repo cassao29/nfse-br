@@ -14,7 +14,11 @@ from nfse_br.domain import (
     FederalTaxId,
     MunicipalityCode,
 )
-from nfse_br.dps.builder import RestrictedDpsDraft
+from nfse_br.dps.builder import (
+    RestrictedDpsDraft,
+    RestrictedDpsNationalAddress,
+    RestrictedDpsTaker,
+)
 from nfse_br.dps.identity import DpsIdentity
 from nfse_br.dps.number import DpsNumber
 from nfse_br.dps.series import DpsSeries
@@ -45,10 +49,14 @@ _SUBSET_CHILDREN = {
         "tpEmit",
         "cLocEmi",
         "prest",
+        "toma",
         "serv",
         "valores",
     ),
     "prest": ("CNPJ", "regTrib"),
+    "toma": ("CNPJ", "xNome", "end"),
+    "end": ("endNac", "xLgr", "nro", "xCpl", "xBairro"),
+    "endNac": ("cMun", "CEP"),
     "regTrib": ("opSimpNac", "regEspTrib"),
     "serv": ("locPrest", "cServ"),
     "locPrest": ("cLocPrestacao",),
@@ -131,46 +139,89 @@ def parse_unsigned_dps(xml_bytes: bytes) -> RestrictedDpsDraft:
         or b"\r" in xml_bytes
     ):
         raise DpsDocumentError("unsupported_document_structure")
-    fields: dict[str, str] = {}
-    _collect_subset(root, "DPS", fields)
-    timestamp = fields["dhEmi"]
+    fields: dict[tuple[str, ...], str] = {}
+    _collect_subset(root, ("DPS",), fields)
+
+    def text(path: str) -> str:
+        return fields[("DPS", "infDPS", *path.split("/"))]
+
+    timestamp = text("dhEmi")
     if (
         _TIMESTAMP_PATTERN.fullmatch(timestamp) is None
         or timestamp.endswith("-00:00")
-        or _AMOUNT_PATTERN.fullmatch(fields["vServ"]) is None
+        or _AMOUNT_PATTERN.fullmatch(text("valores/vServPrest/vServ")) is None
     ):
         raise DpsDocumentError("invalid_document_fields")
     try:
         return RestrictedDpsDraft(
             issuer_tax_id=identity.federal_tax_id,
             issue_municipality=identity.municipality,
-            service_municipality=MunicipalityCode(fields["cLocPrestacao"]),
+            service_municipality=MunicipalityCode(text("serv/locPrest/cLocPrestacao")),
             series=identity.series,
             number=identity.number,
             issued_at=datetime.fromisoformat(timestamp),
-            competence=CompetenceDate.from_iso(fields["dCompet"]),
-            application_version=fields["verAplic"],
-            national_service_code=fields["cTribNac"],
-            service_description=fields["xDescServ"],
-            service_amount=Decimal(fields["vServ"]),
-            op_simp_nac=cast(Literal["1", "2", "3"], fields["opSimpNac"]),
+            competence=CompetenceDate.from_iso(text("dCompet")),
+            application_version=text("verAplic"),
+            national_service_code=text("serv/cServ/cTribNac"),
+            service_description=text("serv/cServ/xDescServ"),
+            service_amount=Decimal(text("valores/vServPrest/vServ")),
+            op_simp_nac=cast(Literal["1", "2", "3"], text("prest/regTrib/opSimpNac")),
             reg_esp_trib=cast(
-                Literal["0", "1", "2", "3", "4", "5", "6", "9"], fields["regEspTrib"]
+                Literal["0", "1", "2", "3", "4", "5", "6", "9"],
+                text("prest/regTrib/regEspTrib"),
             ),
-            trib_issqn=cast(Literal["1", "2", "3", "4"], fields["tribISSQN"]),
-            tp_ret_issqn=cast(Literal["1", "2", "3"], fields["tpRetISSQN"]),
-            ind_tot_trib=cast(Literal["0"], fields["indTotTrib"]),
+            trib_issqn=cast(
+                Literal["1", "2", "3", "4"], text("valores/trib/tribMun/tribISSQN")
+            ),
+            tp_ret_issqn=cast(
+                Literal["1", "2", "3"], text("valores/trib/tribMun/tpRetISSQN")
+            ),
+            ind_tot_trib=cast(Literal["0"], text("valores/trib/totTrib/indTotTrib")),
+            taker=_parse_taker(fields),
         )
     except ValueError:
         # Includes DomainValidationError and calendar/timestamp failures.
         raise DpsDocumentError("invalid_document_fields") from None
 
 
+def _parse_taker(fields: dict[tuple[str, ...], str]) -> RestrictedDpsTaker | None:
+    prefix = ("DPS", "infDPS", "toma")
+    if (*prefix, "xNome") not in fields:
+        return None
+    cpf = fields.get((*prefix, "CPF"))
+    raw = fields[(*prefix, "CNPJ")] if cpf is None else cpf
+    identifier = FederalTaxId.cnpj(raw) if cpf is None else FederalTaxId.cpf(raw)
+    if identifier.value != raw:
+        raise DomainValidationError("Taker identifier normalization is not allowed.")
+    address = (*prefix, "end")
+    return RestrictedDpsTaker(
+        tax_id=identifier,
+        name=fields[(*prefix, "xNome")],
+        address=RestrictedDpsNationalAddress(
+            municipality=MunicipalityCode(fields[(*address, "endNac", "cMun")]),
+            postal_code=fields[(*address, "endNac", "CEP")],
+            street=fields[(*address, "xLgr")],
+            number=fields[(*address, "nro")],
+            neighborhood=fields[(*address, "xBairro")],
+            complement=fields.get((*address, "xCpl")),
+        ),
+    )
+
+
 def _collect_subset(
-    element: ElementTree.Element, name: str, fields: dict[str, str]
+    element: ElementTree.Element,
+    path: tuple[str, ...],
+    fields: dict[tuple[str, ...], str],
 ) -> None:
+    name = path[-1]
     attributes = {"DPS": {"versao"}, "infDPS": {"Id"}}.get(name, set())
     children = _SUBSET_CHILDREN.get(name, ())
+    # Only these two particles are optional in this closed local grammar.
+    optional = {"infDPS": "toma", "end": "xCpl"}.get(name)
+    if optional is not None and not any(c.tag == _qualified(optional) for c in element):
+        children = tuple(c for c in children if c != optional)
+    if name == "toma" and any(c.tag == _qualified("CPF") for c in element):
+        children = ("CPF", "xNome", "end")
     if (
         set(element.attrib) != attributes
         or [child.tag for child in element] != [_qualified(n) for n in children]
@@ -181,9 +232,9 @@ def _collect_subset(
         if (element.text or "").strip(" \t\n\r"):
             raise DpsDocumentError("unsupported_document_structure")
         for child, child_name in zip(element, children, strict=True):
-            _collect_subset(child, child_name, fields)
+            _collect_subset(child, (*path, child_name), fields)
     else:
-        fields[name] = element.text or ""
+        fields[path] = element.text or ""
 
 
 def _parse_input(xml_bytes: bytes) -> ElementTree.Element:
@@ -264,7 +315,8 @@ def _identity_from_fields(
     observed_identity: str,
 ) -> DpsIdentity:
     municipality_text = _unique_text(information, ("cLocEmi",))
-    cnpj_text = _unique_text(information, ("prest", "CNPJ"))
+    taker_identifier = _taker_identifier(information)
+    cnpj_text = _unique_text(information, ("prest", "CNPJ"), excluded=taker_identifier)
     series_text = _unique_text(information, ("serie",))
     number_text = _unique_text(information, ("nDPS",))
     if _DPS_NUMBER_PATTERN.fullmatch(number_text) is None:
@@ -290,17 +342,53 @@ def _identity_from_fields(
     return derived
 
 
+def _taker_identifier(information: ElementTree.Element) -> ElementTree.Element | None:
+    """Identify a legitimate additional role, not a second arbitrary tax ID."""
+    groups = [e for e in information.iter() if _local_name(e.tag) == "toma"]
+    if not groups:
+        if any(_local_name(e.tag) == "CPF" for e in information.iter()):
+            raise DpsDocumentError("ambiguous_identity_field")
+        return None
+    if (
+        len(groups) != 1
+        or groups[0].tag != _qualified("toma")
+        or groups[0] not in list(information)
+    ):
+        raise DpsDocumentError("ambiguous_identity_field")
+    group = groups[0]
+    # Keep inspection structural: do not validate name/address or fiscal rules.
+    # The full schema has NIF/cNaoNIF alternatives, excluded by the subset parser.
+    choices = {"CPF", "CNPJ", "NIF", "cNaoNIF"}
+    identifiers = [e for e in group.iter() if _local_name(e.tag) in choices]
+    if len(identifiers) != 1:
+        raise DpsDocumentError("ambiguous_identity_field")
+    identifier = identifiers[0]
+    if (
+        identifier not in list(group)
+        or identifier.tag != _qualified(_local_name(identifier.tag))
+        or list(identifier)
+    ):
+        raise DpsDocumentError("ambiguous_identity_field")
+    # A CPF elsewhere cannot borrow the taker's role (CNPJ is checked below).
+    if any(
+        _local_name(e.tag) == "CPF" and e is not identifier for e in information.iter()
+    ):
+        raise DpsDocumentError("ambiguous_identity_field")
+    return identifier
+
+
 def _unique_text(
     information: ElementTree.Element,
     path: tuple[str, ...],
     *,
     error_code: str = "ambiguous_identity_field",
+    excluded: ElementTree.Element | None = None,
 ) -> str:
     final_name = path[-1]
     matching = [
         element
         for element in information.iter()
-        if _local_name(element.tag) == final_name
+        if _local_name(element.tag) == final_name and element is not excluded
     ]
     if len(matching) != 1 or matching[0].tag != _qualified(final_name):
         raise DpsDocumentError(error_code)

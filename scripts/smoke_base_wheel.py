@@ -20,6 +20,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -55,7 +56,10 @@ from nfse_br.dps import (
     inspect_unsigned_dps,
     parse_unsigned_dps,
 )
-from nfse_br.dps.builder import RestrictedDpsDraft, build_unsigned_dps
+from nfse_br.dps.builder import (
+    RestrictedDpsDraft, RestrictedDpsNationalAddress, RestrictedDpsTaker,
+    build_unsigned_dps,
+)
 from nfse_br.nfse import (
     NfseAccessKey,
     NfseConsistencyError,
@@ -205,6 +209,25 @@ public_identity = inspect_unsigned_dps(xml)
 assert type(public_identity) is DpsIdentity
 assert public_identity.value == root.find(f"{namespace}infDPS").get("Id")
 assert private_inspect_unsigned_dps(xml) == public_identity.value
+for tax_id in (
+    FederalTaxId.cpf("12345678901"),
+    FederalTaxId.cnpj("12345678000199"),
+    FederalTaxId.cnpj("98ABC6780001Z0"),
+):
+    taker = RestrictedDpsTaker(
+        tax_id=tax_id, name="Synthetic & taker",
+        address=RestrictedDpsNationalAddress(
+            municipality=MunicipalityCode("3550308"), postal_code="01234567",
+            street="Rua Sintetica", number="1", neighborhood="Centro",
+        ),
+    )
+    with_taker = replace(draft, taker=taker)
+    taker_xml = build_unsigned_dps(with_taker)
+    recovered = parse_unsigned_dps(taker_xml)
+    assert recovered == with_taker and recovered.taker == taker
+    assert build_unsigned_dps(recovered) == taker_xml
+    assert inspect_unsigned_dps(taker_xml) == public_identity
+    assert private_inspect_unsigned_dps(taker_xml) == public_identity.value
 try:
     inspect_unsigned_dps(b"<DPS>")
 except DpsDocumentError as error:

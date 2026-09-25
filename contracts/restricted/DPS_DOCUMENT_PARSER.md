@@ -1,5 +1,30 @@
 # Restricted unsigned DPS semantic parser
 
+## Unreleased delta — national taker candidate
+
+The checkout implements the accepted [local taker subset](DPS_NATIONAL_TAKER.md),
+subject to implementation-PR review, not published 0.4.1 support. Values are
+collected by full path so prest/CNPJ cannot be overwritten by toma/CNPJ.
+The closed grammar adds optional toma and xCpl and the CPF/CNPJ choice; all
+represented taker fields survive parsing. No taker returns taker=None.
+
+Inspection recognizes identification by role/path/namespace and rejects empty,
+duplicate, wrapped, conflicting or displaced taker identifiers. It still does
+not certify name/address subset policies. check remains XSD then inspection;
+parse remains XSD then the subset parser, with the same bytes, stage ordering,
+short-circuit and exception identity. Thus XSD-valid names of 151–300 characters
+or missing addresses can pass check but fail parse. Lowercase XML CNPJ is not
+silently normalized. Unknown attributes, contact fields, CAEPF/IM, endExt and
+other unsupported branches are rejected, never discarded.
+
+The old no-taker bytes, datetime/fold caveats, Decimal policies and controlled
+error categories remain. Only builder output has the byte-exact rebuilding
+guarantee. Name/address/identifiers are absent from errors and repr/str, but
+fields, asdict and external logging are not secret containers. No new fiscal,
+signature or transmission capability follows from this local acceptance delta.
+
+## Published 0.4.1 baseline
+
 Public API introduced in nfse-br 0.4.0:
 
 ```python

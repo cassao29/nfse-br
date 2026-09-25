@@ -6,11 +6,20 @@ import argparse
 import hashlib
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 from pathlib import Path
 
 from lxml import etree
 
-from nfse_br.dps import DpsDocumentError, inspect_unsigned_dps
+from nfse_br.domain import CompetenceDate, FederalTaxId, MunicipalityCode
+from nfse_br.dps import DpsDocumentError, DpsNumber, DpsSeries, inspect_unsigned_dps
+from nfse_br.dps.builder import (
+    RestrictedDpsDraft,
+    RestrictedDpsNationalAddress,
+    RestrictedDpsTaker,
+    build_unsigned_dps,
+)
 from nfse_br.xsd import (
     RestrictedDpsChecker,
     RestrictedDpsXsdValidator,
@@ -149,6 +158,118 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+_TAKER_ADDRESS = (
+    b"<end><endNac><cMun>3550308</cMun><CEP>01234567</CEP></endNac>"
+    b"<xLgr>Rua Sintetica</xLgr><nro>1</nro><xCpl>Sala A</xCpl>"
+    b"<xBairro>Centro</xBairro></end>"
+)
+
+
+def _taker_vectors() -> tuple[tuple[bytes, RestrictedDpsDraft], ...]:
+    """Independent literal XML and independently constructed model inputs."""
+    vectors = []
+    for kind, value in (
+        ("CPF", "12345678901"),
+        ("CNPJ", "12345678000199"),
+        ("CNPJ", "98ABC6780001Z0"),
+    ):
+        taker_xml = (
+            f"<toma><{kind}>{value}</{kind}><xNome>Synthetic taker</xNome>".encode()
+            + _TAKER_ADDRESS
+            + b"</toma>"
+        )
+        xml = _replace_exactly_once(
+            _VALID_DPS, b"    <serv>", taker_xml + b"\n    <serv>", label="taker"
+        )
+        draft = RestrictedDpsDraft(
+            issuer_tax_id=FederalTaxId.cnpj("12ABC6780001Z0"),
+            issue_municipality=MunicipalityCode("2927408"),
+            service_municipality=MunicipalityCode("2927408"),
+            series=DpsSeries("123"),
+            number=DpsNumber(42),
+            issued_at=datetime(2026, 9, 17, 12, tzinfo=timezone(timedelta(hours=-3))),
+            competence=CompetenceDate(date(2026, 9, 17)),
+            application_version="nfse-br-test",
+            national_service_code="010101",
+            service_description="Servico sintetico",
+            service_amount=Decimal("1.00"),
+            op_simp_nac="1",
+            reg_esp_trib="0",
+            trib_issqn="1",
+            tp_ret_issqn="1",
+            ind_tot_trib="0",
+            taker=RestrictedDpsTaker(
+                tax_id=FederalTaxId.cpf(value)
+                if kind == "CPF"
+                else FederalTaxId.cnpj(value),
+                name="Synthetic taker",
+                address=RestrictedDpsNationalAddress(
+                    municipality=MunicipalityCode("3550308"),
+                    postal_code="01234567",
+                    street="Rua Sintetica",
+                    number="1",
+                    complement="Sala A",
+                    neighborhood="Centro",
+                ),
+            ),
+        )
+        vectors.append((xml, draft))
+    return tuple(vectors)
+
+
+def _validate_takers(checker: RestrictedDpsChecker) -> None:
+    for oracle, draft in _taker_vectors():
+        built = build_unsigned_dps(draft)
+        if checker.parse(oracle) != draft or checker.parse(built) != draft:
+            raise FixtureMutationError("taker field recovery drifted")
+        if build_unsigned_dps(checker.parse(built)) != built:
+            raise FixtureMutationError("taker rebuild drifted")
+        if checker.check(oracle) != checker.check(_VALID_DPS):
+            raise FixtureMutationError("taker altered DPS identity")
+        for replacement in (b"X" * 150,):
+            boundary = oracle.replace(b"Synthetic taker", replacement)
+            checker.parse(boundary)
+        # XSD-valid documents that intentionally exceed the local subset.
+        for outside in (
+            oracle.replace(b"Synthetic taker", b"X" * 151),
+            oracle.replace(b"Synthetic taker", b"X" * 300),
+            oracle.replace(_TAKER_ADDRESS, b""),
+        ):
+            checker.check(outside)
+            try:
+                checker.parse(outside)
+            except DpsDocumentError as exc:
+                if exc.code not in {
+                    "invalid_document_fields",
+                    "unsupported_document_structure",
+                }:
+                    raise
+            else:
+                raise FixtureMutationError("outside-subset taker was parsed")
+            checker.parse(built)
+        for invalid in (
+            oracle.replace(b"Synthetic taker", b"X" * 301),
+            oracle.replace(b"<xNome>Synthetic taker</xNome>", b""),
+            oracle.replace(b"<CEP>01234567</CEP>", b""),
+            oracle.replace(b"Sala A", b""),
+            oracle.replace(b"</endNac>", b"<UF>SP</UF></endNac>"),
+            oracle.replace(b"<xNome>", b"<CPF>12345678901</CPF><xNome>"),
+            oracle.replace(b"<toma>", b'<toma xmlns="urn:wrong">'),
+        ):
+            try:
+                checker.check(invalid)
+            except XsdValidationError as exc:
+                if exc.phase != "schema" or exc.code != "document_invalid":
+                    raise
+            else:
+                raise FixtureMutationError("invalid taker passed XSD")
+            checker.check(built)
+    print(
+        "National taker independent oracles and builder outputs: PASS (CPF/CNPJ/alpha)"
+    )
+    print("National taker XSD/check/parse boundaries and valid-invalid-valid: PASS")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the explicit local integration without downloading anything."""
     args = _parse_args(argv)
@@ -161,6 +282,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         validator = RestrictedDpsXsdValidator(bundle)
         validator.validate(_VALID_DPS)
+        _validate_takers(RestrictedDpsChecker(bundle))
         identity = inspect_unsigned_dps(_VALID_DPS)
         if identity.value != "DPS2927408212ABC6780001Z000123000000000000042":
             print("Official integration: unsigned DPS inspection drifted.")

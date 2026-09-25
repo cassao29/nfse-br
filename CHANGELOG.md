@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Added
+
+- National taker subset for restricted unsigned DPS: immutable address/taker
+  models and optional `RestrictedDpsDraft.taker`, coordinated construction,
+  parsing and role-aware identity inspection, with independent XML oracles,
+  external-wheel typing/base smokes and local pinned-XSD integration.
+- Explicit local name/address policies and preserved official-source conflicts;
+  unchanged XML without taker and independent checker check/parse pipelines.
+  This candidate API is not in published 0.4.1 and adds no issuance, signing,
+  registry lookup, fiscal calculation or transmission capability.
+
 ## 0.4.1
 
 ### Compatibility
