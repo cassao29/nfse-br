@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Documentation
+
+- Added an offline public-API national-taker demo with CPF, numeric and
+  alphanumeric CNPJ, explicit recovered fields, optional complement, identity
+  preservation and checked round-trips, including execution under `python -O`.
+
 ## 0.5.0
 
 ### Added
