@@ -625,6 +625,8 @@ def test_real_symlink_and_fifo_do_not_overwrite_or_block(tmp_path: Path) -> None
         consumer._write_output(link, b"new")
     assert source.read_text(encoding="utf-8") == _BASE
     fifo = tmp_path / "fifo"
+    if not hasattr(os, "mkfifo"):
+        raise AssertionError("POSIX FIFO support required for this platform test")
     os.mkfifo(fifo)
     result = subprocess.run(
         [
