@@ -114,6 +114,54 @@ drift.
 
 </details>
 
+## DPS com tomador nacional
+
+[The national-taker demo](examples/demo_national_taker.py) uses only the public
+API available in `nfse-br==0.5.0`. With the fresh PyPI environment above, run:
+
+```bash
+python examples/demo_national_taker.py
+python -O examples/demo_national_taker.py
+```
+
+From a development checkout, use
+`uv run --frozen python examples/demo_national_taker.py` instead.
+The example file lives in this repository; the PyPI install supplies the library.
+The original demo and XML preview above remain the case **without** a taker.
+
+The three fixed synthetic cases use CPF, numeric CNPJ and alphanumeric CNPJ.
+Each constructs `RestrictedDpsNationalAddress` (municipality, eight-digit CEP,
+street, string number, neighborhood and optional complement), then
+`RestrictedDpsTaker` (identification, name, address), and sets
+`RestrictedDpsDraft.taker`. `None` omits the complement; the other cases use
+`"Sala A"`. No UF is serialized and no registry or check-digit validation is
+implied by these synthetic identifiers.
+
+For each case, the demo displays unsigned XML and explicitly recovered fields,
+including the CEP's leading zero and complement present/absent. It verifies all
+fields and byte-exact build → parse → rebuild for the builder's output, and
+shows that changing only the taker preserves the DPS identity. All checks finish
+before any successful report is printed; they also run under `python -O`.
+Failures return a nonzero exit code with a generic message, without payloads.
+
+After environment setup this demonstration is offline, reads/writes no data
+files, and needs neither `lxml` nor an XSD bundle. It prints only its fixed
+synthetic data; do not adapt its reporting to log real taxpayer data.
+The output ends with:
+
+```text
+ROUND_TRIP = PASS (3 cases)
+TAKER_IDENTITY_PRESERVED = YES
+XML_UNSIGNED = YES
+XSD_VALIDATION_PERFORMED = NO
+FISCAL_AUTHORIZATION = NOT_PERFORMED
+TRANSMISSION_READY = NO
+```
+
+Construction and parsing do not establish XSD validity, fiscal authorization,
+or readiness for transmission. The existing local subset policies, unresolved
+official conflicts and fixed-offset round-trip caveat still apply.
+
 ## Quickstart from a checkout
 
 This path uses the repository checkout directly; it does not assume a PyPI
