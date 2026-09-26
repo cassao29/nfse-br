@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import io
 import json
 import os
 import socket
@@ -727,12 +728,13 @@ def test_subprocess_success_and_failure_optimized(
     command += [str(_SCRIPT), "--input", str(source), "--output", str(output)]
     result = subprocess.run(command, cwd=tmp_path, capture_output=True, timeout=15)
     assert result.returncode == 0 and result.stdout == b""
-    assert result.stderr.decode() == _SUCCESS
+    # Diagnostics use the native text stream; the XML below stays binary-exact.
+    assert result.stderr == _SUCCESS.replace("\n", os.linesep).encode("ascii")
     assert output.read_bytes() == (_BEFORE + _AFTER).encode()
     source.write_text('{"private":NaN}', encoding="utf-8")
     result = subprocess.run(command, cwd=tmp_path, capture_output=True, timeout=15)
     assert result.returncode == 1 and result.stdout == b""
-    assert result.stderr == b"CODE = invalid_json\n"
+    assert result.stderr == f"CODE = invalid_json{os.linesep}".encode("ascii")
     assert output.read_bytes() == (_BEFORE + _AFTER).encode()
 
 
@@ -837,3 +839,20 @@ def test_readme_input_matches_independent_oracle() -> None:
         + _AFTER
     ).encode()
     assert consumer._document(example.encode()) == expected
+
+
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_text_diagnostics_do_not_change_binary_xml(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, newline: str
+) -> None:
+    source, output = tmp_path / "input", tmp_path / "output"
+    source.write_text(_BASE, encoding="utf-8")
+    buffer = io.BytesIO()
+    stream = io.TextIOWrapper(buffer, encoding="ascii", newline=newline)
+    with monkeypatch.context() as patched:
+        patched.setattr(sys, "stderr", stream)
+        assert consumer.main(["--input", str(source), "--output", str(output)]) == 0
+        stream.flush()
+        assert buffer.getvalue() == _SUCCESS.replace("\n", newline).encode("ascii")
+        assert output.read_bytes() == (_BEFORE + _AFTER).encode()
+    stream.close()
