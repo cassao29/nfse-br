@@ -138,7 +138,7 @@ def _location(raw: str, *, windows: bool | None = None) -> Path:
     if (
         not raw
         or any(ord(c) < 32 or 127 <= ord(c) <= 159 for c in raw)
-        or raw.startswith(("//", "\\"))
+        or raw.startswith(("//", "\\", "/\\"))
         or any(c in raw for c in '<>"|?*')
         or (not windows and "\\" in raw)
     ):

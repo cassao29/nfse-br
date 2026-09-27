@@ -26,6 +26,16 @@ _SUCCESS = (
     "CODE = ok\nXML_UNSIGNED = YES\nXSD_VALIDATION_PERFORMED = NO\n"
     "FISCAL_AUTHORIZATION = NOT_PERFORMED\nTRANSMISSION_READY = NO\n"
 )
+_PROHIBITED_PREFIX_PATHS = (
+    r"/\server\share\entrada.json",
+    r"/\server/share/saida.xml",
+    r"/\.\pipe\demo",
+    r"/\?\C:\entrada.json",
+    "//server/share/entrada.json",
+    r"\\server\share\entrada.json",
+    r"\/server/share/entrada.json",
+    r"\\.\pipe\demo",
+)
 _BASE = """{
   "issuer_tax_id": {"kind": "CNPJ", "value": "12ABC6780001Z0"},
   "issue_municipality": "2927408", "service_municipality": "3550308",
@@ -446,10 +456,116 @@ def test_raw_path_rejections(raw: str, windows: bool) -> None:
 def test_native_paths() -> None:
     for raw in ("input.json", "dir with spaces/ação.json", "/tmp/a", "./a", "../a"):
         assert consumer._location(raw, windows=False) == Path(raw)
-    for raw in (r"C:\dir\a.json", "C:/dir/a.json", r"dir\a.json"):
+    for raw in (
+        r"C:\dir\a.json",
+        "C:/dir/a.json",
+        r"dir\a.json",
+        r"dir with spaces\a.json",
+        "relative file.json",
+    ):
         assert consumer._location(raw, windows=True) == Path(raw)
     with pytest.raises(consumer._Failure):
         consumer._location(r"dir\a.json", windows=False)
+
+
+@pytest.mark.parametrize("raw", _PROHIBITED_PREFIX_PATHS)
+@pytest.mark.parametrize("windows", [False, True])
+def test_prefix_rejected_before_path_conversion(
+    raw: str, windows: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    converted: list[str] = []
+
+    def forbidden_path_conversion(value: str) -> NoReturn:
+        converted.append(value)
+        raise AssertionError("Path conversion occurred before rejection")
+
+    monkeypatch.setattr(consumer, "Path", forbidden_path_conversion)
+    with pytest.raises(consumer._Failure, match="^invalid_file_location$"):
+        consumer._location(raw, windows=windows)
+    assert converted == []
+
+
+@pytest.mark.parametrize("raw", _PROHIBITED_PREFIX_PATHS)
+@pytest.mark.parametrize("windows", [False, True])
+@pytest.mark.parametrize("option", ["--input", "--output"])
+def test_prefix_command_rejected_before_io(
+    raw: str,
+    windows: bool,
+    option: str,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    calls: list[str] = []
+    original_location = consumer._location
+
+    def location(value: str) -> Path:
+        return original_location(value, windows=windows)
+
+    def read(path: Path) -> NoReturn:
+        calls.append("read")
+        raise AssertionError("Forbidden read")
+
+    def write(path: Path, document: bytes) -> NoReturn:
+        calls.append("write")
+        raise AssertionError("Forbidden write")
+
+    monkeypatch.setattr(consumer, "_location", location)
+    monkeypatch.setattr(consumer, "_read_input", read)
+    monkeypatch.setattr(consumer, "_write_output", write)
+    args = ["--input", "ordinary.json", "--output", "ordinary.xml"]
+    args[args.index(option) + 1] = raw
+    assert consumer.main(args) == 2
+    assert capsys.readouterr() == ("", "CODE = invalid_file_location\n")
+    assert calls == []
+
+
+@pytest.mark.parametrize("optimized", [False, True])
+def test_prefix_rejection_in_subprocess_without_io(
+    optimized: bool, tmp_path: Path
+) -> None:
+    # The probe uses explicit checks, including under -O. No prohibited path
+    # reaches filesystem calls even if the regression reappears.
+    probe = r"""
+import contextlib
+import io
+import runpy
+import sys
+
+namespace = runpy.run_path(sys.argv[1], run_name="reference_consumer")
+main = namespace["main"]
+scope = main.__globals__
+original_location = scope["_location"]
+calls = []
+def denied(*args):
+    calls.append("io")
+    raise RuntimeError("Forbidden I/O")
+scope["_read_input"] = denied
+scope["_write_output"] = denied
+for windows in (False, True):
+    scope["_location"] = lambda value: original_location(value, windows=windows)
+    for raw in sys.argv[2:]:
+        for option in ("--input", "--output"):
+            args = ["--input", "ordinary.json", "--output", "ordinary.xml"]
+            args[args.index(option) + 1] = raw
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                code = main(args)
+            if (code != 2 or stdout.getvalue() != "" or
+                    stderr.getvalue() != "CODE = invalid_file_location\n" or calls):
+                raise SystemExit("Prefix rejection failed")
+print("PREFIX_REJECTION = PASS; IO_SENTINEL_CALLS = 0")
+"""
+    command = [sys.executable, "-I"] + (["-O"] if optimized else [])
+    result = subprocess.run(
+        [*command, "-c", probe, str(_SCRIPT), *_PROHIBITED_PREFIX_PATHS],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert result.returncode == 0
+    assert result.stdout == "PREFIX_REJECTION = PASS; IO_SENTINEL_CALLS = 0\n"
+    assert result.stderr == ""
 
 
 def test_command_success_rejection_and_then_success(
