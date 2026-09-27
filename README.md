@@ -162,6 +162,166 @@ Construction and parsing do not establish XSD validity, fiscal authorization,
 or readiness for transmission. The existing local subset policies, unresolved
 official conflicts and fixed-offset round-trip caveat still apply.
 
+## JSON to unsigned DPS: reference consumer
+
+[The JSON consumer](examples/build_unsigned_dps_from_json.py) belongs to this
+repository and uses only the public API in `nfse-br==0.5.0`. It is not a new
+`nfse-br` CLI command. With that library installed in your environment, run:
+
+```bash
+python examples/build_unsigned_dps_from_json.py --input entrada.json --output dps-unsigned.xml
+```
+
+From a development checkout, prefix the same command with `uv run --frozen`.
+Save this complete **synthetic** input as `entrada.json`; the output must not
+already exist:
+
+```json
+{
+  "issuer_tax_id": {"kind": "CNPJ", "value": "12ABC6780001Z0"},
+  "issue_municipality": "2927408",
+  "service_municipality": "3550308",
+  "series": "00123",
+  "number": 42,
+  "issued_at": "2026-09-17T12:00:00-03:00",
+  "competence": "2026-09-17",
+  "application_version": "json-reference",
+  "national_service_code": "010101",
+  "service_description": "Servico sintetico de integracao",
+  "service_amount": "100.10",
+  "op_simp_nac": "1",
+  "reg_esp_trib": "0",
+  "trib_issqn": "1",
+  "tp_ret_issqn": "1",
+  "ind_tot_trib": "0",
+  "taker": {
+    "tax_id": {"kind": "CPF", "value": "01234567890"},
+    "name": "Tomador & Sintetico",
+    "address": {
+      "municipality": "3550308",
+      "postal_code": "01234567",
+      "street": "Rua Sintetica",
+      "number": "0",
+      "neighborhood": "Centro",
+      "complement": "Sala A"
+    }
+  }
+}
+```
+
+For **no taker**, omit `taker` or set it to `null`. For a numeric CNPJ taker,
+replace only `taker.tax_id` with `{"kind":"CNPJ","value":"12345678000199"}`;
+for an alphanumeric CNPJ, use `{"kind":"CNPJ","value":"98ABC6780001Z0"}`.
+Omitting `complement` or setting it to `null` omits that XML element; `""`
+does not mean absence. All other fields shown are required and non-null.
+The identifiers are synthetic, not evidence of valid check digits or registration.
+
+### Input contract
+
+One UTF-8 JSON object, **without a BOM**, represents one DPS. Keys are
+case-sensitive, unordered and unique after escape decoding. Unknown fields,
+arrays, concatenated documents, comments, non-finite numbers and implicit type
+coercion are rejected. Identifiers contain exactly `kind` (`CPF`/`CNPJ`) and
+`value` (string); identification is never inferred by length. The draft, not
+the consumer, rejects CPF in the issuer role.
+
+| Fields | JSON representation and conversion |
+| --- | --- |
+| `issuer_tax_id`, `taker.tax_id` | Objects above; selected public `FederalTaxId` factory. CNPJ factory uppercases ASCII letters; no additional normalization |
+| `issue_municipality`, `service_municipality`, `taker.address.municipality` | Strings passed to `MunicipalityCode`; no registry lookup |
+| `series` | String passed to `DpsSeries`; leading zeros preserved |
+| `number` | JSON integer passed to `DpsNumber`; boolean, string, float and exponent notation rejected |
+| `issued_at` | Exact `YYYY-MM-DDTHH:MM:SS±HH:00`, ASCII digits; fixed offset, no `Z`, `-00:00`, fractional seconds, missing offset or space separator. UTC is `+00:00`; no timezone inference/conversion |
+| `competence` | String passed to `CompetenceDate.from_iso`, strict `YYYY-MM-DD` |
+| `service_amount` | String matching `(0\|[1-9][0-9]*)\.[0-9]{2}` in full; exactly two decimal places, no sign/exponent/comma/whitespace/leading integer zeros except `0`. Direct `Decimal`, never float or rounding |
+| `application_version`, `national_service_code`, `service_description` | Strings passed unchanged to the draft |
+| `op_simp_nac`, `reg_esp_trib`, `trib_issqn`, `tp_ret_issqn`, `ind_tot_trib` | Required strings; allowed values validated by the draft, not duplicated in the consumer |
+| `taker.name` | String passed unchanged to `RestrictedDpsTaker` |
+| `taker.address.postal_code`, `street`, `number`, `neighborhood` | Required strings; notably address number is **not** an integer and CEP preserves zeros |
+| `taker.address.complement` | Optional string or null; empty string rejected by the address model |
+
+When `taker` is an object it requires exactly `tax_id`, `name` and `address`.
+The address requires all five non-optional fields above. Empty objects do not
+mean absence. Domain invariants remain in the public constructors: lengths,
+character ranges, tax codes, amount range, profile years/offsets and required
+national address. No strip, truncation, Unicode normalization or fiscal defaults
+are applied. The two-decimal transport is deliberately narrower than all exact
+`Decimal` representations accepted by the builder. Construction-time CNPJ
+normalization does not change the XML parser's stricter input policy.
+
+Consumer resource policies, **not official NFS-e limits**:
+
+- At most **65,536 bytes**, including whitespace; bounded reading detects growth
+  beyond the budget, without promising a snapshot of a concurrently changed file.
+- At most **3 container levels**, counting root as 1; strings/escapes do not
+  contribute nesting. The standard decoder still validates JSON syntax.
+- At most **64 digits per integer token**, excluding its sign, before integer
+  conversion. `DpsNumber` applies its smaller domain range.
+- UTF-8 errors/BOM and isolated Unicode surrogates are rejected. Valid escaped
+  Unicode pairs are decoded normally, then subjected to the field's domain rules.
+
+### Files, diagnostics and guarantees
+
+Both arguments are mandatory, single-use local paths; no abbreviations,
+argument files, stdin, XML on stdout, batch or `--force`. Raw arguments are checked
+**before** path conversion. URLs/schemes, UNC/device namespaces, drive-relative
+paths, alternate data streams, reserved Windows device names (also with extensions),
+control characters and portable filename hazards (`<>"|?*`, trailing dot/space)
+are rejected. Windows absolute drive prefixes are supported; POSIX paths cannot
+contain backslashes. No parent directory is created automatically.
+
+Input must be a regular file: observable symlinks are rejected, `O_NOFOLLOW` is
+used where available, and the opened descriptor is checked. Descriptors use
+binary mode, including `O_BINARY` on Windows. Directories must be controlled by
+the caller: this is **not** a filesystem sandbox or uniform protection against
+ancestor races/reparse points. No application network access/download occurs;
+that does not certify the filesystem's mount as local.
+
+Processing order is arguments/locations → bounded read → decode/limits →
+structure/representation and public domain construction → build → exclusive
+creation/write/close → diagnostic. Checks stop on the first encountered failure;
+there is no universal precedence between multiple invalid fields. Domain checks
+occur as their public values are constructed. The normal path does not parse
+the XML again; independent XML comparisons and round-trips belong to tests.
+
+All XML bytes are built before opening the destination. Creation is exclusive:
+an existing destination, including the input itself, is never overwritten.
+POSIX creation requests mode `0600` subject to umask; Windows access depends on
+directory ACLs. Output contains the supplied data: keep the file confidential.
+Representations and diagnostics are not encryption or a guarantee against
+external logging, introspection or capture of local variables.
+
+**A write/close failure after creation can leave an empty, partial or complete
+new file.** It is not deleted automatically. File existence is not success:
+check the exit code. There is no transactional-write, fsync or crash-durability
+guarantee. Writes are unbuffered, handle short/no-progress writes, and success
+is reported only after closing the descriptor.
+
+Construction leaves stdout empty. Success returns **0** and prints to stderr:
+
+```text
+CODE = ok
+XML_UNSIGNED = YES
+XSD_VALIDATION_PERFORMED = NO
+FISCAL_AUTHORIZATION = NOT_PERFORMED
+TRANSMISSION_READY = NO
+```
+
+Failure prints only `CODE = <fixed-code>` to stderr, never paths, field values,
+JSON/XML or exception chains. `--help` returns 0 with static help on stdout.
+
+| Exit | Codes and classification |
+| --- | --- |
+| 1 | `invalid_encoding`: UTF-8/BOM; `invalid_json`: syntax/trailing content/non-finites; `input_limit_exceeded`: bytes/depth/integer-token budget |
+| 1 | `invalid_input_structure`: duplicate/unknown/missing fields, wrong types or null; `invalid_input_representation`: transport format, fractional/exponential number tokens, isolated surrogates or unsupported identifier discriminator |
+| 1 | `domain_rejected`: a public constructor rejects a transported value, including invalid competence dates |
+| 2 | `invalid_arguments`, `invalid_file_location`, `input_read_failed`, `output_exists`, `output_write_failed`, `internal_error` |
+
+This consumer adds no public library API, tax calculation, implicit DV/registry
+check, XSD validation, signature, fiscal authorization, transmission or POST
+response recovery. No bundle is downloaded. Existing evidence conflicts and
+fiscal blockers remain unchanged; no new release is required for this example.
+
 ## Quickstart from a checkout
 
 This path uses the repository checkout directly; it does not assume a PyPI

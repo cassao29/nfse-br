@@ -4,6 +4,9 @@
 
 ### Documentation
 
+- Added a reference JSON-to-unsigned-DPS consumer using the published API,
+  with strict transport limits, controlled diagnostics and exclusive local
+  file output; no core, public CLI or fiscal capability change.
 - Added an offline public-API national-taker demo with CPF, numeric and
   alphanumeric CNPJ, explicit recovered fields, optional complement, identity
   preservation and checked round-trips, including execution under `python -O`.
