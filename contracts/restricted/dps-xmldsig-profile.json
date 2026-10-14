@@ -1,7 +1,7 @@
 {
   "environment": "restricted",
   "scope": "dps_xmldsig_preflight",
-  "signature_profile_confirmed": false,
+  "signature_profile_confirmed": true,
   "transmission_ready": false,
   "evidence_bindings": {
     "restricted_bundle": {
@@ -112,6 +112,82 @@
     },
     "signature_profile_confirmed": false,
     "technical_inquiry_ready": true
+  },
+  "empirical_validation": {
+    "as_of": "2026-10-14",
+    "evidence_class": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
+    "record": "PRODREST_EMPIRICAL_PROBE.md",
+    "record_json": "prodrest-empirical-probe.json",
+    "record_json_sha256": "7abdbf1dd02edc5904aa9a90da1b7d19cefc0d092e15d4361d9316179a835c08",
+    "server_application_version": "SefinNacional_1.6.0",
+    "confirmed_profile": {
+      "signed_target": "infDPS (DPS) and infPedReg (pedRegEvento)",
+      "reference_uri": "#<Id of the signed element>",
+      "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+      "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+      "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+      "transforms_in_order": [
+        "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+        "http://www.w3.org/2001/10/xml-exc-c14n#"
+      ],
+      "key_info": "KeyInfo/X509Data with exactly one X509Certificate: the signer end certificate",
+      "signature_namespace": "default namespace declaration, no prefix",
+      "signature_position": "direct child of the root, after the signed element"
+    },
+    "decision_matrix": {
+      "basic_constraints": {
+        "classification": "CONFLICTING",
+        "evidence": "not testable with the single certificate available; documentary conflict unchanged"
+      },
+      "canonicalization_method": {
+        "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
+        "evidence": "exclusive C14N accepted (I3, I4, M00); inclusive C14N 1.0 rejected with E0714 in either position (I1, I2, M06, M08, M09, M10); C14N 1.1 rejected with E0715 (M07)"
+      },
+      "certificate_chain_embedding": {
+        "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
+        "evidence": "end certificate only accepted; end certificate plus chain rejected with E0714 (M13)"
+      },
+      "certificate_validity_identity_and_trust": {
+        "classification": "CURRENT_CONFIRMED",
+        "evidence": "unchanged documentary classification"
+      },
+      "digest_method": {
+        "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
+        "evidence": "SHA-256 accepted and used by the SEFIN signature; SHA-1 and SHA-512 also accepted (M01-M04)"
+      },
+      "key_info_x509data_representation": {
+        "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
+        "evidence": "KeyInfo/X509Data/X509Certificate with the end certificate accepted; absent KeyInfo rejected with E0714 (M14)"
+      },
+      "key_usage": {
+        "classification": "CONFLICTING",
+        "evidence": "not testable with the single certificate available; documentary conflict unchanged"
+      },
+      "reference_uri": {
+        "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
+        "evidence": "# plus the unqualified infDPS Id accepted; URI=\"\" also accepted (M15)"
+      },
+      "signature_method": {
+        "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
+        "evidence": "RSA-SHA256 accepted and used by the SEFIN signature; RSA-SHA1 and RSA-SHA512 also accepted (M01-M04)"
+      },
+      "signature_namespace": {
+        "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
+        "evidence": "default namespace accepted; ds prefix rejected with E1228 (M16)"
+      },
+      "signature_position": {
+        "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
+        "evidence": "direct child of DPS after infDPS accepted; inside infDPS rejected by the schema with E1235 (M18)"
+      },
+      "signed_target": {
+        "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
+        "evidence": "infDPS reference accepted and an NFS-e was issued (I4)"
+      },
+      "transforms_in_order": {
+        "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
+        "evidence": "enveloped-signature then exclusive C14N accepted; order and enveloped presence not enforced (M11, M12)"
+      }
+    }
   },
   "sources": [
     {
@@ -224,16 +300,8 @@
     "target": "{http://www.sped.fazenda.gov.br/nfse}DPS/{http://www.sped.fazenda.gov.br/nfse}infDPS"
   },
   "unconfirmed_for_current_restricted_profile": [
-    "exact signed target",
-    "canonicalization algorithm",
-    "signature algorithm",
-    "digest algorithm",
-    "transform list and order",
-    "required Reference URI form",
-    "required KeyInfo and X509Data shape",
-    "certificate chain embedding",
     "Basic Constraints",
     "complete Key Usage",
-    "Signature position"
+    "production environment behavior"
   ]
 }

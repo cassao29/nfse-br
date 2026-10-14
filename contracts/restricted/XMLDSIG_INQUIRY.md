@@ -74,3 +74,15 @@ Release: https://github.com/cassao29/nfse-br/releases/tag/v0.1.0
 Atenciosamente,
 Projeto nfse-br
 ```
+
+## Status on 14 October 2026
+
+- Response status: `PENDING`. No reply and no automatic response were
+  received.
+- The inquiry no longer blocks the signature profile. The profile was
+  confirmed by the official validator in Produção Restrita; see
+  [`PRODREST_EMPIRICAL_PROBE.md`](PRODREST_EMPIRICAL_PROBE.md).
+- A later reply is still recorded under the rules in
+  [`docs/EVIDENCE_WATCHLIST.md`](../../docs/EVIDENCE_WATCHLIST.md) and
+  compared with the empirical result. A disagreement is recorded as
+  `CONFLICTING`, not resolved silently.

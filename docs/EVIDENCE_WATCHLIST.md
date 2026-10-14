@@ -113,16 +113,20 @@ transforms, KeyInfo/X509Data representation, certificate-chain embedding, and
 resolution of the Basic Constraints, Key Usage, and Signature-position
 conflicts. Partial answers do not unlock signing.
 
-Until a separate reviewed evidence change establishes otherwise, the states
-remain:
+On 14 October 2026 a reviewed evidence change confirmed the signature profile
+and the `POST /nfse` response envelope through the official validator in
+Produção Restrita, without waiting for the inquiry; see
+[`PRODREST_EMPIRICAL_PROBE.md`](../contracts/restricted/PRODREST_EMPIRICAL_PROBE.md).
+The watcher itself stays credential-free and does not perform such requests.
+The states are now:
 
 ```text
-NFSE_POST_RESPONSE_CONTRACT_CONFIRMED = NO
-POST_RESPONSE_PARSER_IMPLEMENTATION_READY = NO
+NFSE_POST_RESPONSE_CONTRACT_CONFIRMED = YES
+POST_RESPONSE_PARSER_IMPLEMENTATION_READY = YES
 POST_RESPONSE_PARSER_IMPLEMENTED = NO
 RECOVERY_IMPLEMENTED = NO
 TECHNICAL_QUERY_RESPONSE = PENDING
-SIGNATURE_PROFILE_CONFIRMED = NO
+SIGNATURE_PROFILE_CONFIRMED = YES
 SIGNING_IMPLEMENTED = NO
 ID_ACCESS_KEY_CONVERSION_ALLOWED = NO
 TRANSMISSION_READY = NO
