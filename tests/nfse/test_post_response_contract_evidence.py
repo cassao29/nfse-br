@@ -53,7 +53,7 @@ def test_observed_service_differences_are_recorded() -> None:
     assert "idDPS" in observed["post_nfse_400"]
     assert "idDps" in observed["post_nfse_201"]
     assert "idDps" not in observed["get_dps_200"]
-    assert len(differences) == 6
+    assert len(differences) == 8
 
 
 def test_history_keeps_the_unavailable_capture() -> None:

@@ -138,9 +138,10 @@ def test_probe_results_support_the_confirmed_profile() -> None:
     }
     profile = cast(dict[str, object], probe["accepted_profile"])
 
-    issued = rows["I4"]
-    assert issued["http_status"] == 201
-    assert issued["codes"] == []
+    for row_id in ("I4", "T1", "T2", "E5"):
+        assert rows[row_id]["http_status"] == 201, row_id
+        assert rows[row_id]["codes"] == [], row_id
+    assert rows["E4"]["codes"] == ["E0840"]
     for row_id in ("I4", "M00"):
         signature = cast(dict[str, object], rows[row_id]["signature"])
         assert (

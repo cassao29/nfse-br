@@ -61,11 +61,30 @@
       "dataHoraProcessamento",
       "erro"
     ],
+    "get_evento_200": [
+      "dataHoraProcessamento",
+      "tipoAmbiente",
+      "versaoAplicativo",
+      "eventos[]"
+    ],
+    "get_evento_200_item": [
+      "chaveAcesso",
+      "tipoEvento",
+      "numeroPedidoRegistroEvento",
+      "dataHoraRecebimento",
+      "arquivoXml"
+    ],
     "get_nfse_404": [
       "tipoAmbiente",
       "versaoAplicativo",
       "dataHoraProcessamento",
       "erro"
+    ],
+    "post_eventos_201": [
+      "tipoAmbiente",
+      "versaoAplicativo",
+      "dataHoraProcessamento",
+      "eventoXmlGZipB64"
     ],
     "post_eventos_400": [
       "tipoAmbiente",
@@ -117,7 +136,9 @@
     "POST /nfse/{chaveAcesso}/eventos 400 erro is an array, documented as an object",
     "GET /dps/{id} 200 omits idDps, documented as required",
     "GET /dps/{id} 404 returns tipoAmbiente 0 and omits versaoAplicativo",
-    "alertas is null on success"
+    "alertas is null on success",
+    "GET /nfse/{chaveAcesso}/eventos/{tipoEvento}/{numSeqEvento} 200 returns an eventos array instead of eventoXmlGZipB64",
+    "eventos[].arquivoXml is Base64 applied twice over the gzip stream"
   ],
   "operation": "POST /nfse",
   "parser_implemented": false,
@@ -127,7 +148,7 @@
     "POST /nfse 403 body",
     "POST /nfse 500 body",
     "non-null alertas item",
-    "successful event response",
+    "events other than cancellation and substitution",
     "production behavior"
   ]
 }

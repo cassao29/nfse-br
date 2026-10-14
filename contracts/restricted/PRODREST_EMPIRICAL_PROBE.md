@@ -36,7 +36,9 @@ validator will not change.
   `regApTribSN = 1`) in a municipality with an active agreement in Produção
   Restrita. The same certificate authenticated mutual TLS and signed the XML.
 - Every DPS was built with the published 0.5.0 builder and then completed with
-  `regApTribSN`, which the builder subset does not serialize.
+  `regApTribSN`, which the builder subset does not serialize. T1 and T2 also
+  received `toma` (CPF and name, without address) and `subst` outside the
+  builder, whose taker model requires an address.
 - Before each request, the exact bytes passed the pinned v1.01 XSD (except the
   deliberately invalid variant M18) and an independent local digest and
   `SignatureValue` check.
@@ -54,7 +56,8 @@ response.
 ## Accepted profile
 
 The first issuance (I4) returned HTTP 201 with an NFS-e. The same profile
-passed the signature stage of the cancellation event (E2).
+issued an NFS-e with a taker (T1), issued a substitute NFS-e (T2) and
+registered a cancellation event (E5).
 
 | Item | Value |
 | --- | --- |
@@ -100,7 +103,12 @@ embedded DPS.
 | M17 | Base64 wrapped at 76 characters | `E0712` |
 | M18 | `Signature` inside `infDPS` | `E1235` schema failure |
 | E1 | cancellation event, inclusive C14N | `E0714` |
-| E2, E3 | cancellation event, accepted profile | `E0824` (municipal rule, see below) |
+| E2, E3 | cancellation event, accepted profile, NFS-e without taker | `E0824` (municipal rule, see below) |
+| T1 | issuance with a CPF taker | HTTP 201, NFS-e issued |
+| T2 | issuance with `subst` replacing T1 | HTTP 201, NFS-e issued; event 105102 generated on T1 |
+| E4 | cancellation of the substituted NFS-e (T1) | `E0840` |
+| E5 | cancellation of the substitute NFS-e (T2) | HTTP 201, event registered |
+| E6 | repeated cancellation of T2 | `E0840` |
 
 Conclusions for the inquiry questions:
 
@@ -131,8 +139,14 @@ are recorded as observations, not as supported options.
 - `E0202`: the taker must not be the provider (B1).
 - `E0014`: resending an issued DPS returns duplicate series/number.
 - `E0824`: the issuing municipality's parametrization forbids cancelling an
-  NFS-e without an identified taker. A cancellation was therefore not
-  completed; this is municipal configuration, not a signature result.
+  NFS-e without an identified taker. This is municipal configuration, not a
+  signature result; the cancellation of an NFS-e with a taker succeeded (E5).
+- A substituted NFS-e and an already cancelled NFS-e both reject a new
+  cancellation with `E0840`.
+- A generic taker name was accepted with a valid CPF; the validator did not
+  compare the name with the CPF registry.
+- `GET /nfse/{chaveAcesso}` still returns HTTP 200 and the NFS-e XML after
+  cancellation; the cancellation is visible only through events.
 
 ## Response contract
 
@@ -145,16 +159,18 @@ response shapes, and the differences between the OpenAPI and the service.
 
 - One certificate, one provider, one municipality, one date and one validator
   version. Production was not contacted.
-- No CPF issuer, third-party taker, substitution, or completed event.
+- No CPF issuer and no CNPJ taker other than the provider. Only the
+  cancellation and substitution events were exercised. The CPF taker belongs
+  to a consenting natural person and is not recorded here.
 - The accepted alternatives may be validator leniency; implementations should
   emit only the recommended profile.
 
 ## Private evidence
 
 Requests, responses, the issued NFS-e and the probe scripts are stored in the
-ignored `.f0/prodrest-2026-10-14/` directory, 93 files listed with SHA-256 in
+ignored `.f0/prodrest-2026-10-14/` directory, 116 files listed with SHA-256 in
 its `SHA256SUMS` (SHA-256
-`589e64f705af74cd3cd5a74b80ee7a10d335e3c3d6da1bd649de599d4f718ec2`). They
+`ad955f16af8b7b239738e16976ed4cd6ffa2b4520df856ffb2e49bfd9e05b804`). They
 are not redistributed: the signed XML embeds the signer certificate and fiscal
 identifiers. This record and its JSON companion contain no CNPJ, CPF, access
-key, DPS Id, municipality code or certificate.
+key, DPS Id, municipality code, taker or certificate.

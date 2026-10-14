@@ -118,7 +118,7 @@
     "evidence_class": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
     "record": "PRODREST_EMPIRICAL_PROBE.md",
     "record_json": "prodrest-empirical-probe.json",
-    "record_json_sha256": "7abdbf1dd02edc5904aa9a90da1b7d19cefc0d092e15d4361d9316179a835c08",
+    "record_json_sha256": "88f363b7e4ee8d81d57de181976cba1c25c53ee8878b1f34653a527fd33a3964",
     "server_application_version": "SefinNacional_1.6.0",
     "confirmed_profile": {
       "signed_target": "infDPS (DPS) and infPedReg (pedRegEvento)",
@@ -181,7 +181,7 @@
       },
       "signed_target": {
         "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
-        "evidence": "infDPS reference accepted and an NFS-e was issued (I4)"
+        "evidence": "infDPS reference accepted; NFS-e issued without taker (I4), with a CPF taker (T1) and as a substitute (T2); infPedReg reference registered a cancellation (E5)"
       },
       "transforms_in_order": {
         "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",

@@ -61,7 +61,10 @@ All observed bodies were `application/json; charset=utf-8`, except where noted.
 | `GET /dps/{id}`, issued | 200 | `tipoAmbiente`, `versaoAplicativo`, `dataHoraProcessamento`, `chaveAcesso` |
 | `GET /dps/{id}`, rejected DPS | 404 | `tipoAmbiente: 0`, `dataHoraProcessamento`, `erro: {codigo, descricao}` (`E2404`) |
 | `HEAD /dps/{id}` | 200 / 404 | no body |
+| `POST /nfse/{chaveAcesso}/eventos`, registered | 201 | `tipoAmbiente`, `versaoAplicativo`, `dataHoraProcessamento`, `eventoXmlGZipB64` |
 | `POST /nfse/{chaveAcesso}/eventos`, rejected | 400 | `erro: [{codigo, descricao}]` |
+| `GET /nfse/{chaveAcesso}/eventos/{tipoEvento}/{numSeqEvento}` | 200 | `dataHoraProcessamento`, `tipoAmbiente`, `versaoAplicativo`, `eventos: [{chaveAcesso, tipoEvento, numeroPedidoRegistroEvento, dataHoraRecebimento, arquivoXml}]` |
+| `GET /nfse/{chaveAcesso}` after cancellation | 200 | same shape as before; the cancellation is visible only through events |
 | `GET /nfse/{chaveAcesso}/eventos` | 405 | `{"message": ...}`; the collection route is not exposed |
 | `POST /nfse` with an already issued DPS | 400 | `erros` with `E0014` |
 
@@ -78,12 +81,16 @@ All observed bodies were `application/json; charset=utf-8`, except where noted.
    `1 | 2` enumeration, and `versaoAplicativo`, documented as required, is
    absent.
 6. `alertas` is `null` on success, not an empty array.
+7. `GET /nfse/{chaveAcesso}/eventos/{tipoEvento}/{numSeqEvento}` 200 returns
+   an `eventos` array instead of the documented `eventoXmlGZipB64`.
+8. In that array, `arquivoXml` is Base64 applied twice: its decoded bytes are
+   the Base64 text of the gzip stream.
 
 ## Still unconfirmed
 
 - 403 and 500 bodies of `POST /nfse`;
 - a non-null `alertas` item;
-- a successful event response and the event retrieval route;
+- events other than cancellation and substitution;
 - production behavior.
 
 ## History: 20 September 2026

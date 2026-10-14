@@ -13,7 +13,8 @@
     "op_simp_nac": "3",
     "reg_ap_trib_sn": "1",
     "municipal_agreement_active_in_restricted": true,
-    "certificate": "ICP-Brasil e-CNPJ A1, RSA 2048, the same certificate for mutual TLS and XML signature"
+    "certificate": "ICP-Brasil e-CNPJ A1, RSA 2048, the same certificate for mutual TLS and XML signature",
+    "taker_in_completed_flows": "CPF of a consenting natural person, generic name; not recorded"
   },
   "method": {
     "sentinel": "DPS kept indTotTrib, which the validator rejects for ME/EPP with E0712 only after the signature check; E0712 alone therefore means signature accepted and no NFS-e generated",
@@ -76,14 +77,14 @@
   "not_tested": [
     "Basic Constraints and Key Usage variants (a single certificate was available)",
     "production environment behavior",
-    "CPF issuers, takers other than the provider, substitution and other events to completion"
+    "CPF issuers, CNPJ takers other than the provider, and events other than cancellation and substitution"
   ],
   "private_evidence": {
     "location": ".f0/prodrest-2026-10-14/",
     "redistributed": false,
     "reason": "requests, responses and NFS-e embed the signer certificate and fiscal identifiers",
-    "files": 93,
-    "sha256sums_sha256": "589e64f705af74cd3cd5a74b80ee7a10d335e3c3d6da1bd649de599d4f718ec2"
+    "files": 116,
+    "sha256sums_sha256": "ad955f16af8b7b239738e16976ed4cd6ffa2b4520df856ffb2e49bfd9e05b804"
   },
   "results": [
     {
@@ -775,6 +776,125 @@
       },
       "request_sha256": "5c4872b33ff727f8d8ad3482465be8fe489dc3924d2fb49c49fcc238cc5aa0d4",
       "response_sha256": "33abc3cac28d816b047346602ec550349922f02a1284e548ef0fe83b5c0af69d"
+    },
+    {
+      "id": "T1",
+      "series": "taker_and_substitution",
+      "variant": "issuance-with-cpf-taker",
+      "http_status": 201,
+      "codes": [],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "91d26209ffa247400bb61e27d3049da3647028a155ba93d89ec0c5e47dd0532e",
+      "response_sha256": "cf3f5f5d2f749bdb5ffd1a0f22c38ea0923943b040553990f17a8f59751658b9"
+    },
+    {
+      "id": "T2",
+      "series": "taker_and_substitution",
+      "variant": "substitution-issuance",
+      "http_status": 201,
+      "codes": [],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "1bca43e3517762a666190cc8f9b48bcc981ab36b2a1fd331a8c88cf755bd1078",
+      "response_sha256": "18951b2636041118c2b3a843868920b727771e4cea6d2c4647f3f2db74f8cb3a"
+    },
+    {
+      "id": "E4",
+      "series": "event_e101101",
+      "variant": "cancel-event-on-substituted-nfse",
+      "http_status": 400,
+      "codes": [
+        "E0840"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infPedReg@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "pedRegEvento"
+      },
+      "request_sha256": "85442051be3d669e7574ddf90df8b46add410bebb6af3e50efd51961a9643581",
+      "response_sha256": "5b1a9c23ea01b136bb28a7ed728eae26afdeceb168c9146c88486748a898e88f"
+    },
+    {
+      "id": "E5",
+      "series": "event_e101101",
+      "variant": "cancel-event-on-nfse-with-taker",
+      "http_status": 201,
+      "codes": [],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infPedReg@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "pedRegEvento"
+      },
+      "request_sha256": "f6ab6f623a833efa4be3ba17647fd9848e80061949f193dd41a1dc6b23947ab2",
+      "response_sha256": "45a87ed8794172a5094edd0aa5c1576d8d0995db772f2d3dc14df7f3ec8950f6"
+    },
+    {
+      "id": "E6",
+      "series": "event_e101101",
+      "variant": "cancel-event-repeat-after-cancellation",
+      "http_status": 400,
+      "codes": [
+        "E0840"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infPedReg@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "pedRegEvento"
+      },
+      "request_sha256": "8235dc39078c39f87372ba06c891056cba48eaf2f437b34f99e83994211b4eb3",
+      "response_sha256": "7e67474cabb726616c2dbd85f20e4a9ecaddaf08473143b2f185ede08a416f83"
     }
   ]
 }
