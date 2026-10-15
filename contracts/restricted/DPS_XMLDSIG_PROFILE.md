@@ -16,8 +16,9 @@ TRANSMISSION_READY = NO
 
 The profile is confirmed by the official SEFIN validator in Produção Restrita
 (`SefinNacional_1.6.0`), classification `CONFIRMED_BY_OFFICIAL_VALIDATOR`. A
-signed DPS was issued as an NFS-e, and a matrix of 19 single-dimension variants
-separated what the validator accepts from what it rejects. Method, results and
+signed DPS was issued as an NFS-e, and a matrix with a control and 18
+single-dimension variants separated what the validator accepts from what it
+rejects. Method, results and
 limits are in [`PRODREST_EMPIRICAL_PROBE.md`](PRODREST_EMPIRICAL_PROBE.md).
 
 | Item | Confirmed value |

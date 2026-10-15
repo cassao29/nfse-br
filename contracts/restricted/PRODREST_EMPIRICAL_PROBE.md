@@ -10,6 +10,7 @@ EVIDENCE_CLASS = CONFIRMED_BY_OFFICIAL_VALIDATOR
 SIGNATURE_PROFILE_CONFIRMED = YES
 NFSE_POST_RESPONSE_CONTRACT_CONFIRMED = YES
 SIGNING_IMPLEMENTED = NO
+CRYPTOGRAPHIC_VERIFICATION_IMPLEMENTED = NO
 TRANSMISSION_READY = NO
 ```
 
@@ -48,7 +49,9 @@ validator will not change.
   ME/EPP with `E0712`. Signature failures returned `E0714` or `E0715` alone; accepted
   signatures reached `E0712` alone. `E0712` therefore means "signature
   accepted, no NFS-e generated".
-- Each matrix variant changes one dimension of the accepted profile.
+- M00 is the control. Each of M01–M18 changes one dimension of the accepted
+  profile; M05 changes the canonicalization algorithm in both places where it
+  appears.
 
 The validator reported `versaoAplicativo = SefinNacional_1.6.0` on every
 response.
@@ -57,7 +60,10 @@ response.
 
 The first issuance (I4) returned HTTP 201 with an NFS-e. The same profile
 issued an NFS-e with a taker (T1), issued a substitute NFS-e (T2) and
-registered a cancellation event (E5).
+registered a cancellation event (E5). For `pedRegEvento`, only
+canonicalization was contrasted: inclusive C14N was rejected (E1) and the full
+profile passed the signature stage (E2–E6). The other dimensions are inferred
+from the DPS matrix, not tested on events.
 
 | Item | Value |
 | --- | --- |
@@ -83,6 +89,7 @@ embedded DPS.
 | I2 | inclusive C14N, RSA-SHA256, SHA-256 | `E0714` |
 | I3 | exclusive C14N, RSA-SHA256, SHA-256 | `E0712` (signature accepted) |
 | I4 | I3 with `pTotTribSN` instead of `indTotTrib` | HTTP 201, NFS-e issued |
+| B1 | accepted profile, taker equal to the provider | `E0202` (business rule) |
 | M00 | control, accepted profile | `E0712` |
 | M01 | RSA-SHA1 + SHA-1 | `E0712` |
 | M02 | RSA-SHA256 + SHA-1 digest | `E0712` |
@@ -115,9 +122,12 @@ Conclusions for the inquiry questions:
 1. Signature algorithm: RSA-SHA256 is accepted and matches the SEFIN
    signature. RSA-SHA1 and RSA-SHA512 were also accepted.
 2. Digest algorithm: SHA-256 is accepted; SHA-1 and SHA-512 were also accepted.
-3. Canonicalization: exclusive C14N without comments is required in practice.
-   Inclusive C14N 1.0, with or without comments, in either position, was
-   always rejected; C14N 1.1 returned `E0715`.
+3. Canonicalization: exclusive C14N is required in practice. Its
+   `#WithComments` variant was also accepted (M05); the recommended form omits
+   comments. Inclusive C14N 1.0, with or without comments, was always
+   rejected: explicitly in either position (I1, I2, M06, M08, M09) and
+   implicitly when the Reference has no C14N transform (M10). C14N 1.1
+   returned `E0715`.
 4. Transforms: `enveloped-signature` then exclusive C14N is accepted. The
    order and the presence of `enveloped-signature` were not enforced.
 5. Reference: `#` plus the `infDPS` Id is accepted; `URI=""` was also accepted.
@@ -153,7 +163,9 @@ are recorded as observations, not as supported options.
 The official SEFIN OpenAPI, unavailable without a certificate on 20 September
 2026, was retrieved with mutual TLS. See
 [`NFSE_POST_RESPONSE.md`](NFSE_POST_RESPONSE.md) for the bytes, the observed
-response shapes, and the differences between the OpenAPI and the service.
+response shapes, and the differences between the OpenAPI and the service. The
+consultation and event-retrieval observations (A1–A11) are bound by response
+SHA-256 in `api_observations` of the JSON companion.
 
 ## Limits
 

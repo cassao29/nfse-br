@@ -9,6 +9,7 @@ from typing import cast
 _ROOT = Path(__file__).resolve().parents[2]
 _CONTRACT_PATH = _ROOT / "contracts/restricted/nfse-post-response-contract.json"
 _DOC_PATH = _ROOT / "contracts/restricted/NFSE_POST_RESPONSE.md"
+_PROBE_PATH = _ROOT / "contracts/restricted/prodrest-empirical-probe.json"
 
 _OPENAPI_SHA256 = "5ab00aeb7a253933e4d3cafa8f2b74992f5e91b6a81c069f7f5a55a5c08d95af"
 _FORBIDDEN_HTML_SHA256 = (
@@ -53,7 +54,33 @@ def test_observed_service_differences_are_recorded() -> None:
     assert "idDPS" in observed["post_nfse_400"]
     assert "idDps" in observed["post_nfse_201"]
     assert "idDps" not in observed["get_dps_200"]
-    assert len(differences) == 8
+    assert observed["get_nfse_200"] == observed["get_nfse_200_after_cancellation"]
+    assert observed["get_eventos_collection_405"] == ["message"]
+    assert observed["post_nfse_400_duplicate_codes"] == ["E0014"]
+    expected_tokens = [
+        "Codigo/Descricao/Complemento",
+        "NFS-e Id",
+        "erro is an array",
+        "omits idDps",
+        "tipoAmbiente 0",
+        "alertas is null",
+        "eventos array",
+        "Base64 applied twice",
+    ]
+    assert len(differences) == len(expected_tokens)
+    for difference, token in zip(differences, expected_tokens, strict=True):
+        assert token in difference
+
+
+def test_observations_are_bound_to_the_probe_record() -> None:
+    contract = _contract()
+    probe = json.loads(_PROBE_PATH.read_text(encoding="utf-8"))
+    observations = {row["id"]: row for row in probe["api_observations"]}
+
+    assert cast(str, contract["observations_record"]).startswith(_PROBE_PATH.name)
+    assert observations["A2"]["request"] == "GET /dps/{id}"
+    assert observations["A6"]["codes"] == ["E2401"]
+    assert observations["A1"]["codes"] == ["E0014"]
 
 
 def test_history_keeps_the_unavailable_capture() -> None:

@@ -132,6 +132,12 @@ ID_ACCESS_KEY_CONVERSION_ALLOWED = NO
 TRANSMISSION_READY = NO
 ```
 
+The requirement above for a complete reply, including Basic Constraints and Key
+Usage, applies to the inquiry route. Those two items remain `CONFLICTING` in the
+documents and do not block the confirmed profile: they describe the
+certificate, and a standard ICP-Brasil e-CNPJ A1, as issued, was accepted by
+the validator. The `Signature` position conflict was resolved by the probe.
+
 No runtime V0.30 work starts from a watcher signal alone. The transport uses
 stdlib GET over official HTTPS hosts only, with no cookies, Authorization,
 client certificate, request body, proxy, or endpoint-operation calls. Redirects,

@@ -33,11 +33,63 @@ _INCLUSIVE_C14N_WITH_COMMENTS = _INCLUSIVE_C14N + "#WithComments"
 _EXCLUSIVE_C14N = "http://www.w3.org/2001/10/xml-exc-c14n#"
 _ENVELOPED = "http://www.w3.org/2000/09/xmldsig#enveloped-signature"
 # CPF (11), CNPJ (14), DPS Id digits (42), access key (50), IBGE code (7).
-_STANDALONE_DIGITS = re.compile(
-    r"(?<![0-9A-Za-z])(?:[0-9]{7}|[0-9]{11,})(?![0-9A-Za-z])"
+_LONG_DIGITS = re.compile(r"(?<![0-9A-Za-z])[0-9]{11,}(?![0-9A-Za-z])")
+_IBGE_DIGITS = re.compile(r"(?<![0-9A-Za-z])[0-9]{7}(?![0-9A-Za-z])")
+_FORMATTED_ID = re.compile(
+    r"(?<![0-9])[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}(?![0-9])"
+    r"|(?<![0-9A-Z])[0-9A-Z]{2}\.[0-9A-Z]{3}\.[0-9A-Z]{3}/[0-9A-Z]{4}-[0-9]{2}(?![0-9])"
 )
 _DOCUMENT_ID = re.compile(r"\b(?:DPS|NFS|PRE)[0-9]{20,}")
 _LONG_BASE64 = re.compile(r"[A-Za-z0-9+/]{200,}")
+_WRAPPED_BASE64 = re.compile(
+    r"(?:[A-Za-z0-9+/]{40,}={0,2}[ \t]*\r?\n[ \t]*){2,}[A-Za-z0-9+/]{4,}"
+)
+_CERTIFICATE = re.compile(r"MII[A-Za-z0-9+/]{40,}|BEGIN CERTIFICATE")
+# Evidence files of this change. The profile JSON carries 7-digit byte sizes,
+# so it is scanned without the IBGE-length rule.
+_PRIVACY_SCAN_PATHS = (
+    _PROBE_PATH,
+    _PROBE_DOC_PATH,
+    _ROOT / "contracts/restricted/NFSE_POST_RESPONSE.md",
+    _ROOT / "contracts/restricted/nfse-post-response-contract.json",
+    _ROOT / "contracts/restricted/XMLDSIG_INQUIRY.md",
+    _PROFILE_DOC_PATH,
+    _ROOT / "docs/EVIDENCE_WATCHLIST.md",
+)
+_EXPECTED_RESULTS = {
+    "I1": (400, ["E0714"]),
+    "I2": (400, ["E0714"]),
+    "I3": (400, ["E0712"]),
+    "I4": (201, []),
+    "B1": (400, ["E0202"]),
+    "M00": (400, ["E0712"]),
+    "M01": (400, ["E0712"]),
+    "M02": (400, ["E0712"]),
+    "M03": (400, ["E0712"]),
+    "M04": (400, ["E0712"]),
+    "M05": (400, ["E0712"]),
+    "M06": (400, ["E0714"]),
+    "M07": (400, ["E0715"]),
+    "M08": (400, ["E0714"]),
+    "M09": (400, ["E0714"]),
+    "M10": (400, ["E0714"]),
+    "M11": (400, ["E0712"]),
+    "M12": (400, ["E0712"]),
+    "M13": (400, ["E0714"]),
+    "M14": (400, ["E0714"]),
+    "M15": (400, ["E0712"]),
+    "M16": (400, ["E1228"]),
+    "M17": (400, ["E0712"]),
+    "M18": (400, ["E1235"]),
+    "E1": (400, ["E0714"]),
+    "E2": (400, ["E0824"]),
+    "E3": (400, ["E0824"]),
+    "T1": (201, []),
+    "T2": (201, []),
+    "E4": (400, ["E0840"]),
+    "E5": (201, []),
+    "E6": (400, ["E0840"]),
+}
 
 
 def _profile() -> dict[str, object]:
@@ -138,10 +190,9 @@ def test_probe_results_support_the_confirmed_profile() -> None:
     }
     profile = cast(dict[str, object], probe["accepted_profile"])
 
-    for row_id in ("I4", "T1", "T2", "E5"):
-        assert rows[row_id]["http_status"] == 201, row_id
-        assert rows[row_id]["codes"] == [], row_id
-    assert rows["E4"]["codes"] == ["E0840"]
+    assert {
+        row_id: (row["http_status"], row["codes"]) for row_id, row in rows.items()
+    } == _EXPECTED_RESULTS
     for row_id in ("I4", "M00"):
         signature = cast(dict[str, object], rows[row_id]["signature"])
         assert (
@@ -154,7 +205,12 @@ def test_probe_results_support_the_confirmed_profile() -> None:
         assert signature["signature_prefixed"] is False
         assert signature["signature_parent"] == "DPS"
 
-    for row_id in cast(list[str], probe["also_accepted"]) + ["I3", "M00"]:
+    control = rows["M00"]["signature"]
+    for index in range(1, 19):
+        row_id = f"M{index:02d}"
+        assert rows[row_id]["signature"] != control, row_id
+
+    for row_id in cast(list[str], probe["also_accepted"]):
         assert rows[row_id]["codes"] == ["E0712"], row_id
     rejected = cast(dict[str, list[str]], probe["rejected"])
     for row_ids in rejected.values():
@@ -171,12 +227,48 @@ def test_probe_results_support_the_confirmed_profile() -> None:
             assert row["codes"] == ["E0714"], row["id"]
 
 
-def test_probe_records_contain_no_fiscal_identifiers() -> None:
-    for path in (_PROBE_PATH, _PROBE_DOC_PATH):
+def test_probe_binds_api_observations() -> None:
+    observations = cast(list[dict[str, object]], _probe()["api_observations"])
+
+    assert [row["id"] for row in observations] == [f"A{n}" for n in range(1, 12)]
+    for row in observations:
+        assert re.fullmatch(r"[0-9a-f]{64}", cast(str, row["response_sha256"]))
+    statuses = {cast(str, row["id"]): row["http_status"] for row in observations}
+    assert statuses["A7"] == 405
+    assert statuses["A10"] == 200
+    assert statuses["A11"] == 404
+
+
+def _identifier_leaks(text: str, *, check_ibge: bool) -> list[str]:
+    patterns = [_LONG_DIGITS, _FORMATTED_ID, _DOCUMENT_ID, _LONG_BASE64]
+    patterns += [_WRAPPED_BASE64, _CERTIFICATE]
+    if check_ibge:
+        patterns.append(_IBGE_DIGITS)
+    return [match.group(0) for pattern in patterns for match in pattern.finditer(text)]
+
+
+def test_privacy_detectors_catch_synthetic_identifiers() -> None:
+    wrapped = "\n".join(["QUJD" * 16] * 3)
+    samples = [
+        "cpf 12345678909",
+        "cpf 123.456.789-09",
+        "cnpj 12.ABC.345/01DE-35",
+        "ibge 1234567.",
+        "DPS123456789012345678901234",
+        wrapped,
+        "MII" + "A" * 60,
+    ]
+    for sample in samples:
+        assert _identifier_leaks(sample, check_ibge=True), sample
+    assert _identifier_leaks("sha256 " + "ab12" * 16, check_ibge=True) == []
+
+
+def test_evidence_records_contain_no_fiscal_identifiers() -> None:
+    for path in _PRIVACY_SCAN_PATHS:
         text = path.read_text(encoding="utf-8")
-        assert _STANDALONE_DIGITS.search(text) is None, path.name
-        assert _DOCUMENT_ID.search(text) is None, path.name
-        assert _LONG_BASE64.search(text) is None, path.name
+        assert _identifier_leaks(text, check_ibge=True) == [], path.name
+    profile_text = _PROFILE_PATH.read_text(encoding="utf-8")
+    assert _identifier_leaks(profile_text, check_ibge=False) == []
 
 
 def test_documentation_states_scope_and_non_authority() -> None:

@@ -118,7 +118,7 @@
     "evidence_class": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
     "record": "PRODREST_EMPIRICAL_PROBE.md",
     "record_json": "prodrest-empirical-probe.json",
-    "record_json_sha256": "88f363b7e4ee8d81d57de181976cba1c25c53ee8878b1f34653a527fd33a3964",
+    "record_json_sha256": "b0f1db1e6986f72a77025002f1d171dd2d314338dc2292931578dc2beba63e35",
     "server_application_version": "SefinNacional_1.6.0",
     "confirmed_profile": {
       "signed_target": "infDPS (DPS) and infPedReg (pedRegEvento)",
@@ -141,7 +141,7 @@
       },
       "canonicalization_method": {
         "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
-        "evidence": "exclusive C14N accepted (I3, I4, M00); inclusive C14N 1.0 rejected with E0714 in either position (I1, I2, M06, M08, M09, M10); C14N 1.1 rejected with E0715 (M07)"
+        "evidence": "exclusive C14N accepted (I3, I4, M00), also its WithComments variant (M05; comments not recommended); inclusive C14N 1.0 rejected with E0714 explicitly in either position (I1, I2, M06, M08, M09) and implicitly when the Reference has no C14N transform (M10); C14N 1.1 rejected with E0715 (M07)"
       },
       "certificate_chain_embedding": {
         "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
@@ -187,7 +187,8 @@
         "classification": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
         "evidence": "enveloped-signature then exclusive C14N accepted; order and enveloped presence not enforced (M11, M12)"
       }
-    }
+    },
+    "event_scope": "for pedRegEvento only canonicalization was contrasted (E1 inclusive rejected; E2-E6 passed the signature stage); the other dimensions are inferred from the DPS matrix"
   },
   "sources": [
     {

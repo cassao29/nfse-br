@@ -896,5 +896,107 @@
       "request_sha256": "8235dc39078c39f87372ba06c891056cba48eaf2f437b34f99e83994211b4eb3",
       "response_sha256": "7e67474cabb726616c2dbd85f20e4a9ecaddaf08473143b2f185ede08a416f83"
     }
-  ]
+  ],
+  "api_observations": [
+    {
+      "id": "A1",
+      "request": "POST /nfse",
+      "case": "already issued DPS",
+      "http_status": 400,
+      "codes": [
+        "E0014"
+      ],
+      "response_sha256": "335eb5e2c5202e776af697b3ecca9a7135056cb36415fdf0318efb781b0ddc36"
+    },
+    {
+      "id": "A2",
+      "request": "GET /dps/{id}",
+      "case": "issued DPS",
+      "http_status": 200,
+      "codes": [],
+      "response_sha256": "a29423bc9700fa462d323a98baa535a30fbaadd1d0fc8e6bd74a76c672b27439"
+    },
+    {
+      "id": "A3",
+      "request": "HEAD /dps/{id}",
+      "case": "issued DPS",
+      "http_status": 200,
+      "codes": [],
+      "response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "A4",
+      "request": "HEAD /dps/{id}",
+      "case": "unknown DPS",
+      "http_status": 404,
+      "codes": [],
+      "response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "A5",
+      "request": "GET /dps/{id}",
+      "case": "rejected DPS",
+      "http_status": 404,
+      "codes": [
+        "E2404"
+      ],
+      "response_sha256": "d4e2219cfd4ab5ca27750b8c0b8f9a66185ee204c7bb65f148a2dde8c0ad9b77"
+    },
+    {
+      "id": "A6",
+      "request": "GET /nfse/{chaveAcesso}",
+      "case": "unknown key",
+      "http_status": 404,
+      "codes": [
+        "E2401"
+      ],
+      "response_sha256": "bc39f5b90517c1680e528995f5e8e309888ddbc944d2c62403a1e16a7a1a24ae"
+    },
+    {
+      "id": "A7",
+      "request": "GET /nfse/{chaveAcesso}/eventos",
+      "case": "collection route",
+      "http_status": 405,
+      "codes": [],
+      "response_sha256": "b3d5777b5e326ccfc2042e4cc8b52955303f36995bff1ca9e9b026eb29751f77"
+    },
+    {
+      "id": "A8",
+      "request": "GET /nfse/{chaveAcesso}/eventos/105102/1",
+      "case": "substitution event",
+      "http_status": 200,
+      "codes": [],
+      "response_sha256": "3c9d029fd71b5500b99881269c335464435ecdf5d8a30e77a739b91541648004"
+    },
+    {
+      "id": "A9",
+      "request": "GET /nfse/{chaveAcesso}/eventos/101101/1",
+      "case": "cancellation event",
+      "http_status": 200,
+      "codes": [],
+      "response_sha256": "1074575c8434ca36e7acf5ca4f2d638c96983169e85080e83792e45822a1d723"
+    },
+    {
+      "id": "A10",
+      "request": "GET /nfse/{chaveAcesso}",
+      "case": "after cancellation",
+      "http_status": 200,
+      "codes": [],
+      "response_sha256": "30c0354a91f8a2daf473a6e4e5c0b71911f601ca6d41408b424d686774b6e7c7"
+    },
+    {
+      "id": "A11",
+      "request": "GET ADN /danfse/{chaveAcesso}",
+      "case": "issued NFS-e",
+      "http_status": 404,
+      "codes": [],
+      "response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "notes": {
+    "M00": "control: the accepted profile unchanged",
+    "M05": "accepted: exclusive C14N with comments; the recommended form omits comments",
+    "M10": "no C14N transform in the Reference, so the Reference uses implicit inclusive C14N 1.0",
+    "events": "for pedRegEvento only canonicalization was contrasted (E1 rejected; E2-E6 passed the signature stage); other dimensions are inferred from the DPS matrix"
+  }
 }

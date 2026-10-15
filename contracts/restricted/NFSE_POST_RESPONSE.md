@@ -51,18 +51,22 @@ optional `alertas`. `NFSePostResponseErro` requires `tipoAmbiente`,
 ## Observed responses
 
 All observed bodies were `application/json; charset=utf-8`, except where noted.
+Each row is bound by request or response SHA-256 in
+[`prodrest-empirical-probe.json`](prodrest-empirical-probe.json) (`results`
+and `api_observations`) and listed in the `observed` map of
+[`nfse-post-response-contract.json`](nfse-post-response-contract.json).
 
 | Request | HTTP | Observed shape |
 | --- | ---: | --- |
 | `POST /nfse`, issued | 201 | `tipoAmbiente`, `versaoAplicativo`, `dataHoraProcessamento`, `idDps`, `chaveAcesso`, `nfseXmlGZipB64`, `alertas: null` |
 | `POST /nfse`, rejected | 400 | `tipoAmbiente`, `versaoAplicativo`, `dataHoraProcessamento`, `idDPS`, `erros: [{Codigo, Descricao, Complemento?}]` |
 | `GET /nfse/{chaveAcesso}`, found | 200 | `nfseXmlGZipB64` with the same bytes returned by the issuance |
-| `GET /nfse/{chaveAcesso}`, unknown | 404 | `erro: {codigo, descricao}` (`E2401`) |
+| `GET /nfse/{chaveAcesso}`, unknown | 404 | `tipoAmbiente`, `versaoAplicativo`, `dataHoraProcessamento`, `erro: {codigo, descricao}` (`E2401`) |
 | `GET /dps/{id}`, issued | 200 | `tipoAmbiente`, `versaoAplicativo`, `dataHoraProcessamento`, `chaveAcesso` |
 | `GET /dps/{id}`, rejected DPS | 404 | `tipoAmbiente: 0`, `dataHoraProcessamento`, `erro: {codigo, descricao}` (`E2404`) |
 | `HEAD /dps/{id}` | 200 / 404 | no body |
 | `POST /nfse/{chaveAcesso}/eventos`, registered | 201 | `tipoAmbiente`, `versaoAplicativo`, `dataHoraProcessamento`, `eventoXmlGZipB64` |
-| `POST /nfse/{chaveAcesso}/eventos`, rejected | 400 | `erro: [{codigo, descricao}]` |
+| `POST /nfse/{chaveAcesso}/eventos`, rejected | 400 | `tipoAmbiente`, `versaoAplicativo`, `dataHoraProcessamento`, `erro: [{codigo, descricao}]` |
 | `GET /nfse/{chaveAcesso}/eventos/{tipoEvento}/{numSeqEvento}` | 200 | `dataHoraProcessamento`, `tipoAmbiente`, `versaoAplicativo`, `eventos: [{chaveAcesso, tipoEvento, numeroPedidoRegistroEvento, dataHoraRecebimento, arquivoXml}]` |
 | `GET /nfse/{chaveAcesso}` after cancellation | 200 | same shape as before; the cancellation is visible only through events |
 | `GET /nfse/{chaveAcesso}/eventos` | 405 | `{"message": ...}`; the collection route is not exposed |
