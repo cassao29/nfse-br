@@ -37,5 +37,8 @@ reproduction command.
 The XMLDSig grammar and the private unsigned-DPS structural preflight are
 documented separately in
 [`DPS_XMLDSIG_PROFILE.md`](DPS_XMLDSIG_PROFILE.md). The frozen XSD leaves
-algorithm URIs open, while the detailed algorithm profile located so far is
-historical; consequently `SIGNATURE_PROFILE_CONFIRMED` remains `NO`.
+algorithm URIs open, and the detailed algorithm profile in official documents
+is historical. The current profile was confirmed by the official validator on
+14 October 2026, so `SIGNATURE_PROFILE_CONFIRMED` is `YES`; see
+[`PRODREST_EMPIRICAL_PROBE.md`](PRODREST_EMPIRICAL_PROBE.md) and its companion
+[`prodrest-empirical-probe.json`](prodrest-empirical-probe.json).

@@ -719,6 +719,13 @@ belongs to the historical v1.00.02 manual and is not treated as confirmation
 for the current restricted v1.01 bundle. See
 [`contracts/restricted/DPS_XMLDSIG_PROFILE.md`](contracts/restricted/DPS_XMLDSIG_PROFILE.md).
 
+On 14 October 2026 the official validator in Produção Restrita confirmed the
+current profile: exclusive C14N, RSA-SHA256, SHA-256, only the end certificate
+in `KeyInfo`, and an unprefixed `Signature` after `infDPS`. It rejects the
+historical inclusive-C14N profile. See
+[`contracts/restricted/PRODREST_EMPIRICAL_PROBE.md`](contracts/restricted/PRODREST_EMPIRICAL_PROBE.md).
+The library still does not sign or transmit.
+
 ## Unsigned DPS check CLI
 
 After following the checkout quickstart, check one local unsigned DPS against

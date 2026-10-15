@@ -1,0 +1,1002 @@
+{
+  "capture_date": "2026-10-14",
+  "environment": "restricted",
+  "evidence_class": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
+  "authorization": "maintainer decision of 2026-10-14 to use a maintainer-controlled ICP-Brasil e-CNPJ A1 certificate for operational requests in Produção Restrita",
+  "server_application_version": "SefinNacional_1.6.0",
+  "operations": [
+    "POST /nfse",
+    "POST /nfse/{chaveAcesso}/eventos"
+  ],
+  "provider_profile": {
+    "issuer_tax_id_kind": "CNPJ",
+    "op_simp_nac": "3",
+    "reg_ap_trib_sn": "1",
+    "municipal_agreement_active_in_restricted": true,
+    "certificate": "ICP-Brasil e-CNPJ A1, RSA 2048, the same certificate for mutual TLS and XML signature",
+    "taker_in_completed_flows": "CPF of a consenting natural person, generic name; not recorded"
+  },
+  "method": {
+    "sentinel": "DPS kept indTotTrib, which the validator rejects for ME/EPP with E0712 only after the signature check; E0712 alone therefore means signature accepted and no NFS-e generated",
+    "observed_order": "E0714 responses never carried E0712, and the accepted profile reached E0712 or issuance",
+    "local_checks": "pinned v1.01 XSD validation and an independent digest and SignatureValue check on the exact sent bytes",
+    "envelope": "JSON body with the UTF-8 XML gzip-compressed and Base64-encoded",
+    "one_dimension_per_variant": true
+  },
+  "accepted_profile": {
+    "signed_target": "infDPS (DPS) and infPedReg (pedRegEvento)",
+    "reference_uri": "#<Id of the signed element>",
+    "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+    "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+    "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+    "transforms_in_order": [
+      "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+      "http://www.w3.org/2001/10/xml-exc-c14n#"
+    ],
+    "key_info": "KeyInfo/X509Data with exactly one X509Certificate: the signer end certificate",
+    "signature_namespace": "default namespace declaration, no prefix",
+    "signature_position": "direct child of the root, after the signed element"
+  },
+  "also_accepted": [
+    "M01",
+    "M02",
+    "M03",
+    "M04",
+    "M05",
+    "M11",
+    "M12",
+    "M15",
+    "M17"
+  ],
+  "rejected": {
+    "inclusive_c14n_anywhere": [
+      "I1",
+      "I2",
+      "M06",
+      "M08",
+      "M09",
+      "M10",
+      "E1"
+    ],
+    "c14n_1_1": [
+      "M07"
+    ],
+    "certificate_chain_in_key_info": [
+      "M13"
+    ],
+    "missing_key_info": [
+      "M14"
+    ],
+    "prefixed_signature": [
+      "M16"
+    ],
+    "signature_inside_signed_element": [
+      "M18"
+    ]
+  },
+  "not_tested": [
+    "Basic Constraints and Key Usage variants (a single certificate was available)",
+    "production environment behavior",
+    "CPF issuers, CNPJ takers other than the provider, and events other than cancellation and substitution"
+  ],
+  "private_evidence": {
+    "location": ".f0/prodrest-2026-10-14/",
+    "redistributed": false,
+    "reason": "requests, responses and NFS-e embed the signer certificate and fiscal identifiers",
+    "files": 116,
+    "sha256sums_sha256": "ad955f16af8b7b239738e16976ed4cd6ffa2b4520df856ffb2e49bfd9e05b804"
+  },
+  "results": [
+    {
+      "id": "I1",
+      "series": "initial",
+      "variant": "inclusive-rsa-sha1-sha1",
+      "http_status": 400,
+      "codes": [
+        "E0714"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
+        "digest_method": "http://www.w3.org/2000/09/xmldsig#sha1",
+        "canonicalization_method": "http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "54aa14226f490cc30ad195a3117025bad8282f561d5e7a907a9771c4b973874b",
+      "response_sha256": "c01956809c62718cedf3678186e4385a8ba9ca3d4ad2fd4cbd6750321420469c"
+    },
+    {
+      "id": "I2",
+      "series": "initial",
+      "variant": "inclusive-rsa-sha256-sha256",
+      "http_status": 400,
+      "codes": [
+        "E0714"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "2a299bcdc7ce7393b44d22d706ee43360804531ea8ae82d76a1ebcf0a1dc6440",
+      "response_sha256": "fd5aabbb032c74b7041346bc2189715e83a53b11a86ec55074015de34fe1416d"
+    },
+    {
+      "id": "I3",
+      "series": "initial",
+      "variant": "exc-rsa-sha256-sha256",
+      "http_status": 400,
+      "codes": [
+        "E0712"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "c3e6fbe3bbe2665a55c681d99e55543398b05129c022c7e6bb4aeddecee5955f",
+      "response_sha256": "65819d9258fe2a88b767c7001bd3f70b8a2930748592c52384987860cd40587c"
+    },
+    {
+      "id": "I4",
+      "series": "initial",
+      "variant": "exc-rsa-sha256-sha256-issuance",
+      "http_status": 201,
+      "codes": [],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "e01abaf9e5138b24d1a448c0422f95529fb6f68eb551b19c39d0cda406fdd9fc",
+      "response_sha256": "b0ce2a246af036dbc7b0ab6b7d2a0229640252b5f85d225ec1643e9419f715ba"
+    },
+    {
+      "id": "B1",
+      "series": "business",
+      "variant": "taker-equals-provider",
+      "http_status": 400,
+      "codes": [
+        "E0202"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "0dda0d1cdc0a205dab447b850522456cb04268975e875868a0854e17e60988a8",
+      "response_sha256": "048380d388e4c4fad9d74035e49050f8396d313838e9e8e1c4f2e49914f29dec"
+    },
+    {
+      "id": "M00",
+      "series": "matrix",
+      "variant": "control-accepted-profile",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0712"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "569365e50d428d63b14ddce10e75cc81bd4dbbdadc6f150309cec0e2d698d4c4",
+      "response_sha256": "a74a320dccd5efe2fef3921d1bcfb717d7bfc920d39ae9f286e893842bc6da26"
+    },
+    {
+      "id": "M01",
+      "series": "matrix",
+      "variant": "exc-rsa-sha1-sha1",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0712"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
+        "digest_method": "http://www.w3.org/2000/09/xmldsig#sha1",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "b9a66c99cc6d2329f69558b307078f31d5db9fb8f9f84fa64d7c29d0b83ac677",
+      "response_sha256": "04e1faf944cfbf40e19bcf9b0f98155566433a943ce48ea80c295ddf0a4d888b"
+    },
+    {
+      "id": "M02",
+      "series": "matrix",
+      "variant": "exc-rsa-sha256-digest-sha1",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0712"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2000/09/xmldsig#sha1",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "c547d5ffe48ade3d78a1253f9b612ceff3781a58e4555dd83dcb803cb243c6f0",
+      "response_sha256": "627172f10d4eedc02a5b240fc1c5a0c7d4592eff7f259add96a5d0852cf6d7e0"
+    },
+    {
+      "id": "M03",
+      "series": "matrix",
+      "variant": "exc-rsa-sha1-digest-sha256",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0712"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "89892c5ced0509605f1c85cbd6abaf1673a7b3bd4d915e11330ca10869c4c811",
+      "response_sha256": "b6a2badfd885aa066cd175fadc9a1994693c7b0eefe58e2f5953815b428d4025"
+    },
+    {
+      "id": "M04",
+      "series": "matrix",
+      "variant": "exc-rsa-sha512-sha512",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0712"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha512",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "7a64f18132e942f368ae0784ac15dc66d3a73f1d311131fb4340aba0c4ccd8d0",
+      "response_sha256": "558f95feb98d9290a311d1a8ae0e60167137ee5919f0cca64e61cb5ae2da90d7"
+    },
+    {
+      "id": "M05",
+      "series": "matrix",
+      "variant": "exc-with-comments",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0712"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#WithComments",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#WithComments"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "2359118c75783bf6484aa798492323224f378720c2cc5fc0b450233025143d2c",
+      "response_sha256": "1ba4e763fbe675d34cdb5f2206093b7fba4ecb4e53380398be7220ef94261a38"
+    },
+    {
+      "id": "M06",
+      "series": "matrix",
+      "variant": "inclusive-with-comments",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0714"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "713a1d6ece1b529a8a07a0dab0e53810bcf5444dc44a2dc578ee96d6ddab4072",
+      "response_sha256": "b6502d680218758f4390638ce27dcd98facbeda7be1cf6df7312506afe87fc2e"
+    },
+    {
+      "id": "M07",
+      "series": "matrix",
+      "variant": "c14n-1.1",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0715"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2006/12/xml-c14n11",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2006/12/xml-c14n11"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "2e4d7e5475fd9e6fd8ed8a7f44e7d79008d27604d29a81541bf312c691f388f9",
+      "response_sha256": "c2879738b1ac20fc8010b0aa2351fbfc6de9c4c4cef7f47eb64e53d69bc99b3d"
+    },
+    {
+      "id": "M08",
+      "series": "matrix",
+      "variant": "inclusive-signedinfo-exc-reference",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0714"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "cd3ae9d8c6f4dace8f89dfeac75cc40046398c9dcc106f09dc34de8110c5c565",
+      "response_sha256": "2319846aaa13df9ab350a817a41e41d60e908056626eee2dcd77567ce94ddbcf"
+    },
+    {
+      "id": "M09",
+      "series": "matrix",
+      "variant": "exc-signedinfo-inclusive-reference",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0714"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "1b92491b106efa0291f001c282b2bee5e95240ebf8be3a89355ca7b56713601d",
+      "response_sha256": "eabfdc9a6aa0be9ecfa8e7c832e183ab1febd6079515ad46b3f8f3aa2238e46d"
+    },
+    {
+      "id": "M10",
+      "series": "matrix",
+      "variant": "enveloped-only",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0714"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "810b45fef26e0f0ba7e51d046d70f684ce0b7c41004577463636b2f19a239850",
+      "response_sha256": "9f823c6caee74553c5c85e42736bd44b3a6e57200e18d373d072dc34fe74ec59"
+    },
+    {
+      "id": "M11",
+      "series": "matrix",
+      "variant": "exc-only-without-enveloped",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0712"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "6661d63d9cd36d01a076cdac20f6aa5225a500224f2dc9ce1fd81d0d40951893",
+      "response_sha256": "7b9bbe19a26e54717861c8e0153ade6ef7831d7e587eed47e6b84ab16cf59687"
+    },
+    {
+      "id": "M12",
+      "series": "matrix",
+      "variant": "exc-before-enveloped",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0712"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2001/10/xml-exc-c14n#",
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "f068d923b70f3e69e449ad65a5c3ba2c16cf4a4bc84a5b65432f49a28a7fd5ae",
+      "response_sha256": "ae5d538d17f66f6fee409213759ca868a776a4078977eafeb7279f29751c980d"
+    },
+    {
+      "id": "M13",
+      "series": "matrix",
+      "variant": "key-info-with-chain",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0714"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 4,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "53a667298d56a128f1a8f912887e1e68883d0b9b7d9ab9f7cccdfeddab46a2f9",
+      "response_sha256": "b984b7c16d721b01c76d8bffc532acf2c5c50d06bd1b73fc6ea3ea3bee30ba85"
+    },
+    {
+      "id": "M14",
+      "series": "matrix",
+      "variant": "no-key-info",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0714"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 0,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "dbafe2afcda631db41d7f9c3476ac81181629ab219650a416c83336d197c143e",
+      "response_sha256": "24d94eb3fffe788aea97d849b20b257525a95afa0beccf417685d2b46fee057b"
+    },
+    {
+      "id": "M15",
+      "series": "matrix",
+      "variant": "empty-uri-whole-document",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0712"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "bbf547e8246fa34bb2f013aa017a29c3ffc70603a579c7c12f358ba28887e217",
+      "response_sha256": "aa910ac3a448a7331bfc8d1a105b0f29f3c9f2a77577c2cdaf05568c8ed50c53"
+    },
+    {
+      "id": "M16",
+      "series": "matrix",
+      "variant": "ds-prefix",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E1228"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": true,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "4789be99a97029f7b5478d3d4e362bf904011169e3730d9df553e81499f0f344",
+      "response_sha256": "52b4c4e71300c6bbf532caf69ec5c0bb1eed421ad5819efa60b17685b900e45c"
+    },
+    {
+      "id": "M17",
+      "series": "matrix",
+      "variant": "base64-wrapped-76",
+      "local_xsd_valid": true,
+      "http_status": 400,
+      "codes": [
+        "E0712"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": true,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "82c8c35c0c16993fe4183518a6e1b062b2be2b4f3c336d03441df0437f197280",
+      "response_sha256": "68db6c68e31e695b7f312308e50ae1087f58b6b099169e9b56efc7e173c7f70a"
+    },
+    {
+      "id": "M18",
+      "series": "matrix",
+      "variant": "signature-inside-infdps",
+      "local_xsd_valid": false,
+      "http_status": 400,
+      "codes": [
+        "E1235"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "infDPS"
+      },
+      "request_sha256": "c48b95bd512cd0a61487f6262a6cf32047b815c8c4e754b41e21775ce9590ffd",
+      "response_sha256": "dfe384eaa283ae7f60045d86b704f3411680914908b1238db6eafe11f69eb00f"
+    },
+    {
+      "id": "E1",
+      "series": "event_e101101",
+      "variant": "cancel-event-inclusive",
+      "http_status": 400,
+      "codes": [
+        "E0714"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
+        ],
+        "reference_uri": "#<infPedReg@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "pedRegEvento"
+      },
+      "request_sha256": "8c6f33a687e2fce72f1a0837dc12345d060ad45e9ab028c4ccf18f9a00224896",
+      "response_sha256": "0f7edf2def6297d35a976f8154875302360f19ac364c63b2592ad36914d834c8"
+    },
+    {
+      "id": "E2",
+      "series": "event_e101101",
+      "variant": "cancel-event-exc",
+      "http_status": 400,
+      "codes": [
+        "E0824"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infPedReg@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "pedRegEvento"
+      },
+      "request_sha256": "9a166bed3a1c3351562f3965f96266fbe3db9255942c188b246b71db95f0e39c",
+      "response_sha256": "2492025a392d623c3db671ba3d8fe606b56c139b4817aa0fde5c90eb6c5d6fe6"
+    },
+    {
+      "id": "E3",
+      "series": "event_e101101",
+      "variant": "cancel-event-exc-repeat",
+      "http_status": 400,
+      "codes": [
+        "E0824"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infPedReg@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "pedRegEvento"
+      },
+      "request_sha256": "5c4872b33ff727f8d8ad3482465be8fe489dc3924d2fb49c49fcc238cc5aa0d4",
+      "response_sha256": "33abc3cac28d816b047346602ec550349922f02a1284e548ef0fe83b5c0af69d"
+    },
+    {
+      "id": "T1",
+      "series": "taker_and_substitution",
+      "variant": "issuance-with-cpf-taker",
+      "http_status": 201,
+      "codes": [],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "91d26209ffa247400bb61e27d3049da3647028a155ba93d89ec0c5e47dd0532e",
+      "response_sha256": "cf3f5f5d2f749bdb5ffd1a0f22c38ea0923943b040553990f17a8f59751658b9"
+    },
+    {
+      "id": "T2",
+      "series": "taker_and_substitution",
+      "variant": "substitution-issuance",
+      "http_status": 201,
+      "codes": [],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infDPS@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "DPS"
+      },
+      "request_sha256": "1bca43e3517762a666190cc8f9b48bcc981ab36b2a1fd331a8c88cf755bd1078",
+      "response_sha256": "18951b2636041118c2b3a843868920b727771e4cea6d2c4647f3f2db74f8cb3a"
+    },
+    {
+      "id": "E4",
+      "series": "event_e101101",
+      "variant": "cancel-event-on-substituted-nfse",
+      "http_status": 400,
+      "codes": [
+        "E0840"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infPedReg@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "pedRegEvento"
+      },
+      "request_sha256": "85442051be3d669e7574ddf90df8b46add410bebb6af3e50efd51961a9643581",
+      "response_sha256": "5b1a9c23ea01b136bb28a7ed728eae26afdeceb168c9146c88486748a898e88f"
+    },
+    {
+      "id": "E5",
+      "series": "event_e101101",
+      "variant": "cancel-event-on-nfse-with-taker",
+      "http_status": 201,
+      "codes": [],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infPedReg@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "pedRegEvento"
+      },
+      "request_sha256": "f6ab6f623a833efa4be3ba17647fd9848e80061949f193dd41a1dc6b23947ab2",
+      "response_sha256": "45a87ed8794172a5094edd0aa5c1576d8d0995db772f2d3dc14df7f3ec8950f6"
+    },
+    {
+      "id": "E6",
+      "series": "event_e101101",
+      "variant": "cancel-event-repeat-after-cancellation",
+      "http_status": 400,
+      "codes": [
+        "E0840"
+      ],
+      "signature": {
+        "signature_method": "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+        "digest_method": "http://www.w3.org/2001/04/xmlenc#sha256",
+        "canonicalization_method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+        "transforms": [
+          "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+          "http://www.w3.org/2001/10/xml-exc-c14n#"
+        ],
+        "reference_uri": "#<infPedReg@Id>",
+        "x509_certificates": 1,
+        "signature_prefixed": false,
+        "base64_wrapped": false,
+        "signature_parent": "pedRegEvento"
+      },
+      "request_sha256": "8235dc39078c39f87372ba06c891056cba48eaf2f437b34f99e83994211b4eb3",
+      "response_sha256": "7e67474cabb726616c2dbd85f20e4a9ecaddaf08473143b2f185ede08a416f83"
+    }
+  ],
+  "api_observations": [
+    {
+      "id": "A1",
+      "request": "POST /nfse",
+      "case": "already issued DPS",
+      "http_status": 400,
+      "codes": [
+        "E0014"
+      ],
+      "response_sha256": "335eb5e2c5202e776af697b3ecca9a7135056cb36415fdf0318efb781b0ddc36"
+    },
+    {
+      "id": "A2",
+      "request": "GET /dps/{id}",
+      "case": "issued DPS",
+      "http_status": 200,
+      "codes": [],
+      "response_sha256": "a29423bc9700fa462d323a98baa535a30fbaadd1d0fc8e6bd74a76c672b27439"
+    },
+    {
+      "id": "A3",
+      "request": "HEAD /dps/{id}",
+      "case": "issued DPS",
+      "http_status": 200,
+      "codes": [],
+      "response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "A4",
+      "request": "HEAD /dps/{id}",
+      "case": "unknown DPS",
+      "http_status": 404,
+      "codes": [],
+      "response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "A5",
+      "request": "GET /dps/{id}",
+      "case": "rejected DPS",
+      "http_status": 404,
+      "codes": [
+        "E2404"
+      ],
+      "response_sha256": "d4e2219cfd4ab5ca27750b8c0b8f9a66185ee204c7bb65f148a2dde8c0ad9b77"
+    },
+    {
+      "id": "A6",
+      "request": "GET /nfse/{chaveAcesso}",
+      "case": "unknown key",
+      "http_status": 404,
+      "codes": [
+        "E2401"
+      ],
+      "response_sha256": "bc39f5b90517c1680e528995f5e8e309888ddbc944d2c62403a1e16a7a1a24ae"
+    },
+    {
+      "id": "A7",
+      "request": "GET /nfse/{chaveAcesso}/eventos",
+      "case": "collection route",
+      "http_status": 405,
+      "codes": [],
+      "response_sha256": "b3d5777b5e326ccfc2042e4cc8b52955303f36995bff1ca9e9b026eb29751f77"
+    },
+    {
+      "id": "A8",
+      "request": "GET /nfse/{chaveAcesso}/eventos/105102/1",
+      "case": "substitution event",
+      "http_status": 200,
+      "codes": [],
+      "response_sha256": "3c9d029fd71b5500b99881269c335464435ecdf5d8a30e77a739b91541648004"
+    },
+    {
+      "id": "A9",
+      "request": "GET /nfse/{chaveAcesso}/eventos/101101/1",
+      "case": "cancellation event",
+      "http_status": 200,
+      "codes": [],
+      "response_sha256": "1074575c8434ca36e7acf5ca4f2d638c96983169e85080e83792e45822a1d723"
+    },
+    {
+      "id": "A10",
+      "request": "GET /nfse/{chaveAcesso}",
+      "case": "after cancellation",
+      "http_status": 200,
+      "codes": [],
+      "response_sha256": "30c0354a91f8a2daf473a6e4e5c0b71911f601ca6d41408b424d686774b6e7c7"
+    },
+    {
+      "id": "A11",
+      "request": "GET ADN /danfse/{chaveAcesso}",
+      "case": "issued NFS-e",
+      "http_status": 404,
+      "codes": [],
+      "response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "notes": {
+    "M00": "control: the accepted profile unchanged",
+    "M05": "accepted: exclusive C14N with comments; the recommended form omits comments",
+    "M10": "no C14N transform in the Reference, so the Reference uses implicit inclusive C14N 1.0",
+    "events": "for pedRegEvento only canonicalization was contrasted (E1 rejected; E2-E6 passed the signature stage); other dimensions are inferred from the DPS matrix"
+  }
+}

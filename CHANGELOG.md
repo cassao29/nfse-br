@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Evidence
+
+- Confirmed the DPS v1.01 XMLDSig profile with the official SEFIN validator in
+  Produção Restrita (`CONFIRMED_BY_OFFICIAL_VALIDATOR`): exclusive C14N,
+  RSA-SHA256, SHA-256, transforms enveloped then exclusive C14N, `#` plus the
+  `infDPS` Id, only the end certificate, unprefixed `Signature` after
+  `infDPS`. The historical inclusive-C14N profile is rejected with `E0714`.
+- Recorded a 32-request probe (issuance, 19-variant signature matrix,
+  issuance with a CPF taker, substitution, cancellation events, business
+  rules) without redistributing XML, certificates or fiscal identifiers.
+- Confirmed the `POST /nfse` response envelope from the official OpenAPI,
+  retrieved with mutual TLS, and recorded eight differences between the
+  OpenAPI and the service.
+- `SIGNATURE_PROFILE_CONFIRMED` and `NFSE_POST_RESPONSE_CONTRACT_CONFIRMED` are
+  now `YES`. Signing, transmission and response parsing remain unimplemented;
+  no runtime or public API change.
+
 ### Documentation
 
 - Added a reference JSON-to-unsigned-DPS consumer using the published API,

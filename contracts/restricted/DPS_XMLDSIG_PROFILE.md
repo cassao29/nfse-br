@@ -1,15 +1,42 @@
 # Restricted DPS XMLDSig profile and structural preflight
 
-This record separates what the frozen restricted XSD proves from historical
-signature instructions and from the fail-closed policy used by the local
-preflight. It does not authorize signing or transmission.
+This record separates what the frozen restricted XSD proves, the historical
+signature instructions, the profile confirmed by the official validator on
+14 October 2026, and the fail-closed policy used by the local preflight. It
+does not implement signing or transmission.
 
 ```text
-SIGNATURE_PROFILE_CONFIRMED = NO
+SIGNATURE_PROFILE_CONFIRMED = YES
 SIGNING_IMPLEMENTED = NO
 CRYPTOGRAPHIC_VERIFICATION_IMPLEMENTED = NO
 TRANSMISSION_READY = NO
 ```
+
+## Empirical validation (14 October 2026)
+
+The profile is confirmed by the official SEFIN validator in Produção Restrita
+(`SefinNacional_1.6.0`), classification `CONFIRMED_BY_OFFICIAL_VALIDATOR`. A
+signed DPS was issued as an NFS-e, and a matrix with a control and 18
+single-dimension variants separated what the validator accepts from what it
+rejects. Method, results and
+limits are in [`PRODREST_EMPIRICAL_PROBE.md`](PRODREST_EMPIRICAL_PROBE.md).
+
+| Item | Confirmed value |
+| --- | --- |
+| Signed element and reference | `infDPS`; `Reference/@URI` is `#` plus its unqualified `Id` |
+| `CanonicalizationMethod` | `http://www.w3.org/2001/10/xml-exc-c14n#` |
+| `SignatureMethod` | `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256` |
+| `DigestMethod` | `http://www.w3.org/2001/04/xmlenc#sha256` |
+| Transforms, in order | `http://www.w3.org/2000/09/xmldsig#enveloped-signature`, `http://www.w3.org/2001/10/xml-exc-c14n#` |
+| `KeyInfo` | `X509Data` with only the signer end certificate |
+| Namespace and position | unprefixed `Signature`, direct child of `DPS` after `infDPS` |
+
+The historical v1.00.02 profile (inclusive C14N, RSA-SHA1, SHA-1) is rejected
+with `E0714`. The deciding dimension is canonicalization: inclusive C14N is
+rejected in either position, while RSA-SHA1 and SHA-1 pass with exclusive
+C14N. A certificate chain in `KeyInfo`, a missing `KeyInfo` and a `ds:` prefix
+are rejected. Basic Constraints and Key Usage remain `CONFLICTING` because only
+one certificate was available.
 
 ## Frozen schema observations
 
@@ -226,7 +253,8 @@ sections 6.1.3–6.1.5 (printed pp. 27–30) contain the historical profile.
 
 Because the target, reference, algorithms, complete ordered transforms, and
 `KeyInfo` representation are not all confirmed by an applicable current
-official source, the decision remains fail-closed:
+official source, the decision as of 20 September 2026 remained fail-closed.
+This state was superseded on 14 October 2026 by the empirical validation above:
 
 ```text
 SIGNATURE_PROFILE_CONFIRMED = NO
@@ -234,7 +262,7 @@ SIGNING_IMPLEMENTED = NO
 TRANSMISSION_READY = NO
 ```
 
-### Final technical inquiry (ready, not sent)
+### Technical inquiry (sent 20 September 2026)
 
 ```text
 Assunto: Confirmação do perfil XMLDSig da DPS v1.01 no ambiente nacional
@@ -270,8 +298,10 @@ certificado ou chave privada.
 The current official [attendance page](https://www.gov.br/nfse/pt-br/canais-de-atendimento),
 updated 16 September 2026, disables the former direct support email and
 directs contributors to their municipality, which may contact Receita
-Federal. That is the identified current route. The inquiry above has not been
-sent.
+Federal. That is the identified current route. The inquiry was sent to the
+municipal technical channel on 20 September 2026; see
+[`XMLDSIG_INQUIRY.md`](XMLDSIG_INQUIRY.md). It had no reply by 14 October 2026
+and no longer blocks the profile.
 
 ## Local structural preflight
 
@@ -309,6 +339,7 @@ Id is not reusable authorization for different bytes.
 - [Manual Integrado histórico v1.00.02](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/leiaute-e-esquemas-antigos/manualintegradosnnfse_v1-00-02-producao.pdf)
 - [XML Signature Syntax and Processing 1.1](https://www.w3.org/TR/xmldsig-core1/)
 - [XML Signature Best Practices](https://www.w3.org/TR/xmldsig-bestpractices/)
+- [Produção Restrita empirical probe](PRODREST_EMPIRICAL_PROBE.md)
 
 The machine-readable companion
 [`dps-xmldsig-profile.json`](dps-xmldsig-profile.json) contains the same

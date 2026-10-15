@@ -1,60 +1,176 @@
 {
-  "capture_date": "2026-09-20",
-  "contract_confirmed": false,
-  "implementation_ready": false,
-  "openapi": null,
-  "operation": "POST /nfse",
-  "raw_artifact_versioned": false,
-  "resources": [
+  "capture_date": "2026-10-14",
+  "contract_confirmed": true,
+  "environment": "restricted",
+  "evidence_record": "PRODREST_EMPIRICAL_PROBE.md",
+  "history": [
     {
-      "bytes": 1233,
-      "environment": "restricted",
-      "http_status": 403,
-      "media_type": "text/html",
-      "role": "documentation_ui",
-      "sha256": "c55f527e536de44c7980fecece7428ae5a765647495e47008a8a54fa1e434736",
-      "url": "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/docs/index"
-    },
-    {
-      "bytes": 1233,
-      "environment": "production",
-      "http_status": 403,
-      "media_type": "text/html",
-      "role": "documentation_ui",
-      "sha256": "c55f527e536de44c7980fecece7428ae5a765647495e47008a8a54fa1e434736",
-      "url": "https://sefin.nfse.gov.br/SefinNacional/docs/index"
-    },
-    {
-      "bytes": 1233,
-      "environment": "restricted",
-      "http_status": 403,
-      "media_type": "text/html",
-      "role": "openapi_candidate",
-      "sha256": "c55f527e536de44c7980fecece7428ae5a765647495e47008a8a54fa1e434736",
-      "url": "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/swagger/docs/v1"
-    },
-    {
-      "bytes": 1233,
-      "environment": "production",
-      "http_status": 403,
-      "media_type": "text/html",
-      "role": "openapi_candidate",
-      "sha256": "c55f527e536de44c7980fecece7428ae5a765647495e47008a8a54fa1e434736",
-      "url": "https://sefin.nfse.gov.br/SefinNacional/swagger/docs/v1"
+      "capture_date": "2026-09-20",
+      "contract_confirmed": false,
+      "resources": [
+        {
+          "bytes": 1233,
+          "environment": "restricted",
+          "http_status": 403,
+          "media_type": "text/html",
+          "role": "documentation_ui",
+          "sha256": "c55f527e536de44c7980fecece7428ae5a765647495e47008a8a54fa1e434736",
+          "url": "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/docs/index"
+        },
+        {
+          "bytes": 1233,
+          "environment": "production",
+          "http_status": 403,
+          "media_type": "text/html",
+          "role": "documentation_ui",
+          "sha256": "c55f527e536de44c7980fecece7428ae5a765647495e47008a8a54fa1e434736",
+          "url": "https://sefin.nfse.gov.br/SefinNacional/docs/index"
+        },
+        {
+          "bytes": 1233,
+          "environment": "restricted",
+          "http_status": 403,
+          "media_type": "text/html",
+          "role": "openapi_candidate",
+          "sha256": "c55f527e536de44c7980fecece7428ae5a765647495e47008a8a54fa1e434736",
+          "url": "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/swagger/docs/v1"
+        },
+        {
+          "bytes": 1233,
+          "environment": "production",
+          "http_status": 403,
+          "media_type": "text/html",
+          "role": "openapi_candidate",
+          "sha256": "c55f527e536de44c7980fecece7428ae5a765647495e47008a8a54fa1e434736",
+          "url": "https://sefin.nfse.gov.br/SefinNacional/swagger/docs/v1"
+        }
+      ],
+      "result": "official_openapi_unavailable"
     }
   ],
-  "result": "official_openapi_unavailable",
-  "schema": null,
+  "implementation_ready": true,
+  "observations_record": "prodrest-empirical-probe.json (results, api_observations)",
+  "observed": {
+    "get_dps_200": [
+      "tipoAmbiente",
+      "versaoAplicativo",
+      "dataHoraProcessamento",
+      "chaveAcesso"
+    ],
+    "get_dps_404": [
+      "tipoAmbiente=0",
+      "dataHoraProcessamento",
+      "erro"
+    ],
+    "get_evento_200": [
+      "dataHoraProcessamento",
+      "tipoAmbiente",
+      "versaoAplicativo",
+      "eventos[]"
+    ],
+    "get_evento_200_item": [
+      "chaveAcesso",
+      "tipoEvento",
+      "numeroPedidoRegistroEvento",
+      "dataHoraRecebimento",
+      "arquivoXml"
+    ],
+    "get_eventos_collection_405": [
+      "message"
+    ],
+    "get_nfse_200": [
+      "tipoAmbiente",
+      "versaoAplicativo",
+      "dataHoraProcessamento",
+      "chaveAcesso",
+      "nfseXmlGZipB64"
+    ],
+    "get_nfse_200_after_cancellation": [
+      "tipoAmbiente",
+      "versaoAplicativo",
+      "dataHoraProcessamento",
+      "chaveAcesso",
+      "nfseXmlGZipB64"
+    ],
+    "get_nfse_404": [
+      "tipoAmbiente",
+      "versaoAplicativo",
+      "dataHoraProcessamento",
+      "erro"
+    ],
+    "head_dps_200_404": [],
+    "post_eventos_201": [
+      "tipoAmbiente",
+      "versaoAplicativo",
+      "dataHoraProcessamento",
+      "eventoXmlGZipB64"
+    ],
+    "post_eventos_400": [
+      "tipoAmbiente",
+      "versaoAplicativo",
+      "dataHoraProcessamento",
+      "erro[]"
+    ],
+    "post_eventos_400_error_item": [
+      "codigo",
+      "descricao"
+    ],
+    "post_nfse_201": [
+      "tipoAmbiente",
+      "versaoAplicativo",
+      "dataHoraProcessamento",
+      "idDps",
+      "chaveAcesso",
+      "nfseXmlGZipB64",
+      "alertas"
+    ],
+    "post_nfse_400": [
+      "tipoAmbiente",
+      "versaoAplicativo",
+      "dataHoraProcessamento",
+      "idDPS",
+      "erros"
+    ],
+    "post_nfse_400_duplicate_codes": [
+      "E0014"
+    ],
+    "post_nfse_400_error_item": [
+      "Codigo",
+      "Descricao",
+      "Complemento?"
+    ]
+  },
+  "observed_server_version": "SefinNacional_1.6.0",
+  "openapi": {
+    "access": "mutual_tls",
+    "bytes": 14303,
+    "format": "swagger_2.0",
+    "http_status": 200,
+    "media_type": "application/json",
+    "raw_artifact_versioned": false,
+    "sha256": "5ab00aeb7a253933e4d3cafa8f2b74992f5e91b6a81c069f7f5a55a5c08d95af",
+    "title": "API NFS-e - Sefin Nacional",
+    "url": "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/swagger/docs/v1"
+  },
+  "openapi_service_differences": [
+    "POST /nfse 400 erros items use Codigo/Descricao/Complemento instead of codigo/descricao/complemento",
+    "POST /nfse 201 idDps carries the NFS-e Id (NFS prefix), not the DPS Id",
+    "POST /nfse/{chaveAcesso}/eventos 400 erro is an array, documented as an object",
+    "GET /dps/{id} 200 omits idDps, documented as required",
+    "GET /dps/{id} 404 returns tipoAmbiente 0 and omits versaoAplicativo",
+    "alertas is null on success",
+    "GET /nfse/{chaveAcesso}/eventos/{tipoEvento}/{numSeqEvento} 200 returns an eventos array instead of eventoXmlGZipB64",
+    "eventos[].arquivoXml is Base64 applied twice over the gzip stream"
+  ],
+  "operation": "POST /nfse",
+  "parser_implemented": false,
   "third_party_contract_data_used": false,
   "transmission_ready": false,
   "unconfirmed": [
-    "documented HTTP statuses",
-    "success schema",
-    "error schema",
-    "idDps/idDPS casing",
-    "required fields",
-    "nullability",
-    "tipoAmbiente enum",
-    "MensagemProcessamento schema"
+    "POST /nfse 403 body",
+    "POST /nfse 500 body",
+    "non-null alertas item",
+    "events other than cancellation and substitution",
+    "production behavior"
   ]
 }
