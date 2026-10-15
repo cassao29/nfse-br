@@ -291,18 +291,62 @@ def test_new_api_link_requests_review_not_post_confirmation() -> None:
     assert watch.evaluate(config, transport)["status"] == "review_required"
 
 
-def test_new_official_technical_note_is_review_required() -> None:
+def _rtc_note_report(label: str) -> dict[str, object]:
     config, transport = baseline()
     config = replace(
         config, catalogues=(replace(config.catalogues[0], id="rtc_notes"),)
     )
     transport.responses[CATALOGUE_URL] = response(
         CATALOGUE_URL,
-        html_page(
-            extra='<a href="/nfse/nt-010.pdf">Nota Técnica SE/CGNFS-e nº 010</a>'
-        ),
+        html_page(extra=f'<a href="/nfse/nt.pdf">{label}</a>'),
     )
-    assert watch.evaluate(config, transport)["status"] == "review_required"
+    return watch.evaluate(config, transport)
+
+
+@pytest.mark.parametrize(
+    ("label", "number"),
+    [
+        ("Nota Técnica SE/CGNFS-e nº 009", 9),
+        ("Nota Técnica SE/CGNFS-e nº 009 versão 1.01 (01/10/2026)", 9),
+        ("Nota Técnica 010 SE/CGNFS-e nº 010 versão 1.00", 10),
+        ("Nota Técnica SE/CGNFS-e Nº 011", 11),
+        ("Nota Técnica SE/CGNFS-e n° 11", 11),
+        ("NOTA TECNICA 012 SE/CGNFS-E", 12),
+        ("Nota Técnica 013 SE/CGNFS-e nº 012", 13),
+        ("AnexoVI-LeiautesRN_RTC_IBSCBS-v1.04.01 - NT009 v1.01", None),
+    ],
+)
+def test_note_number_reads_every_portal_label_format(
+    label: str, number: int | None
+) -> None:
+    assert watch._note_number(label) == number
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "Nota Técnica SE/CGNFS-e nº 011",
+        "Nota Técnica 011 SE/CGNFS-e nº 011 versão 1.00",
+    ],
+)
+def test_new_official_technical_note_is_review_required(label: str) -> None:
+    report = _rtc_note_report(label)
+
+    assert report["status"] == "review_required"
+    signals = cast("list[dict[str, object]]", report["signals"])
+    assert [s["reason"] for s in signals] == ["new_note"]
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "Nota Técnica SE/CGNFS-e nº 009 versão 1.01 (01/10/2026)",
+        "Nota Técnica 010 SE/CGNFS-e nº 010 versão 1.00",
+    ],
+)
+def test_reviewed_technical_notes_stay_unchanged(label: str) -> None:
+    assert watch._note_number(label) is not None
+    assert _rtc_note_report(label)["status"] == "unchanged"
 
 
 def test_baseline_403_to_official_post_openapi_is_candidate() -> None:
