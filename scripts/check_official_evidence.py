@@ -47,7 +47,10 @@ _XMLDSIG_TERMS = re.compile(
     re.IGNORECASE,
 )
 _POST_TERMS = re.compile(r"post\s*/nfse|openapi|swagger", re.IGNORECASE)
-_NOTE_NUMBER = re.compile(r"Nota Técnica SE/CGNFS-e nº\s*(\d+)")
+# The portal labels notes as "Nota Técnica SE/CGNFS-e nº 009" and, since NT 010,
+# also as "Nota Técnica 010 SE/CGNFS-e nº 010".
+_NOTE_NUMBER = re.compile(r"Nota Técnica(?:\s+\d+)?\s+SE/CGNFS-e\s+nº\s*(\d+)")
+_LAST_REVIEWED_RTC_NOTE = 10
 _FAQ_VERSION = re.compile(r"Versão\s+([\d.]+)\s+-\s+(\d\d/\d\d/\d{4})")
 
 
@@ -406,7 +409,7 @@ def _inspect_new_links(
     for label, href in links:
         if catalogue.id == "rtc_notes":
             note = _NOTE_NUMBER.search(label)
-            if note and int(note.group(1)) > 9:
+            if note and int(note.group(1)) > _LAST_REVIEWED_RTC_NOTE:
                 signals.append(
                     _signal(
                         "review_required", catalogue.id, reason="new_note", label=label

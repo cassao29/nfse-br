@@ -291,18 +291,38 @@ def test_new_api_link_requests_review_not_post_confirmation() -> None:
     assert watch.evaluate(config, transport)["status"] == "review_required"
 
 
-def test_new_official_technical_note_is_review_required() -> None:
+def _rtc_note_status(label: str) -> object:
     config, transport = baseline()
     config = replace(
         config, catalogues=(replace(config.catalogues[0], id="rtc_notes"),)
     )
     transport.responses[CATALOGUE_URL] = response(
         CATALOGUE_URL,
-        html_page(
-            extra='<a href="/nfse/nt-010.pdf">Nota Técnica SE/CGNFS-e nº 010</a>'
-        ),
+        html_page(extra=f'<a href="/nfse/nt.pdf">{label}</a>'),
     )
-    assert watch.evaluate(config, transport)["status"] == "review_required"
+    return watch.evaluate(config, transport)["status"]
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "Nota Técnica SE/CGNFS-e nº 011",
+        "Nota Técnica 011 SE/CGNFS-e nº 011 versão 1.00",
+    ],
+)
+def test_new_official_technical_note_is_review_required(label: str) -> None:
+    assert _rtc_note_status(label) == "review_required"
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "Nota Técnica SE/CGNFS-e nº 009 versão 1.01 (01/10/2026)",
+        "Nota Técnica 010 SE/CGNFS-e nº 010 versão 1.00",
+    ],
+)
+def test_reviewed_technical_notes_stay_unchanged(label: str) -> None:
+    assert _rtc_note_status(label) == "unchanged"
 
 
 def test_baseline_403_to_official_post_openapi_is_candidate() -> None:
