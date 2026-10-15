@@ -48,8 +48,11 @@ _XMLDSIG_TERMS = re.compile(
 )
 _POST_TERMS = re.compile(r"post\s*/nfse|openapi|swagger", re.IGNORECASE)
 # The portal labels notes as "Nota Técnica SE/CGNFS-e nº 009" and, since NT 010,
-# also as "Nota Técnica 010 SE/CGNFS-e nº 010".
-_NOTE_NUMBER = re.compile(r"Nota Técnica(?:\s+\d+)?\s+SE/CGNFS-e\s+nº\s*(\d+)")
+# also as "Nota Técnica 010 SE/CGNFS-e nº 010". Either number counts.
+_NOTE_LABEL = re.compile(
+    r"Nota\s+T[ée]cnica(?:\s+(\d+))?\s+SE/CGNFS-e(?:\s+n\.?\s*[º°o]?\s*(\d+))?",
+    re.IGNORECASE,
+)
 _LAST_REVIEWED_RTC_NOTE = 10
 _FAQ_VERSION = re.compile(r"Versão\s+([\d.]+)\s+-\s+(\d\d/\d\d/\d{4})")
 
@@ -402,14 +405,22 @@ def _inspect_artifact(
     return []
 
 
+def _note_number(label: str) -> int | None:
+    match = _NOTE_LABEL.search(label)
+    if match is None:
+        return None
+    numbers = [int(number) for number in match.groups() if number is not None]
+    return max(numbers, default=None)
+
+
 def _inspect_new_links(
     catalogue: Catalogue, links: list[tuple[str, str]]
 ) -> list[dict[str, object]]:
     signals: list[dict[str, object]] = []
     for label, href in links:
         if catalogue.id == "rtc_notes":
-            note = _NOTE_NUMBER.search(label)
-            if note and int(note.group(1)) > _LAST_REVIEWED_RTC_NOTE:
+            number = _note_number(label)
+            if number is not None and number > _LAST_REVIEWED_RTC_NOTE:
                 signals.append(
                     _signal(
                         "review_required", catalogue.id, reason="new_note", label=label

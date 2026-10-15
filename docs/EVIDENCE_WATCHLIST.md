@@ -83,7 +83,8 @@ operation at `/nfse`.
 
 The weekly run reported `review_required` (`catalogue_updated`) from 5 October
 2026. Compared with the Wayback capture of 22/08/2026 (marker 15/07/2026
-09h00), the page changed in two entries:
+09h00), two notes changed: NT 009 was replaced by v1.01 together with new
+versions of Anexo VI and Anexo VII, and NT 010 was added.
 
 | Artifact | Bytes | SHA-256 |
 | --- | ---: | --- |
@@ -94,7 +95,8 @@ The weekly run reported `review_required` (`catalogue_updated`) from 5 October
 
 Classification:
 
-- **NT 009 v1.01: `CURRENT_PARTIAL`.** It replaces v1.0.1 (04/06/2026) and adds
+- **NT 009 v1.01 and its two annexes: `CURRENT_PARTIAL`.** It replaces the
+  previous file (`nt-009-se-cgnfse-v1-0-1.pdf`, cover "Versão 1.0", 04/06/2026) and adds
   sections 2.9 to 2.16 to the future RTC layout (Anexo VI). Examples: `dest`
   and `indDest` move to `infDPS`, `CST` and `cClassTrib` move, `verCalcIBSCBS`
   is added, and the condominium and `comExt` groups change. It publishes no
@@ -104,16 +106,21 @@ Classification:
 - **NT 010 v1.00: out of scope.** It covers the NFS-e Via (road-use NFS-e)
   layout and its acquirer manifestation event, not DPS or the regular NFS-e.
 
-Effect on this library: none now. The builder and parsers do not serialize or
-read IBS/CBS groups; they appear only in the frozen schema contract. The pinned
-production and restricted XSD bundles did not change. When the RTC layout of
-NT 009 reaches an official XSD, the bundle pins report `material_change`, and
-the schema contract is reviewed then.
+Effect on this library: none now. NT 009 describes the future RTC layout, and
+none of it is in the pinned production and restricted XSD bundles, which did
+not change. Its other topics, such as the address rules for code 17.05, also
+apply only with that layout; the alphanumeric CNPJ of topic 2.1 is already
+supported. The builder and parsers do not serialize or read IBS/CBS groups;
+they appear only in the frozen schema contract. When the RTC layout reaches an
+official XSD, the bundle pins report `material_change`, and the schema
+contract is reviewed then.
 
 The same review fixed the note detector: the portal labels NT 010 as "Nota
-Técnica 010 SE/CGNFS-e nº 010", a format the earlier pattern missed. Notes up
-to nº 010 are now reviewed; a higher number reports `review_required` in both
-label formats.
+Técnica 010 SE/CGNFS-e nº 010", a format the earlier pattern missed. The
+detector now reads either number, any case, and `nº`, `Nº` or `n°`. Notes up
+to nº 010 are reviewed; a higher number reports `review_required`. A new
+version of a reviewed note is not a new number: it surfaces through the
+catalogue marker (`catalogue_updated`), as NT 009 v1.01 did.
 
 ## Signals and exit codes
 
