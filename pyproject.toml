@@ -49,7 +49,7 @@ dev = [
 ]
 
 [tool.hatch.build]
-exclude = ["/.agents", "/.claude", "/.f0", "/build", "/dist"]
+exclude = ["/.agents", "/.claude", "/.codex", "/.f0", "/build", "/dist"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/nfse_br"]
