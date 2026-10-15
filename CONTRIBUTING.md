@@ -13,6 +13,7 @@ by CI:
 
 ```console
 uv sync --frozen --extra xsd
+uv run --frozen --extra xsd python scripts/check_public_surface.py
 uv run --frozen --extra xsd ruff check .
 uv run --frozen --extra xsd ruff format --check .
 uv run --frozen --extra xsd mypy src tests scripts examples
