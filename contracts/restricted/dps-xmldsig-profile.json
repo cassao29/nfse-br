@@ -118,7 +118,7 @@
     "evidence_class": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
     "record": "PRODREST_EMPIRICAL_PROBE.md",
     "record_json": "prodrest-empirical-probe.json",
-    "record_json_sha256": "b0f1db1e6986f72a77025002f1d171dd2d314338dc2292931578dc2beba63e35",
+    "record_json_sha256": "da4505c2e32c173306ae39423e448a34bc2d487be888f039684d62258552c274",
     "server_application_version": "SefinNacional_1.6.0",
     "confirmed_profile": {
       "signed_target": "infDPS (DPS) and infPedReg (pedRegEvento)",

@@ -56,6 +56,11 @@ _PRIVACY_SCAN_PATHS = (
     _PROFILE_DOC_PATH,
     _ROOT / "docs/EVIDENCE_WATCHLIST.md",
 )
+# Short unsigned responses echo request identifiers; SHA256SUMS in the private
+# evidence binds them instead of a published digest.
+_WITHHELD_RESPONSE_DIGESTS = frozenset(
+    {"I1", "I2", "I3", "B1", "A1", "A2", *(f"M{n:02d}" for n in range(19))}
+)
 _EXPECTED_RESULTS = {
     "I1": (400, ["E0714"]),
     "I2": (400, ["E0714"]),
@@ -231,12 +236,25 @@ def test_probe_binds_api_observations() -> None:
     observations = cast(list[dict[str, object]], _probe()["api_observations"])
 
     assert [row["id"] for row in observations] == [f"A{n}" for n in range(1, 12)]
-    for row in observations:
-        assert re.fullmatch(r"[0-9a-f]{64}", cast(str, row["response_sha256"]))
     statuses = {cast(str, row["id"]): row["http_status"] for row in observations}
     assert statuses["A7"] == 405
     assert statuses["A10"] == 200
     assert statuses["A11"] == 404
+
+
+def test_probe_withholds_short_unsigned_response_digests() -> None:
+    probe = _probe()
+    rows = [
+        *cast(list[dict[str, object]], probe["results"]),
+        *cast(list[dict[str, object]], probe["api_observations"]),
+    ]
+
+    for row in rows:
+        if row["id"] in _WITHHELD_RESPONSE_DIGESTS:
+            assert "response_sha256" not in row, row["id"]
+        else:
+            assert re.fullmatch(r"[0-9a-f]{64}", cast(str, row["response_sha256"]))
+    assert "response_digests" in cast(dict[str, object], probe["private_evidence"])
 
 
 def _identifier_leaks(text: str, *, check_ibge: bool) -> list[str]:

@@ -18,8 +18,8 @@ TRANSMISSION_READY = NO
 
 The technical inquiry in [`XMLDSIG_INQUIRY.md`](XMLDSIG_INQUIRY.md) received no
 reply in 24 days. On 14 October 2026 the maintainer authorized a different
-route: operational requests to Produção Restrita, authenticated with a
-maintainer-controlled ICP-Brasil e-CNPJ A1 certificate. This decision
+route: operational requests to Produção Restrita, authenticated with an
+ICP-Brasil e-CNPJ A1 certificate used with its holder's consent. This decision
 supersedes the earlier "no client certificate or operational request" limit in
 [`NFSE_POST_RESPONSE.md`](NFSE_POST_RESPONSE.md). Documents generated in
 Produção Restrita have no fiscal value.
@@ -148,9 +148,9 @@ are recorded as observations, not as supported options.
   the 0.5.0 builder subset.
 - `E0202`: the taker must not be the provider (B1).
 - `E0014`: resending an issued DPS returns duplicate series/number.
-- `E0824`: the issuing municipality's parametrization forbids cancelling an
-  NFS-e without an identified taker. This is municipal configuration, not a
-  signature result; the cancellation of an NFS-e with a taker succeeded (E5).
+- `E0824`: municipal parametrization can forbid cancelling an NFS-e without
+  an identified taker. This is municipal configuration, not a signature
+  result; the cancellation of an NFS-e with a taker succeeded (E5).
 - A substituted NFS-e and an already cancelled NFS-e both reject a new
   cancellation with `E0840`.
 - A generic taker name was accepted with a valid CPF; the validator did not
@@ -185,4 +185,6 @@ its `SHA256SUMS` (SHA-256
 `ad955f16af8b7b239738e16976ed4cd6ffa2b4520df856ffb2e49bfd9e05b804`). They
 are not redistributed: the signed XML embeds the signer certificate and fiscal
 identifiers. This record and its JSON companion contain no CNPJ, CPF, access
-key, DPS Id, municipality code, taker or certificate.
+key, DPS Id, municipality code, taker or certificate. The JSON publishes a
+response digest only for empty responses and for responses that embed a
+SEFIN-signed document; `SHA256SUMS` binds the others.
