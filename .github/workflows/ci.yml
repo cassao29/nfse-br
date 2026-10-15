@@ -39,6 +39,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --extra xsd
 
+      - name: Check public surface
+        run: uv run --frozen --extra xsd python scripts/check_public_surface.py
+
       - name: Lint
         run: uv run --frozen --extra xsd ruff check .
 

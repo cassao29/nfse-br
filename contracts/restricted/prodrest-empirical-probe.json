@@ -2,7 +2,7 @@
   "capture_date": "2026-10-14",
   "environment": "restricted",
   "evidence_class": "CONFIRMED_BY_OFFICIAL_VALIDATOR",
-  "authorization": "maintainer decision of 2026-10-14 to use a maintainer-controlled ICP-Brasil e-CNPJ A1 certificate for operational requests in Produção Restrita",
+  "authorization": "maintainer decision of 2026-10-14 to use an ICP-Brasil e-CNPJ A1 certificate, with its holder's consent, for operational requests in Produção Restrita",
   "server_application_version": "SefinNacional_1.6.0",
   "operations": [
     "POST /nfse",
@@ -84,7 +84,8 @@
     "redistributed": false,
     "reason": "requests, responses and NFS-e embed the signer certificate and fiscal identifiers",
     "files": 116,
-    "sha256sums_sha256": "ad955f16af8b7b239738e16976ed4cd6ffa2b4520df856ffb2e49bfd9e05b804"
+    "sha256sums_sha256": "ad955f16af8b7b239738e16976ed4cd6ffa2b4520df856ffb2e49bfd9e05b804",
+    "response_digests": "response_sha256 is published for empty responses and for responses that embed a SEFIN-signed document; it is omitted for short unsigned responses that echo request identifiers. sha256sums_sha256 binds every response file."
   },
   "results": [
     {
@@ -109,8 +110,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "54aa14226f490cc30ad195a3117025bad8282f561d5e7a907a9771c4b973874b",
-      "response_sha256": "c01956809c62718cedf3678186e4385a8ba9ca3d4ad2fd4cbd6750321420469c"
+      "request_sha256": "54aa14226f490cc30ad195a3117025bad8282f561d5e7a907a9771c4b973874b"
     },
     {
       "id": "I2",
@@ -134,8 +134,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "2a299bcdc7ce7393b44d22d706ee43360804531ea8ae82d76a1ebcf0a1dc6440",
-      "response_sha256": "fd5aabbb032c74b7041346bc2189715e83a53b11a86ec55074015de34fe1416d"
+      "request_sha256": "2a299bcdc7ce7393b44d22d706ee43360804531ea8ae82d76a1ebcf0a1dc6440"
     },
     {
       "id": "I3",
@@ -159,8 +158,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "c3e6fbe3bbe2665a55c681d99e55543398b05129c022c7e6bb4aeddecee5955f",
-      "response_sha256": "65819d9258fe2a88b767c7001bd3f70b8a2930748592c52384987860cd40587c"
+      "request_sha256": "c3e6fbe3bbe2665a55c681d99e55543398b05129c022c7e6bb4aeddecee5955f"
     },
     {
       "id": "I4",
@@ -207,8 +205,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "0dda0d1cdc0a205dab447b850522456cb04268975e875868a0854e17e60988a8",
-      "response_sha256": "048380d388e4c4fad9d74035e49050f8396d313838e9e8e1c4f2e49914f29dec"
+      "request_sha256": "0dda0d1cdc0a205dab447b850522456cb04268975e875868a0854e17e60988a8"
     },
     {
       "id": "M00",
@@ -233,8 +230,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "569365e50d428d63b14ddce10e75cc81bd4dbbdadc6f150309cec0e2d698d4c4",
-      "response_sha256": "a74a320dccd5efe2fef3921d1bcfb717d7bfc920d39ae9f286e893842bc6da26"
+      "request_sha256": "569365e50d428d63b14ddce10e75cc81bd4dbbdadc6f150309cec0e2d698d4c4"
     },
     {
       "id": "M01",
@@ -259,8 +255,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "b9a66c99cc6d2329f69558b307078f31d5db9fb8f9f84fa64d7c29d0b83ac677",
-      "response_sha256": "04e1faf944cfbf40e19bcf9b0f98155566433a943ce48ea80c295ddf0a4d888b"
+      "request_sha256": "b9a66c99cc6d2329f69558b307078f31d5db9fb8f9f84fa64d7c29d0b83ac677"
     },
     {
       "id": "M02",
@@ -285,8 +280,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "c547d5ffe48ade3d78a1253f9b612ceff3781a58e4555dd83dcb803cb243c6f0",
-      "response_sha256": "627172f10d4eedc02a5b240fc1c5a0c7d4592eff7f259add96a5d0852cf6d7e0"
+      "request_sha256": "c547d5ffe48ade3d78a1253f9b612ceff3781a58e4555dd83dcb803cb243c6f0"
     },
     {
       "id": "M03",
@@ -311,8 +305,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "89892c5ced0509605f1c85cbd6abaf1673a7b3bd4d915e11330ca10869c4c811",
-      "response_sha256": "b6a2badfd885aa066cd175fadc9a1994693c7b0eefe58e2f5953815b428d4025"
+      "request_sha256": "89892c5ced0509605f1c85cbd6abaf1673a7b3bd4d915e11330ca10869c4c811"
     },
     {
       "id": "M04",
@@ -337,8 +330,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "7a64f18132e942f368ae0784ac15dc66d3a73f1d311131fb4340aba0c4ccd8d0",
-      "response_sha256": "558f95feb98d9290a311d1a8ae0e60167137ee5919f0cca64e61cb5ae2da90d7"
+      "request_sha256": "7a64f18132e942f368ae0784ac15dc66d3a73f1d311131fb4340aba0c4ccd8d0"
     },
     {
       "id": "M05",
@@ -363,8 +355,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "2359118c75783bf6484aa798492323224f378720c2cc5fc0b450233025143d2c",
-      "response_sha256": "1ba4e763fbe675d34cdb5f2206093b7fba4ecb4e53380398be7220ef94261a38"
+      "request_sha256": "2359118c75783bf6484aa798492323224f378720c2cc5fc0b450233025143d2c"
     },
     {
       "id": "M06",
@@ -389,8 +380,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "713a1d6ece1b529a8a07a0dab0e53810bcf5444dc44a2dc578ee96d6ddab4072",
-      "response_sha256": "b6502d680218758f4390638ce27dcd98facbeda7be1cf6df7312506afe87fc2e"
+      "request_sha256": "713a1d6ece1b529a8a07a0dab0e53810bcf5444dc44a2dc578ee96d6ddab4072"
     },
     {
       "id": "M07",
@@ -415,8 +405,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "2e4d7e5475fd9e6fd8ed8a7f44e7d79008d27604d29a81541bf312c691f388f9",
-      "response_sha256": "c2879738b1ac20fc8010b0aa2351fbfc6de9c4c4cef7f47eb64e53d69bc99b3d"
+      "request_sha256": "2e4d7e5475fd9e6fd8ed8a7f44e7d79008d27604d29a81541bf312c691f388f9"
     },
     {
       "id": "M08",
@@ -441,8 +430,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "cd3ae9d8c6f4dace8f89dfeac75cc40046398c9dcc106f09dc34de8110c5c565",
-      "response_sha256": "2319846aaa13df9ab350a817a41e41d60e908056626eee2dcd77567ce94ddbcf"
+      "request_sha256": "cd3ae9d8c6f4dace8f89dfeac75cc40046398c9dcc106f09dc34de8110c5c565"
     },
     {
       "id": "M09",
@@ -467,8 +455,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "1b92491b106efa0291f001c282b2bee5e95240ebf8be3a89355ca7b56713601d",
-      "response_sha256": "eabfdc9a6aa0be9ecfa8e7c832e183ab1febd6079515ad46b3f8f3aa2238e46d"
+      "request_sha256": "1b92491b106efa0291f001c282b2bee5e95240ebf8be3a89355ca7b56713601d"
     },
     {
       "id": "M10",
@@ -492,8 +479,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "810b45fef26e0f0ba7e51d046d70f684ce0b7c41004577463636b2f19a239850",
-      "response_sha256": "9f823c6caee74553c5c85e42736bd44b3a6e57200e18d373d072dc34fe74ec59"
+      "request_sha256": "810b45fef26e0f0ba7e51d046d70f684ce0b7c41004577463636b2f19a239850"
     },
     {
       "id": "M11",
@@ -517,8 +503,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "6661d63d9cd36d01a076cdac20f6aa5225a500224f2dc9ce1fd81d0d40951893",
-      "response_sha256": "7b9bbe19a26e54717861c8e0153ade6ef7831d7e587eed47e6b84ab16cf59687"
+      "request_sha256": "6661d63d9cd36d01a076cdac20f6aa5225a500224f2dc9ce1fd81d0d40951893"
     },
     {
       "id": "M12",
@@ -543,8 +528,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "f068d923b70f3e69e449ad65a5c3ba2c16cf4a4bc84a5b65432f49a28a7fd5ae",
-      "response_sha256": "ae5d538d17f66f6fee409213759ca868a776a4078977eafeb7279f29751c980d"
+      "request_sha256": "f068d923b70f3e69e449ad65a5c3ba2c16cf4a4bc84a5b65432f49a28a7fd5ae"
     },
     {
       "id": "M13",
@@ -569,8 +553,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "53a667298d56a128f1a8f912887e1e68883d0b9b7d9ab9f7cccdfeddab46a2f9",
-      "response_sha256": "b984b7c16d721b01c76d8bffc532acf2c5c50d06bd1b73fc6ea3ea3bee30ba85"
+      "request_sha256": "53a667298d56a128f1a8f912887e1e68883d0b9b7d9ab9f7cccdfeddab46a2f9"
     },
     {
       "id": "M14",
@@ -595,8 +578,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "dbafe2afcda631db41d7f9c3476ac81181629ab219650a416c83336d197c143e",
-      "response_sha256": "24d94eb3fffe788aea97d849b20b257525a95afa0beccf417685d2b46fee057b"
+      "request_sha256": "dbafe2afcda631db41d7f9c3476ac81181629ab219650a416c83336d197c143e"
     },
     {
       "id": "M15",
@@ -621,8 +603,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "bbf547e8246fa34bb2f013aa017a29c3ffc70603a579c7c12f358ba28887e217",
-      "response_sha256": "aa910ac3a448a7331bfc8d1a105b0f29f3c9f2a77577c2cdaf05568c8ed50c53"
+      "request_sha256": "bbf547e8246fa34bb2f013aa017a29c3ffc70603a579c7c12f358ba28887e217"
     },
     {
       "id": "M16",
@@ -647,8 +628,7 @@
         "base64_wrapped": false,
         "signature_parent": "DPS"
       },
-      "request_sha256": "4789be99a97029f7b5478d3d4e362bf904011169e3730d9df553e81499f0f344",
-      "response_sha256": "52b4c4e71300c6bbf532caf69ec5c0bb1eed421ad5819efa60b17685b900e45c"
+      "request_sha256": "4789be99a97029f7b5478d3d4e362bf904011169e3730d9df553e81499f0f344"
     },
     {
       "id": "M17",
@@ -673,8 +653,7 @@
         "base64_wrapped": true,
         "signature_parent": "DPS"
       },
-      "request_sha256": "82c8c35c0c16993fe4183518a6e1b062b2be2b4f3c336d03441df0437f197280",
-      "response_sha256": "68db6c68e31e695b7f312308e50ae1087f58b6b099169e9b56efc7e173c7f70a"
+      "request_sha256": "82c8c35c0c16993fe4183518a6e1b062b2be2b4f3c336d03441df0437f197280"
     },
     {
       "id": "M18",
@@ -699,8 +678,7 @@
         "base64_wrapped": false,
         "signature_parent": "infDPS"
       },
-      "request_sha256": "c48b95bd512cd0a61487f6262a6cf32047b815c8c4e754b41e21775ce9590ffd",
-      "response_sha256": "dfe384eaa283ae7f60045d86b704f3411680914908b1238db6eafe11f69eb00f"
+      "request_sha256": "c48b95bd512cd0a61487f6262a6cf32047b815c8c4e754b41e21775ce9590ffd"
     },
     {
       "id": "E1",
@@ -905,16 +883,14 @@
       "http_status": 400,
       "codes": [
         "E0014"
-      ],
-      "response_sha256": "335eb5e2c5202e776af697b3ecca9a7135056cb36415fdf0318efb781b0ddc36"
+      ]
     },
     {
       "id": "A2",
       "request": "GET /dps/{id}",
       "case": "issued DPS",
       "http_status": 200,
-      "codes": [],
-      "response_sha256": "a29423bc9700fa462d323a98baa535a30fbaadd1d0fc8e6bd74a76c672b27439"
+      "codes": []
     },
     {
       "id": "A3",

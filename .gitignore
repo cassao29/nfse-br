@@ -28,14 +28,29 @@ dist/
 .vscode/
 *.swp
 
-# Local environment and credentials
+# Local environment and credentials (case-insensitive: Windows and macOS
+# checkouts may write CERT.PFX or KEY.PEM)
 .env
 .env.*
 !.env.example
-*.pfx
-*.p12
-*.pem
-*.key
+.envrc
+.netrc
+.pypirc
+*.[pP][fF][xX]
+*.[pP]12
+*.[pP][eE][mM]
+*.[kK][eE][yY]
+*.[cC][eE][rR]
+*.[cC][rR][tT]
+*.[dD][eE][rR]
+*.[pP]7[bBcC]
+*.[jJ][kK][sS]
+*.[kK][eE][yY][sS][tT][oO][rR][eE]
+
+# Local agent and tool state
+.agents/
+.claude/
+.codex/
 
 # Local official-contract evidence bytes
 .f0/
